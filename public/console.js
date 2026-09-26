@@ -331,6 +331,12 @@
     }
   }
 
+  function reachHint() {
+    if (!D || present) return "";
+    return D.hub.demo ? "Demo mode: nothing is read and no machine can join."
+      : D.hub.listen.network ? "Other machines can join at " + D.hub.urls.join(", ") + ". The console itself answers only here."
+      : "Only this machine can reach this console. Start it with --listen 0.0.0.0 to add other computers.";
+  }
   function onData() {
     document.body.classList.remove("offline");
     document.body.dataset.demo = String(Boolean(D.hub.demo));
@@ -338,11 +344,8 @@
     const net = D.hub.listen.network;
     $("reach").classList.toggle("network", net);
     $("reachText").textContent = D.hub.demo ? "Synthetic team" : net ? "Accepting machines on this network" : "This machine only";
-    // the addresses name this machine on the network: kept off the screen while presenting
-    $("reach").dataset.title = D.hub.demo ? "Demo mode: nothing is read and no machine can join."
-      : net ? "Other machines can join at " + D.hub.urls.join(", ") + ". The console itself answers only here."
-      : "Only this machine can reach this console. Start it with --listen 0.0.0.0 to add other computers.";
-    $("reach").title = present ? "" : $("reach").dataset.title;
+    // Network addresses stay in memory while presenting, never in a hidden attribute.
+    $("reach").title = reachHint();
     const reporting = D.devices.filter((d) => d.status === "reporting").length;
     const current = currentDevices().length;
     $("tabTeam").textContent = current ? reporting + "/" + current : "0";
@@ -628,12 +631,11 @@
     if (!roots.length) return null;
     const found = roots.reduce((a, r) => a + (r.exists && Number.isFinite(r.files) ? r.files : 0), 0);
     const held = (r) => (r.exists === false ? "not there" : r.exists === null ? "not read yet" : plural(r.files || 0, "file"));
-    // while presenting a folder is a stand-in, as the restart command's folder options are: a path can carry a project or a client
-    const where = (r) => (present ? "…" : homeShort(r.path));
-    const list = roots.map((r) => `<code title="${esc(TOOL[r.tool] || r.tool)} · ${esc(held(r))}">${esc(where(r))}</code> <span class="held">(${esc(held(r))})</span>`).join(", ");
+    const folder = (r, i) => present ? `Folder ${i + 1}` : homeShort(r.path);
+    const list = roots.map((r, i) => `<code title="${esc(TOOL[r.tool] || r.tool)} · ${esc(held(r))}">${esc(folder(r, i))}</code> <span class="held">(${esc(held(r))})</span>`).join(", ");
     const hint = `<span class="hint">Elsewhere? Start with <code>--claude-root &lt;folder&gt;</code> or <code>--codex-root &lt;folder&gt;</code>, or set <code>CLAUDE_CONFIG_DIR</code> or <code>CODEX_HOME</code>.</span>`;
     return { found, head: found ? `Read ${plural(found, "transcript")} in` : "No Claude Code or Codex transcript found. Looked in", html: `<span class="roots">${list}.</span> ${found ? `<span class="hint">None has usage in the ${esc(PERIOD_TEXT[period][0])}.</span> ` : ""}${hint}`,
-      text: `${found ? `read ${plural(found, "transcript")} in` : "looked in"} ${roots.map((r) => `${where(r)} (${held(r)})`).join(", ")} · elsewhere: --claude-root, --codex-root, CLAUDE_CONFIG_DIR, CODEX_HOME` };
+      text: `${found ? `read ${plural(found, "transcript")} in` : "looked in"} ${roots.map((r, i) => `${folder(r, i)} (${held(r)})`).join(", ")} · elsewhere: --claude-root, --codex-root, CLAUDE_CONFIG_DIR, CODEX_HOME` };
   }
   // A path under the home directory is written with ~ (R3-10): the screen never carries the account's name in a path
   const homeShort = (p) => String(p ?? "").replace(/^(?:\/Users\/[^/\s'"]+|\/home\/[^/\s'"]+|[A-Za-z]:\\Users\\[^\\\s'"]+)(?=[\\/]|$)/u, "~");
@@ -741,6 +743,7 @@
   function paintLanes() {
     const now = serverNow();
     const box = $("cLanes");
+    const active = document.activeElement;
     const visible = D.lanes.filter((l) => laneVisible(l, now));
     const hidden = D.lanes.length - visible.length;
     // the cold lanes that fill the room under the warm rows, most recently active first; one row is the hairline that names them
@@ -761,7 +764,6 @@
     // is the tray under the strip, as on Projects and Team — never a hatched tile standing in for rows that do not exist
     const hug = hugWanted;
     box.closest(".lanes").classList.toggle("hug", hug);
-    const active = document.activeElement;
     if (!visible.length && !fill.length) {
       laneRows.clear(); fillRows.clear(); laneSep = null;
       // nothing to draw at all: the pane is a drawn void with its reason, sized to the pane — never a line of text over dead space;
@@ -1267,9 +1269,7 @@
   }
   // Why nothing can be said of alerts when no machine shares them (J4-05): the void's one sentence, on the Team head, the row and the strip.
   const NOT_WATCHED_WHY = "No machine shares its alerts (--share-alerts), so no alert can be known here · nothing is estimated in its place";
-  /* The Team canvas lists today's alerts, live and earlier, each named for its machine. The head is the day's count from the hub's
-     own counter (alertsToday, G01) — exact, never the length of the bounded list it sends to draw; when the list holds fewer than
-     the day raised, it says how many are kept. A hub without the counter says its figure is the list's. */
+  // The Team head names retained alerts explicitly when the hub has no complete daily ledger.
   function paintTeamAlerts() {
     const all = D.alerts || [];
     // today's alerts by the hub's own day (J4-03); anything before today is listed under "Earlier", dated, and stays out of today's count
@@ -1286,10 +1286,11 @@
     // the count is whole only from alertsToday.since: after midnight it is the day's; from later, it names its start
     const countedFrom = today && Number.isFinite(today.since) && today.since > today.from ? today.since : null;
     $("teamAlertCount").textContent = unwatchedAll && !count ? `not watched · 0 of ${plural(cov.watched + cov.unwatched, "machine")} share alerts`
-      : (count ? `${plural(count, "alert")} today${kept < count ? ` · ${kept} kept` : ""} · ${live} live` : "none today")
+      : (exact ? (count ? `${plural(count, "alert")} today${kept < count ? ` · ${kept} kept` : ""} · ${live} live` : "none today")
+        : `${plural(kept, "alert")} kept today · ${live} live`)
       + (countedFrom ? ` · counted since ${hhmm(countedFrom)}` : "") + (cov && cov.unwatched > 0 ? ` · ${plural(cov.unwatched, "machine")} not watched` : "") + (known ? ` · known since ${hhmm(known)}` : "");
     $("teamAlertCount").title = [unwatchedAll ? NOT_WATCHED_WHY : "",
-      today ? (exact ? `${count} alerts raised or accepted today by this console's clock${today.tz ? ` (${today.tz})` : ""}, counted as they came; the list below keeps the last ${kept}` : `This hub keeps no day counter: the figure is the ${kept} alerts its list still holds`) : `The ${dayList.length} alerts this hub's list holds for today`,
+      today ? (exact ? `${count} alerts raised or accepted today by this console's clock${today.tz ? ` (${today.tz})` : ""}, counted as they came; the list below keeps the last ${kept}` : `The figure is the ${kept} alerts retained from today, not a complete daily total; the list is bounded and resets when the console restarts`) : `The ${dayList.length} alerts this hub's list holds for today`,
       countedFrom ? `counting began at ${hhmm(countedFrom)}; today's alerts before then are unavailable, not zero` : "",
       cov && cov.unwatched > 0 && !unwatchedAll ? `${cov.unwatchedDevices.map((id) => pn("machine", (deviceOf(id) || { label: id }).label)).join(", ")}: the reporter there does not share alerts (--share-alerts is off), so their silence is not "no alert"` : cov && !cov.unwatched ? "Every current machine shares its alerts" : "",
       known ? `held only since ${hhmm(known)}: ${SINCE_WHY[cov.reason] || "unknown before"}` : ""].filter(Boolean).join(" · ");
@@ -1575,9 +1576,10 @@
       : fillRows.size ? [{ html: `none folded · <b>${fillRows.size}</b> cold ${fillRows.size === 1 ? "session is" : "sessions are"} drawn above, dimmed`, pri: 0 }]
       : [{ html: "none · every session of the day is above", pri: 0 }], cold.length ? " · idle for more than an hour, or on a machine that is silent, catching up or gone · open" : " · open");
     const box = $("coldLanes");
+    const active = document.activeElement;
     if (!cold.length) { box.innerHTML = ""; coldRows.clear(); }
     else {
-      const active = document.activeElement, place = placer(box);
+      const place = placer(box);
       const keep = new Set();
       for (const l of cold) {
         keep.add(l.key);
@@ -2041,14 +2043,21 @@
     present = Boolean(on);
     document.body.toggleAttribute("data-present", present);
     $("presentStamp").hidden = !present;
-    $("reach").title = present ? "" : $("reach").dataset.title || "";
+    $("reach").title = reachHint();
     // every row takes its new name at once, not at its own moment inside the poll interval; a hover's cached title (data-t) is dropped too, so no pre-presenting name survives in an attribute
     for (const rows of [laneRows, fillRows, coldRows, projLaneRows]) for (const row of rows.values()) row._painted = false;
     for (const el of document.querySelectorAll("[data-t]")) delete el.dataset.t;
-    if (D) { paintAll(); if (foldFetched.data) paintFold(); if (view === "projects") loadProjects(true); }
+    if (D) {
+      paintAll();
+      // Previously visited panes remain in the document even when hidden.
+      paintTeam();
+      if (foldFetched.data) paintFold();
+      if (projCache) loadProjects(true);
+      else if (view === "projects") loadProjects();
+    }
     // an open inspector's address takes the stand-in too, at once
     if (inspect.open && inspectDialog.open && inspect.kind !== "lane") setHash(`${view}/${inspect.kind}/${idInUrl(inspect.kind, inspect.id)}`);
-    if (addDialog.open) $("peopleList").innerHTML = present ? "" : (D ? D.people : []).map((p) => `<option value="${esc(p.person)}"></option>`).join("");
+    $("peopleList").innerHTML = present || !addDialog.open ? "" : (D ? D.people : []).map((p) => `<option value="${esc(p.person)}"></option>`).join("");
     // the restart command on the open sheet takes its masks at once (R3-09): no name and no home path survives in the DOM while presenting
     if (D && D.hub.networkCommand) $("networkCmdShown").textContent = shownCommand(D.hub.networkCommand);
     toast(present ? "Presenting: names are stand-ins until you press P again." : "Presenting is off: real names are back.");
@@ -2514,8 +2523,8 @@
     const now = serverNow();
     const lanes = localLanes().slice().sort((a, b) => a.project.name.localeCompare(b.project.name) || (b.tokens5m ?? -1) - (a.tokens5m ?? -1));
     const box = $("pLanes");
-    const keep = new Set();
     const active = document.activeElement;
+    const keep = new Set();
     if (lanes.length && box.querySelector(".empty")) box.innerHTML = "";
     const place = placer(box);
     for (const l of lanes) {
@@ -2591,7 +2600,9 @@
     if (!projCache) body.innerHTML = `<tr><td colspan="14">Reading this machine…</td></tr>`;
     try {
       let p = projCache;
-      if (!fromCache || !p || (p.period && p.period.id !== period)) {
+      // A privacy redraw must replace old names synchronously, before any network wait.
+      // Opening Projects or changing period calls this without fromCache and refreshes it.
+      if (!fromCache || !p) {
         const r = await fetch("/api/projects?period=" + period, { headers: HEADERS });
         p = await r.json();
         if (!r.ok) throw new Error(p.reason || String(r.status));
@@ -2768,7 +2779,13 @@
   }
   $("addBtn").addEventListener("click", openAdd);
   addDialog.addEventListener("click", (ev) => { if (ev.target.closest("[data-close]")) closeAdd(); });
-  addDialog.addEventListener("close", () => clearSecret());
+  addDialog.addEventListener("close", () => {
+    clearSecret();
+    $("addForm").reset();
+    $("peopleList").replaceChildren();
+    $("linkSay").textContent = "—";
+    $("joinStatus").textContent = "";
+  });
   function closeAdd() { if (addDialog.open) addDialog.close(); }
   function clearSecret() {
     // The link is a credential until it is used or expires. It is not kept
@@ -2864,7 +2881,12 @@
     paintInspect();
     openSheet(inspectDialog, `${view}/${kind}/${idInUrl(kind, id)}`, from);
   }
-  inspectDialog.addEventListener("close", () => { inspect.open = false; });
+  inspectDialog.addEventListener("close", () => {
+    inspect.open = false;
+    $("inspectTitle").textContent = "—";
+    $("inspectBody").replaceChildren();
+    $("inspectFoot").replaceChildren();
+  });
   document.addEventListener("click", (ev) => {
     const door = ev.target.closest("[data-inspect]"); if (!door) return;
     const other = ev.target.closest("button, a");
@@ -3007,6 +3029,7 @@
   /* Everything reachable is one keystroke away from every view, and what is
      not reachable right now is listed too, struck through with the reason. */
   const pal = $("pal"), palq = $("palq"), palres = $("palres");
+  pal.addEventListener("close", () => { palq.value = ""; palres.replaceChildren(); });
   let palSel = 0, palRows = [];
   const PERIODS = ["1h", "24h", "7d", "30d"];
   function palItems() {

@@ -19,8 +19,7 @@
       "local": { "type": "object", "properties": {
         "roots": { "type": "array", "description": "Every folder read for this machine's transcripts: the tool, the path, whether it exists (null before the first read) and how many transcripts it holds.",
           "items": { "type": "object", "required": ["tool", "path", "exists", "files"], "additionalProperties": false,
-            "properties": { "tool": { "enum": ["claude-code", "codex"] }, "path": { "type": "string" }, "exists": { "type": ["boolean", "null"] }, "files": { "type": ["integer", "null"] } } } },
-        "backfill": { "type": ["object", "null"], "description": "This machine's first read of the console's 30 days, once complete." } } } } },
+            "properties": { "tool": { "enum": ["claude-code", "codex"] }, "path": { "type": "string" }, "exists": { "type": ["boolean", "null"] }, "files": { "type": ["integer", "null"] } } } } } } } },
     "windows": {
       "type": "object", "required": ["1h", "24h", "7d", "30d"],
       "additionalProperties": { "type": "object", "required": ["key", "basis", "from", "to", "tokens", "cost"],
@@ -122,7 +121,7 @@
     "alertsToday": {
       "type": "object", "additionalProperties": false,
       "required": ["date", "tz", "from", "since", "count", "kept", "byKind", "lastHour", "exact"],
-      "description": "The alerts of this console's calendar day (G01), counted as they were raised or accepted and kept with the state: exact, never the length of alerts[], which is a bounded list. kept: how many of them alerts[] still holds (print 'count alerts today · kept kept' when kept < count). lastHour: live alerts dated within the last hour. since: from when the count is whole (today's midnight, or when counting began after an upgrade); before it today's alerts are unavailable. exact false: this embedding keeps no counter and count is the list's (since null).",
+      "description": "Counts from the bounded, in-memory alert list, not a complete ledger. count and kept are the retained alerts dated on the console's local calendar day; lastHour is the retained live alerts from the last hour, including across midnight. exact is false and since is null. Restart availability is described by alertsCoverage; an empty list does not establish zero daily alerts.",
       "properties": {
         "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
         "tz": { "type": "string" },

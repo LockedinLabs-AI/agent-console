@@ -31,7 +31,6 @@ import { createNames, startLocalCollection } from "./lib/hub/local.js";
 import { startDemo } from "./lib/hub/demo.js";
 import { createAlerts } from "./lib/hub/alerts.js";
 import { createFleetSignals } from "./lib/hub/fleet.js";
-import { createAlertDay } from "./lib/hub/alert-day.js";
 import { createActivityBook } from "./lib/collector/activity.js";
 import { createConsoleHandler, createReportingHandler, hubAddresses, joinAssetsPresent, isCgnatAddress } from "./lib/hub/routes.js";
 import { choosePort, chooseFreePort } from "./lib/hub/port.js";
@@ -217,12 +216,12 @@ try {
     : "\n  " + remedy(error, { what: "opening the console's data folder", path: config.stateDir, command: COMMAND }) + "\n\n");
   process.exit(1);
 }
-let registry = null, names = null, store = null, alertDay = null;
+let registry = null, names = null, store = null;
 if (!config.demo) {
   // Register before initializing any persisted component, including failures
   // during startup. Finish every final write before another hub may acquire it.
   process.on("exit", () => {
-    try { registry?.flush(); names?.save(); store?.flush(); alertDay?.flush(); } catch { /* exiting */ }
+    try { registry?.flush(); names?.save(); store?.flush(); } catch { /* exiting */ }
     finally { try { stateLock.release(); } catch { /* a dead owner is recovered on the next start */ } }
   });
   for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => process.exit(signal === "SIGINT" ? 130 : 143));
@@ -243,26 +242,20 @@ let local = null;
 let alertEngine = null;
 // Joined machines' opt-in alerts and tool activity (lib/hub/fleet.js), and
 // this machine's own tool activity, counted from the transcripts it reads.
-// The day's alert count, kept with the state: exact however many alerts the
-// lists keep (lib/hub/alert-day.js). A first read of this machine's
-// transcripts starts from the beginning, so it counts the whole day.
-alertDay = config.demo ? null : createAlertDay({ file: path.join(config.stateDir, "alerts-today.json"),
-  fromMidnight: config.local && !fs.existsSync(path.join(config.stateDir, "local", "cursor-v2.json")) });
-const fleet = createFleetSignals({ day: alertDay, firstStart: !config.demo && registry.previousRunSeenAt === null });
+const fleet = createFleetSignals({ firstStart: !config.demo && registry.previousRunSeenAt === null });
 let activityBook = null;
 if (config.demo) {
   activityBook = createActivityBook();
   const demo = startDemo({ registry, store, fleet, activity: activityBook });
   names = demo.names;
   alertEngine = { list: () => demo.alerts() };
-  alertDay = { read: (t) => demo.alertDay(t), flush() {} };
 } else if (config.local) {
   const roots = transcriptRoots({ home: config.home, env: config.homeGiven ? {} : process.env,
     claudeRoot: config.claudeRoot, codexRoot: config.codexRoot });
   // No alert is live until the first read of this machine's transcripts is
   // done: a first run replays history, and history is not "now".
   alertEngine = createAlerts({ repeat: config.alertRepeat, spikeFactor: config.alertSpikeFactor,
-    stallMinutes: config.alertStallMinutes, notify: config.desktopAlerts, names, day: alertDay,
+    stallMinutes: config.alertStallMinutes, notify: config.desktopAlerts, names,
     live: () => local?.status.firstRunComplete === true });
   activityBook = createActivityBook();
   local = startLocalCollection({
@@ -282,7 +275,6 @@ const consoleHandler = createConsoleHandler({
   reporting: reportingInfo,
   git: config.demo ? null : createGitStatsStore(),
   alerts: alertEngine,
-  alertDay,
   fleet,
   activity: activityBook,
   interop: config.interop && !config.demo ? createInteropStore() : null,

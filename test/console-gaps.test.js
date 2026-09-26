@@ -5,7 +5,7 @@
  * - the lanes pane is never left standing empty: cold lanes fill it, the card
  *   hugs its rows when the day leaves room (and this machine's Projects fold
  *   opens in that room), and a pane with no lane at all is the hatched void;
- * - Team's alert head is the hub's own day counter, saying how many are kept;
+ * - Team's alert head labels the bounded list as retained alerts;
  * - Projects' live and subagent counts come from the per-project rollup;
  * - a floor is named once per pane, and only by what made it a floor;
  * - the burn rate's money shares the tokens' unit;
@@ -21,7 +21,6 @@ import { test } from "node:test";
 import fs from "node:fs";
 import vm from "node:vm";
 
-// A Windows checkout has CRLF endings; the functions are sliced out of the source by their LF-delimited ends.
 const read = (file) => fs.readFileSync(new URL("../public/" + file, import.meta.url), "utf8").replace(/\r\n/gu, "\n");
 const JS = read("console.js");
 const CSS = read("console.css");
@@ -74,13 +73,14 @@ test("G06: the lanes card hugs its rows when the day leaves the pane room, fills
   assert.doesNotMatch(JS, /box\.appendChild\(row\);\s*\/\/ moves it into sorted position/u);
 });
 
-test("G01: the Team head prints the day's alert count from the hub's counter and says how many are kept when the list is shorter", () => {
+test("the Team head distinguishes retained alert counts from a complete daily total", () => {
   // without the hub's counter the figure is today's own list (J4-03): an alert from before today is never in it
   assert.match(JS, /const count = today \? today\.count : dayList\.length;/u);
   assert.match(JS, /const kept = today \? today\.kept : dayList\.length;/u);
   assert.match(JS, /\$\{plural\(count, "alert"\)\} today\$\{kept < count \? ` · \$\{kept\} kept` : ""\}/u);
-  assert.ok(Number.isInteger(CONSOLE.alertsToday.count) && Number.isInteger(CONSOLE.alertsToday.kept), "the fixture carries the day counter");
-  assert.ok(CONSOLE.alertsToday.count >= CONSOLE.alertsToday.kept);
+  assert.match(JS, /\$\{plural\(kept, "alert"\)\} kept today/u);
+  assert.equal(CONSOLE.alertsToday.exact, false);
+  assert.equal(CONSOLE.alertsToday.count, CONSOLE.alertsToday.kept);
 });
 
 test("R2-M1: Projects counts live and subagents from the hub's per-project rollup, never from the rows drawn", () => {

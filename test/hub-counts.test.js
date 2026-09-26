@@ -1,23 +1,19 @@
 /**
- * Counts that are exact and reasons that are true (verified gaps G01, G02,
- * G12, R2-L2): the day's alerts are counted, not the length of a bounded
- * list; Projects counts sessions as the Console counts lanes; an empty
+ * Counts with explicit scope: alert summaries describe the retained list;
+ * Projects counts sessions as the Console counts lanes; an empty
  * minute period is a counted zero, not "not kept"; and a partial interval
  * names the cause that is true.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import crypto from "node:crypto";
 
 import { createStore } from "../lib/hub/store.js";
 import { createRegistry } from "../lib/hub/registry.js";
 import { buildConsole } from "../lib/hub/aggregate.js";
 import { projectsPayload } from "../lib/hub/projects.js";
-import { createAlerts } from "../lib/hub/alerts.js";
-import { createAlertDay, localDayOf } from "../lib/hub/alert-day.js";
+import { alertsTodayOf, localDayOf } from "../lib/hub/alert-day.js";
 import { createFleetSignals } from "../lib/hub/fleet.js";
 import { allAlerts, consoleSignals, coverageOf, RESTART_GRACE_MS } from "../lib/hub/routes.js";
 import { eventMeasurement } from "../lib/collector/measurement.js";
@@ -49,75 +45,43 @@ function hub(devices = [{ id: "dev_a", label: "Studio", person: "You", local: tr
   return { store, registry };
 }
 
-// --- G01: the day's alerts are counted, not the list's length --------------
+// A bounded list never represents a complete durable daily alert count.
 
-test("G01: 150 alerts today read 150, with the 100 the list keeps named apart", () => {
+test("retained alert counts remain bounded through eviction, replay and restart", () => {
   const { store, registry } = hub([{ id: "dev_a", label: "Studio", person: "You", local: true },
     { id: "dev_b", label: "Laptop", person: "Platform engineer" }]);
-  const day = createAlertDay({ now: () => NOW, fromMidnight: true });
-  const fleet = createFleetSignals({ now: () => NOW, startedAt: NOW - 6 * HOUR, day });
+  let fleet = createFleetSignals({ now: () => NOW, startedAt: NOW - 6 * HOUR });
   const alerts = Array.from({ length: 150 }, (_, i) => ({ id: h("a" + i), kind: i % 3 ? "loop" : "spike", at: iso(NOW - (150 - i) * MINUTE),
     sessionHash: h("s"), count: 5 }));
-  fleet.accept("dev_b", { share: { alerts: "on", activity: "off" }, alerts }, NOW);
-  const view = buildConsole({ store, registry, now: NOW, hub: {}, alerts: allAlerts({ fleet }, NOW), alertDay: day.read(NOW) });
-  assert.equal(view.alerts.length, 100, "the list is bounded");
-  assert.equal(view.alertsToday.count, 150, "the head says 150, not 100");
-  assert.equal(view.alertsToday.kept, 100);
-  assert.equal(view.alertsToday.exact, true);
-  assert.equal(view.alertsToday.byKind.spike + view.alertsToday.byKind.loop, 150);
-  assert.equal(view.alertsToday.lastHour, 59, "live: dated within the hour, not the list's share of it");
-  assert.equal(view.alertsToday.since, localDayOf(NOW).from, "whole from midnight");
-  assert.equal(view.alertsToday.date, localDayOf(NOW).date);
-  // A resent envelope is not counted twice.
-  fleet.accept("dev_b", { share: { alerts: "on", activity: "off" }, alerts: alerts.slice(-10) }, NOW);
-  assert.equal(day.read(NOW).count, 150);
+  const send = (batch) => fleet.accept("dev_b", { share: { alerts: "on", activity: "off" }, alerts: batch }, NOW);
+  const view = () => buildConsole({ store, registry, now: NOW, hub: {}, alerts: allAlerts({ fleet }, NOW), signals: consoleSignals({ fleet }, NOW) });
+  send(alerts);
+  assert.deepEqual([view().alertsToday.count, view().alertsToday.kept, view().alertsToday.exact, view().alertsToday.since], [100, 100, false, null]);
+  send(alerts.slice(0, 1)); // This identity was evicted from the bounded list.
+  assert.equal(view().alertsToday.count, 100, "replay cannot increment a separate lifetime counter");
+  assert.equal(view().alertsToday.exact, false, "the retained count is never claimed to be the day's full total");
+  fleet = createFleetSignals({ now: () => NOW, startedAt: NOW });
+  assert.deepEqual([view().alertsToday.count, view().alertsToday.lastHour, view().alertsToday.exact, view().alertsToday.since], [0, 0, false, null]);
+  send(alerts.slice(-1));
+  const receipt = send(alerts.slice(-1));
+  assert.equal(receipt.alerts.duplicate, 1);
+  assert.equal(view().alertsToday.count, 1, "only the newly retained alert is counted after restart");
+  assert.equal(view().alertsToday.exact, false);
+  assert.equal(view().alertsCoverage.byDevice.dev_b.reason, "console-restarted");
 });
 
-test("G01: the local engine counts every alert it raises, and yesterday's are not today's", () => {
-  const day = createAlertDay({ now: () => NOW, fromMidnight: true });
-  let clock = NOW;
-  const engine = createAlerts({ now: () => clock, repeat: 2, day });
-  const hashIdentity = (kind, v) => h(kind + "|" + v);
-  const line = (at, id) => ({ type: "assistant", timestamp: new Date(at).toISOString(),
-    message: { content: [{ type: "tool_use", id, name: "Bash", input: { command: "same" } }] } });
-  for (let i = 0; i < 6; i += 1) engine.observeLine({ tool: "claude-code", line: line(NOW - 10 * MINUTE + i * 1000, "c" + i), sessionHash: h("s"), hashIdentity });
-  const raised = engine.list().length;
-  assert.ok(raised > 0);
-  assert.equal(day.read(NOW).count, raised);
-  day.add({ kind: "loop", at: localDayOf(NOW).from - MINUTE }, NOW);
-  assert.equal(day.read(NOW).count, raised, "an alert dated yesterday is not today's");
-});
-
-test("G01: the count is kept with the state and starts again at midnight", (t) => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "agent-console-alert-day-"));
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-  const file = path.join(dir, "alerts-today.json");
-  let clock = NOW;
-  const first = createAlertDay({ now: () => clock, file });
-  assert.equal(first.read().since, NOW, "an upgrade with no count kept is whole only from now");
-  for (let i = 0; i < 7; i += 1) first.add({ kind: "stall", at: NOW - i * MINUTE });
-  first.stop();
-  assert.equal((fs.statSync(file).mode & 0o777).toString(8), process.platform === "win32" ? (fs.statSync(file).mode & 0o777).toString(8) : "600");
-  clock = NOW + HOUR;
-  const again = createAlertDay({ now: () => clock, file });
-  assert.equal(again.read().count, 7, "a restart keeps the day's count");
-  assert.equal(again.read().since, NOW);
-  // Past midnight: a new day, counted from its midnight.
-  const tomorrow = localDayOf(NOW).from + DAY + 5 * MINUTE;
-  clock = tomorrow;
-  assert.equal(again.read().count, 0);
-  assert.equal(again.read().since, localDayOf(tomorrow).from);
-  again.add({ kind: "loop", at: tomorrow - MINUTE });
-  again.stop();
-  // A count kept from an earlier day is continuous: the next run is whole from its midnight.
-  clock = tomorrow + DAY;
-  assert.equal(createAlertDay({ now: () => clock, file }).read().since, localDayOf(clock).from);
-});
-
-test("G01: without a counter the figure is the list's, and says it is not exact", () => {
-  const { store, registry } = hub();
-  const view = buildConsole({ store, registry, now: NOW, hub: {}, alerts: [{ id: "x", kind: "loop", at: NOW - MINUTE, sessionHash: h("s"), count: 5 }] });
-  assert.deepEqual([view.alertsToday.count, view.alertsToday.kept, view.alertsToday.exact, view.alertsToday.since], [1, 1, false, null]);
+test("retained daily and hourly alerts use their own time boundaries across midnight", () => {
+  const now = localDayOf(NOW).from + 5 * MINUTE;
+  const reading = alertsTodayOf([
+    { kind: "loop", at: now - 10 * MINUTE },
+    { kind: "spike", at: now - MINUTE },
+    { kind: "stall", at: now + 3 * MINUTE },
+  ], now);
+  assert.equal(reading.count, 1, "yesterday's and overly future alerts are outside today's list");
+  assert.equal(reading.lastHour, 2, "a rolling hour can include retained alerts from yesterday");
+  assert.deepEqual(reading.byKind, { loop: 0, spike: 1, stall: 0 });
+  assert.equal(reading.exact, false);
+  assert.equal(reading.since, null);
 });
 
 // --- G02: Projects counts sessions as the Console counts lanes -------------

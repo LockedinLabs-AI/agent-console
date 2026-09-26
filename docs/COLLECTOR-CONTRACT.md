@@ -77,25 +77,6 @@ lines and fields are ignored and never forwarded.
 `backlog` is optional: two counts saying how far a large upload has got (see
 below). Nothing else is in it.
 
-`backfill` is optional and marks a machine's **first delivery**: the reporter
-has never delivered to this console before (or its first delivery is still
-under way), so it read its transcripts back the console's 30 UTC days rather
-than the minute retention, and says from which day:
-
-```json
-"backfill": { "from": "2026-08-27" }
-```
-
-It is on every envelope of that delivery, until the one whose `backlog` says
-everything is delivered. The console puts records of days wholly past its
-minute retention straight into the daily totals, once per machine and day:
-the first such record of a day replaces what the console held for that
-machine and day, and when the delivery is complete those days are done, so a
-later reading of them adds nothing ([accounting.md](accounting.md) §6). Such
-records do not count against the machine's daily allowance, which is for
-records inside minute retention. A 0.4.0 console ignores it and counts
-those records as expired, as before.
-
 `coverage` is optional: what the reporter's collector could not count, as
 counts by reason (`{ "unreadableLine": 1, "unboundedReplay": 2 }`). Reason
 names are plain words, the values non-negative integers, at most 32 of them.
@@ -291,8 +272,8 @@ Where it appears:
   explicit `--claude-root` or `--codex-root` replaces its tool's list. A
   screen with nothing to show names them; the console's own window does too
   when its first read finds nothing, with the `--claude-root` and
-  `--codex-root` hint. `hub.local.backfill` is `{ from, days, complete }`
-  once the first read of the 30 days is complete.
+  `--codex-root` hint. The first read follows configured minute retention;
+  the 30-day view remains partial where daily history is unavailable.
 - `hub.prices`: the offline price table estimates are made with —
   `{ v, checkedOn, lastVerifiedOn, currency, basis, models }`: its format
   version, the day its inventory was checked, the newest row's verification
@@ -304,13 +285,14 @@ Where it appears:
   address and a port forward.
 - `series["30d"].whole`: per day of the 30-day series, whether the daily
   totals hold it whole — from `windows["30d"].since` on. A day before it
-  (on a console that has not completed a first read, the edge of its minute
-  retention) is drawn as partial.
-- `alertsToday`: the alerts of the console's calendar day, counted as each
-  is raised here or accepted from a machine and kept in the console's state
-  directory, so it is exact however many `alerts[]` keeps (100 per machine).
-  `kept` says how many of them the list still holds, `lastHour` the live
-  ones of the hour, and `since` from when the count is whole.
+  is drawn as partial. A first read follows configured retention and does
+  not establish complete coverage for older days.
+- `alertsToday`: counts from the bounded, in-memory alert list (up to 100
+  per machine). `count` and `kept` both describe retained alerts dated on the
+  console's calendar day; `lastHour` describes retained live alerts from the
+  last hour, including across midnight. `exact` is false and `since` is null:
+  these are not complete daily or hourly totals. Restart coverage remains
+  explicit in `alertsCoverage`; a new empty list does not establish no alerts.
 
 ## How it is delivered
 

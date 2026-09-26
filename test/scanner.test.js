@@ -92,3 +92,27 @@ test("a sweep is cut into budgeted slices, and only a finished sweep lets a miss
   assert.equal(once.entries.length, 200);
   assert.equal(once.whole, true);
 });
+
+test("a replaced transcript is read even when its size and modification time match", async (t) => {
+  const root = tree(t);
+  const file = path.join(root, "project-0", "live.jsonl");
+  const roots = [{ tool: "claude-code", directory: root }];
+  let clock = Date.now();
+  const scanner = createScanner({ now: () => clock, budgetMs: 1000 });
+  await scanner.scan(roots);
+  const stat = fs.statSync(file);
+  const realStat = fs.statSync;
+  // Model a new file identity without relying on filesystem timestamp resolution.
+  t.mock.method(fs, "statSync", (...args) => {
+    const current = realStat(...args);
+    if (args[0] === file) return Object.assign(current, { size: stat.size, mtimeMs: stat.mtimeMs, birthtimeMs: stat.birthtimeMs + 1000 });
+    return current;
+  });
+  clock += 2000;
+  const quick = await scanner.scan(roots);
+  assert.deepEqual(quick.entries.map((entry) => entry.filename), [file]);
+  clock += 60_000;
+  const sweep = await scanner.scan(roots);
+  assert.equal(sweep.whole, true);
+  assert.deepEqual(sweep.entries, [], "the replacement was already delivered by the quick pass");
+});

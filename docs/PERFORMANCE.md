@@ -175,44 +175,6 @@ month, 107,685 records of a second history, and every conformance machine.
 `test/collector-incremental.test.js` also holds that a transcript read in two
 passes, split mid-response, gives exactly the records of one pass.
 
-## Idle on a large history (26 September 2026)
-
-A real history of about 21,000 transcripts kept about 42% of a core busy
-while the console sat idle: every two seconds it walked every folder,
-stat-ed every file through promises, hashed every path again (the memo was
-cleared at 20,000 entries) and parsed its multi-megabyte cursor. Measured on
-the synthetic equivalent (`node bench/generate.mjs --lines 200000 --sessions
-10000 --days 30 --bytes-per-line 400`: 21,199 files in 6,981 folders), the
-hub's own machine only, 60 seconds after the first read, on the same Mac:
-
-| | Before | After |
-| --- | --- | --- |
-| CPU at idle | 47.9% of a core | 1.5% of a core |
-| Resident memory at idle | 441 MB | 242 MB |
-| Peak resident memory, first read | 480 MB (8 days read) | 481–587 MB (30 days read) |
-
-What changed:
-
-- **A scanner decides what a pass looks at** (`lib/collector/scanner.js`).
-  Between sweeps it stats only files changed in the last quarter hour, and
-  lists again only the roots, their children and the folders above a recent
-  file whose modification time moved. A sweep of everything starts once a
-  minute and runs in slices of at most 15 ms a pass, with synchronous calls
-  (a whole walk through promises cost about 2 s of CPU; synchronously, 0.3 s).
-  Only a finished sweep lets a missing transcript go. A session resumed after
-  a long pause is seen within the minute.
-- **The cursor stays in memory** between passes while it is the file this
-  process last wrote; each path's key is computed once per file.
-- **A first read's alert analysis skips history older than the day it
-  keeps**, and a session quiet for longer is let go: its tool-call identities
-  alone can run to thousands.
-
-The peak is the first read, and it now reads 30 days where it read 8 (a
-first read fills the 30-day view; `lib/hub/store.js`). On the real history it
-was about 1.5 GB. What holds it is the parse of each transcript line and the
-records of the retention window being indexed; no change here safely bounds
-it further, so it is recorded here rather than claimed.
-
 ## Known limits
 
 - A restart reads the stored records before the console answers. At a heavy
@@ -222,3 +184,10 @@ it further, so it is recorded here rather than claimed.
   background needs the console to show that it is still loading.
 - A reporter's first catch-up holds its backlog in memory while it sends it
   in batches of 500. The hub's own machine no longer does.
+
+Live collectors also keep an in-memory directory scan. Between complete
+sweeps, they check recently active transcripts and folders where files can
+appear. A complete sweep runs in bounded slices at least once a minute; a
+replacement file is detected by its birth time even if its size and
+modification time are unchanged. This reduces idle scanning without changing
+token retention or the accounting identity rules.

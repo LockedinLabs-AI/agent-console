@@ -547,45 +547,54 @@ async function focusThroughReorder(page, contextButton) {
 }
 await section("keyboard", async () => {
   const { page, context } = await open(1440, "dark");
+  // The live demo can reorder rows between keys. Capture the expected adjacent
+  // row at keydown, then observe focus after the app's handler for that event.
+  await page.evaluate(() => {
+    window.laneProbeSteps = [];
+    const steps = new WeakMap();
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "j" && event.key !== "k") return;
+      const rows = [...document.querySelectorAll("#cLanes .lane")];
+      const from = rows.indexOf(document.activeElement);
+      const next = from < 0 ? (event.key === "j" ? rows[0] : rows.at(-1))
+        : (rows[from + (event.key === "j" ? 1 : -1)] || rows[from]);
+      const step = { key: event.key, from, expected: next?.dataset.key || null, actual: null };
+      steps.set(event, step);
+      window.laneProbeSteps.push(step);
+    }, true);
+    document.addEventListener("keydown", (event) => {
+      const step = steps.get(event);
+      if (step) step.actual = document.activeElement?.classList.contains("lane") ? document.activeElement.dataset.key : null;
+    });
+  });
   await page.keyboard.press("j");
   await page.waitForTimeout(150);
-  const first = await page.evaluate(() => document.activeElement && document.activeElement.classList.contains("lane") ? document.activeElement.dataset.key : null);
   await page.keyboard.press("j");
   await page.waitForTimeout(150);
-  const second = await page.evaluate(() => document.activeElement && document.activeElement.classList.contains("lane") ? document.activeElement.dataset.key : null);
   await page.keyboard.press("k");
   await page.waitForTimeout(150);
-  const back = await page.evaluate(() => document.activeElement && document.activeElement.classList.contains("lane") ? document.activeElement.dataset.key : null);
-  if (!first || !second || first === second || back !== first) fail(`J/K do not move DOM focus across rows (${first}, ${second}, ${back})`); else ok("J/K move DOM focus onto the rows");
-  // five more presses land on five consecutive rows, none skipped, and the focus is still on that row after two polls with no key pressed (R3-01)
-  const order = await page.evaluate(() => [...document.querySelectorAll("#cLanes .lane")].map((r) => r.dataset.key));
-  // A poll may reorder the lanes by burn between two presses (the demo's lanes do): J goes to the row after the focused one as the
-  // rows stand when it is pressed, so each step is judged against the order just before it, or just after it when a poll lands
-  // between the press and the read — never against the order before the whole walk.
-  const rowsNow = () => page.evaluate(() => { const a = document.activeElement; return { keys: [...document.querySelectorAll("#cLanes .lane")].map((r) => r.dataset.key), on: a && a.classList.contains("lane") ? a.dataset.key : null }; });
-  const walk = [];
-  let steps = true;
+  const opening = await page.evaluate(() => window.laneProbeSteps.slice());
+  const adjacent = (step) => step.expected && step.actual === step.expected;
+  if (opening.length !== 3 || !opening.every(adjacent)) fail("J/K do not move DOM focus to the adjacent row at keydown"); else ok("J/K move DOM focus onto the rows");
+  // Five more keys follow the current order; a poll may move a row during the
+  // walk, but may neither skip its successor nor take its focus afterward.
   for (let i = 0; i < 5; i += 1) {
-    const pre = await rowsNow();
-    const want = pre.keys[Math.min(pre.keys.length - 1, pre.keys.indexOf(pre.on) + 1)];
     await page.keyboard.press("j");
     await page.waitForTimeout(150);
-    const post = await rowsNow();
-    walk.push(post.on);
-    const next = post.on && (post.on === want || post.keys.indexOf(post.on) === Math.min(post.keys.length - 1, post.keys.indexOf(pre.on) + 1));
-    if (!next) steps = false;
   }
+  const walk = await page.evaluate(() => window.laneProbeSteps.slice(3));
   await page.waitForTimeout(4600);
   const held = await page.evaluate(() => document.activeElement && document.activeElement.classList.contains("lane") ? document.activeElement.dataset.key : (document.activeElement && document.activeElement.tagName) || null);
-  if (!steps) fail(`J skips rows or loses focus across polls: ${walk.map((k) => (k ? order.indexOf(k) : "BODY")).join(" → ")} from row ${order.indexOf(first)}`); else ok(`five J presses land on five consecutive rows (${walk.map((k) => order.indexOf(k)).join(" → ")} in the order before the walk)`);
-  if (held !== walk[4]) fail(`the focused row is on ${held} 4.6 s later with no key pressed`); else ok("the focused row keeps DOM focus through two polls");
+  if (walk.length !== 5 || !walk.every(adjacent)) fail("J skips the adjacent row in the order present at its keydown"); else ok("five J presses each reach the next row in the current order");
+  if (!walk[4]?.actual || held !== walk[4].actual) fail(`the focused row is on ${held} 4.6 s later with no key pressed`); else ok("the focused row keeps DOM focus through two polls");
   for (let i = 0; i < 5; i += 1) { await page.keyboard.press("k"); await page.waitForTimeout(120); }
+  const openerKey = await page.evaluate(() => document.activeElement?.classList.contains("lane") ? document.activeElement.dataset.key : null);
   await page.keyboard.press("Enter");
   await page.waitForTimeout(400);
   const opened = await page.evaluate(() => document.getElementById("inspectDialog").open);
   await page.keyboard.press("Escape");
   await page.waitForTimeout(400);
-  const returned = await page.evaluate((k) => document.activeElement && document.activeElement.classList.contains("lane") && document.activeElement.dataset.key === k, first);
+  const returned = openerKey && await page.evaluate((k) => document.activeElement && document.activeElement.classList.contains("lane") && document.activeElement.dataset.key === k, openerKey);
   if (!opened) fail("Enter on a focused row does not open its inspector"); else ok("Enter opens the row's inspector");
   if (!returned) fail("closing the inspector opened with Enter does not return focus to the row"); else ok("closing the sheet returns focus to the row it was opened from with Enter");
   // a machine row opens its inspector; five seconds later (two repaints) Escape still lands on that machine's row
@@ -751,6 +760,82 @@ await section("presenting", async () => {
     const left = values.filter((v) => outer.includes(v)).concat(home && outer.includes(home) ? ["the home path"] : []);
     if (left.length) fail(`${hub.name}: while presenting the document still holds ${left.length} of the command's names, folders or the home path`); else ok(`${hub.name}: while presenting, the restart command's names, folders and the home path are out of the document (${values.length} value(s) checked)`);
     await c2.close();
+  }
+});
+
+// Previously visited panes and closed dialogs remain in the document. Distinct
+// synthetic names make a complete source scan unambiguous, including attributes.
+await section("presenting after navigation", async () => {
+  const names = [
+    ["Studio", "Presentation machine canary"],
+    ["You", "Presentation person canary"],
+    ["atlas-web", "presentation-project-canary"],
+  ];
+  const host = "presentation-console.example.test";
+  const canaries = [...names.map(([, value]) => value), host];
+  for (const width of [1440, 390]) {
+    const context = await browser.newContext({ viewport: { width, height: SIZES[width][1] } });
+    try {
+      await context.route(/\/api\/(?:console|projects)(?:\?|$)/u, async (route) => {
+        const response = await route.fetch();
+        let text = JSON.stringify(await response.json());
+        for (const [from, to] of names) text = text.split(JSON.stringify(from)).join(JSON.stringify(to));
+        const data = JSON.parse(text);
+        if (data.hub) {
+          data.hub.demo = false;
+          data.hub.listen.network = true;
+          data.hub.urls = [`https://${host}:6788`];
+        }
+        await route.fulfill({ response, json: data });
+      });
+      const page = await context.newPage();
+      await page.goto(await signInUrl(hubs[0]), { waitUntil: "domcontentloaded" });
+      await settled(page);
+      await page.locator('.tab[data-view="team"]').click();
+      await page.waitForSelector("#peopleTable .rowbtn");
+      await page.locator("#peopleTable .rowbtn").first().click();
+      await page.waitForSelector("#inspectDialog[open]");
+      await page.keyboard.press("Escape");
+      await page.waitForSelector("#inspectDialog[open]", { state: "hidden" });
+      await page.locator('.tab[data-view="projects"]').click();
+      await page.waitForSelector("#projTable .rowbtn");
+      await page.locator('.tab[data-view="console"]').click();
+      // The hidden Projects pane still holds a different period's last reading.
+      await page.locator('#winSeg button[data-w="7d"]').click();
+      await page.locator("#addBtn").click();
+      await page.waitForSelector("#addDialog[open]");
+      await page.keyboard.press("Escape");
+      await page.waitForSelector("#addDialog[open]", { state: "hidden" });
+      await page.locator("#palBtn").click();
+      await page.waitForSelector("#pal[open]");
+      await page.keyboard.press("Escape");
+      await page.waitForSelector("#pal[open]", { state: "hidden" });
+      // Use real pointer activation above and prove focus returned naturally;
+      // a programmatic click does not focus its button before opening a dialog.
+      await page.waitForFunction(() => document.activeElement === document.getElementById("palBtn"));
+      ok(`${width}: closing the palette returns focus to its opener before presenting`);
+      const before = await page.evaluate(() => document.documentElement.outerHTML);
+      if (!canaries.every((value) => before.includes(value))) {
+        fail(`${width}: privacy fixture did not render every canary before presenting`);
+        continue;
+      }
+      for (const round of ["first toggle", "second toggle"]) {
+        await page.keyboard.press("p");
+        await page.waitForFunction(() => !document.getElementById("presentStamp").hidden);
+        for (const phase of ["immediately", "after a poll"]) {
+          if (phase === "after a poll") await page.waitForTimeout(2600);
+          const outer = await page.evaluate(() => document.documentElement.outerHTML);
+          const leaked = canaries.filter((value) => outer.includes(value));
+          if (leaked.length) fail(`${width}: ${round}, ${phase}: ${leaked.length} private canaries remain in the full document`);
+          else ok(`${width}: ${round}, ${phase}: hidden panes, closed dialogs and network hints contain no private canaries`);
+        }
+        await page.keyboard.press("p");
+        await page.waitForFunction(() => document.getElementById("presentStamp").hidden);
+        const restored = await page.locator("#reach").getAttribute("title");
+        if (!restored.includes(host)) fail(`${width}: ordinary mode did not restore the network tooltip`);
+        else ok(`${width}: ordinary mode restores its network tooltip`);
+      }
+    } finally { await context.close(); }
   }
 });
 

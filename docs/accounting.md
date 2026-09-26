@@ -245,20 +245,11 @@ the Console headline and chart, Team, and Projects.
   the console's daily totals. The console keeps a per-day rollup (by machine,
   model, project and price tier) for 400 days, long after its minute buckets
   are pruned at the retention edge. A record joins the daily totals when it
-  arrives inside minute retention. A machine's **first read** (the console's
-  own on a first start, a reporter's first delivery, which says so with
-  `backfill`) goes back the whole 30 days: records of days wholly past the
-  minute retention go straight into the daily totals, once per machine and
-  day. The first time a first read touches such a day it replaces what the
-  rollup held for that machine and day, and once the read is complete the day
-  is done: a later reading of the same day adds nothing, so a re-read never
-  counts twice. Any other record that arrives past minute retention (a
-  reporter off for longer than the retention) is counted as `pastRetention`
-  (§3.2) and the period is marked `partial`, unless a first read already made
-  that machine's day whole. The rollup keeps no sessions, so a session count
+  arrives inside minute retention; one that arrives later (a reporter off for
+  longer than the retention) is counted as `pastRetention` (§3.2) and the
+  period is marked `partial`. The rollup keeps no sessions, so a session count
   for 30 days is unknown, not zero. A console that has not kept daily totals
-  for all 30 days says from which day it has (`since`), and each day of the
-  30-day series says whether it is whole (`whole`).
+  for all 30 days says from which day it has (`since`).
 - A minute period longer than the minute retention (7 days with
   `--retention-days` below 7) covers only the minutes still kept: it is
   marked `partial`, with `since` the retention edge.
@@ -409,3 +400,9 @@ These are counts from one heavily used machine, taken read-only on
   rollout.
 - An over-long Claude Code line is recovered only when its usage, uuid and
   time are outside the message content, where Claude Code writes them.
+
+The Console keeps separate lanes for each machine and session hash while
+shared record IDs still count once across machines. The accounting report
+retains its session-hash grouping; when it needs machine-specific session
+facts, it uses the latest reporting machine. Use the Console machine view
+for per-machine lane attribution.

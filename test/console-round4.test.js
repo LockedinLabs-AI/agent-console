@@ -31,13 +31,12 @@ import { test } from "node:test";
 import fs from "node:fs";
 import vm from "node:vm";
 
-// A Windows checkout has CRLF endings; the functions are sliced out of the source by their LF-delimited ends.
 const read = (file) => fs.readFileSync(new URL("../public/" + file, import.meta.url), "utf8").replace(/\r\n/gu, "\n");
 const JS = read("console.js");
 const CSS = read("console.css");
 const JOIN_CSS = read("join.css");
 const HTML = read("index.html");
-const PROBES = fs.readFileSync(new URL("../scripts/ui-probes.mjs", import.meta.url), "utf8").replace(/\r\n/gu, "\n");
+const PROBES = fs.readFileSync(new URL("../scripts/ui-probes.mjs", import.meta.url), "utf8");
 
 const plural = (n, one, many = one + "s") => `${n} ${n === 1 ? one : many}`;
 const esc = (s) => String(s ?? "");
@@ -176,7 +175,7 @@ test("J4-03: an alert from before today is dated, listed under 'earlier', and ou
   const noCounter = { ...D, alertsToday: null };
   const $2 = elements();
   fn("paintTeamAlerts", { ...base, D: noCounter, $: $2, beforeToday: arrow("beforeToday", { ...base, alertDayFrom: arrow("alertDayFrom", { ...base, D: noCounter }) }), liveAlerts: () => [], alertRow, pn: (k, v) => v, deviceOf: () => null, SINCE_WHY: {}, NOT_WATCHED_WHY: "" })();
-  assert.match($2("teamAlertCount").textContent, /^1 alert today · 0 live$/u);
+  assert.match($2("teamAlertCount").textContent, /^1 alert kept today · 0 live$/u);
   // the alerts sheet: "earlier today" over this morning's, "earlier · before today" over the rest; the Attention rule says "earlier", not "earlier today"
   const $3 = elements();
   const paintAlerts = fn("paintAlerts", { ...base, $: $3, beforeToday, alertWhen, alertRow, liveAlerts: () => [], earlierAlerts: () => D.alerts, alertsOpen: false, ALERT_SHOWN: 6, SINCE_WHY: {}, NOT_WATCHED_WHY: "", alertStrip: () => {}, serverNow: () => now, PERIOD_TEXT, period: "24h", win: () => ({ models: [] }), specModelRows: () => "", noModelText: () => "no model" });
@@ -286,10 +285,10 @@ test("J4-08 / J4-09: presenting is switched on from the console before the scan,
   assert.match(PROBES, /--\(\?:name\|person\|state-dir\|claude-root\|codex-root\)/u);
   const source = JS.slice(JS.indexOf("  function shownCommand("), JS.indexOf("\n  }\n", JS.indexOf("  function shownCommand(")) + 4);
   const run = (present, cmd, D = null) => vm.runInNewContext(source + "\nshownCommand(cmd)", { present, cmd, D });
-  const cmd = "/Users/someone/.nvm/bin/node /Users/someone/work/agent-console/bin/agent-console.mjs --name 'Mac Studio' --person Sam --state-dir /private/tmp/claude-1/someone/atlas-web/state --claude-root /private/tmp/claude-1/someone/atlas-web/sandbox/.claude/projects --listen 0.0.0.0";
+  const cmd = "/Users/someone/.nvm/bin/node /Users/someone/work/agent-console/bin/agent-console.mjs --name 'Mac Studio' --person Sam --state-dir /private/tmp/claude-1/someone/atlas-web/state --claude-root /private/tmp/claude-1/someone/atlas-web/synthetic/.claude/projects --listen 0.0.0.0";
   // outside presenting: the home directory is ~, and the account's name in a path outside it is masked at that segment; the project's name stays
   const plain = run(false, cmd);
-  assert.equal(plain, "~/.nvm/bin/node ~/work/agent-console/bin/agent-console.mjs --name 'Mac Studio' --person Sam --state-dir /private/tmp/claude-1/…/atlas-web/state --claude-root /private/tmp/claude-1/…/atlas-web/sandbox/.claude/projects --listen 0.0.0.0");
+  assert.equal(plain, "~/.nvm/bin/node ~/work/agent-console/bin/agent-console.mjs --name 'Mac Studio' --person Sam --state-dir /private/tmp/claude-1/…/atlas-web/state --claude-root /private/tmp/claude-1/…/atlas-web/synthetic/.claude/projects --listen 0.0.0.0");
   assert.doesNotMatch(plain, /someone/u);
   // while presenting: every folder option is masked as the names are
   const shown = run(true, cmd);

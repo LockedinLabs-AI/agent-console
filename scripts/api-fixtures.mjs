@@ -69,10 +69,9 @@ export async function demoPayloads({ period = "24h" } = {}) {
     release: { url: null, page: null }, local: { enabled: true, tools: ["claude-code", "codex"], firstRunComplete: true, progress: null, error: null,
       // The folders a console reads for its own machine, as a home directory would name them (synthetic).
       roots: [{ tool: "claude-code", path: "~/.claude/projects", exists: true, files: 42 }, { tool: "codex", path: "~/.codex/sessions", exists: true, files: 9 },
-        { tool: "codex", path: "~/.codex/archived_sessions", exists: false, files: 0 }],
-      backfill: { from: new Date(Math.floor(now / 86_400_000) * 86_400_000 - 29 * 86_400_000).toISOString().slice(0, 10), days: 30, complete: true } } };
+        { tool: "codex", path: "~/.codex/archived_sessions", exists: false, files: 0 }] } };
   const console = buildConsole({ store, registry, names: demo.names, now, hub,
-    alerts: allAlerts({ alerts, fleet }, now), signals: consoleSignals({ alerts, fleet, activity }, now), alertDay: demo.alertDay(now) });
+    alerts: allAlerts({ alerts, fleet }, now), signals: consoleSignals({ alerts, fleet, activity }, now) });
   console.interop = demoInterop(now);
   const projects = await projectsPayload({ store, registry, names: demo.names, period, demo: true, now });
   return { console, projects };

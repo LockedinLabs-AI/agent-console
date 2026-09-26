@@ -643,7 +643,10 @@ body[data-demo="true"] .xrow.reporting .xn i { background: var(--lit); box-shado
 .foldrow .fs b { font: 500 calc(12px * var(--k)) var(--sans); color: var(--ink2); font-variant-numeric: tabular-nums; }
 .foldrow .fs .sep { margin: 0 8px; opacity: .5; }
 .coldlanes { border-top: 1px solid var(--hair2); max-height: calc(320px * var(--k)); overflow-y: auto; scrollbar-width: thin; }
-.foldbody { border-top: 1px solid var(--hair2); padding: 0; }
+/* a fold held to the room the lanes leave (J5-03) scrolls inside itself; the frame never does */
+.foldrow.roomfit > summary + * { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--hair) transparent; }
+/* positioned, so a visually-hidden reason in a void cell (absolute, 1px) is contained by the fold's own sideways scroller at phone width and never widens the page (J5-01) */
+.foldbody { position: relative; border-top: 1px solid var(--hair2); padding: 0; }
 .tbl .foldbody { border-top: 0; }
 .foldbody table.grid { font-size: calc(12px * var(--k)); }
 .foldbody table.grid th, .foldbody table.grid td { padding: calc(5px * var(--k)) calc(8px * var(--k)); }
@@ -836,6 +839,11 @@ dialog.sheet.dock[open] { animation: dockin .2s var(--ease); }
 .sheet .step[hidden] { display: none; }
 .sheet .step { padding: calc(18px * var(--k)) calc(22px * var(--k)) calc(18px * var(--k)); display: flex; flex-direction: column; gap: calc(12px * var(--k)); }
 .sheet header { display: flex; align-items: center; gap: 10px; }
+/* a docked sheet scrolls under its header: the title and × Close stay pinned in view however far the body is scrolled — opening a lane at its
+   Context section scrolls the body, never the header, off the top (J5-02); the header's own ground covers the step's padding above it */
+.sheet.dock .step > header { position: sticky; top: 0; z-index: 2; margin: calc(-18px * var(--k)) calc(-22px * var(--k)) 0; padding: calc(18px * var(--k)) calc(22px * var(--k)) calc(10px * var(--k));
+  background: var(--raise); box-shadow: inset 1px 0 0 var(--hair), inset 0 1px 0 var(--rim); }
+.sheet.dock .step > header ~ * [id] { scroll-margin-top: calc(64px * var(--k)); }
 .sheet header h2 { margin: 0; font: 400 calc(18px * var(--k)) var(--sans); letter-spacing: -.015em; min-width: 0; outline: none; }
 .sheet .x { margin-left: auto; width: 28px; height: 28px; border: 0; border-radius: 7px; background: none; cursor: pointer; color: var(--quiet); font-size: 18px; line-height: 1; flex: none; }
 .sheet .x:hover { color: var(--ink); background: var(--row-hover); }
@@ -1069,6 +1077,11 @@ body[data-present] [data-internal] { visibility: hidden; }
 /* below 1024 the page scrolls as a document and the band stacks: the figure and the breakdown side by side, the wave under them */
 @media (max-width: 1023px) {
   .foldstrip { display: none; }
+  /* the presenter's controls stay on the strip as their glyphs (J5-05): the eye and the pause, each a 32px target that keeps its name */
+  .conhead .ctrls { gap: 4px; padding: 0; }
+  .conhead .ctrls button { min-width: 32px; min-height: 32px; padding: 0; justify-content: center; }
+  .conhead .ctrls button span { display: none; }
+  .conhead .ctrls button svg { display: block; }
   .console { grid-template-columns: 1fr 1fr; }
   .console > .col.flow { grid-column: 1 / -1; order: 3; }
   .console.two > .col.spectrum { grid-column: 1 / -1; order: 3; }
@@ -1093,7 +1106,7 @@ body[data-present] [data-internal] { visibility: hidden; }
     background: var(--raise); box-shadow: inset 0 1px 0 var(--hair); }
   .tab { flex: 1; min-height: 44px; height: auto; flex-direction: column; gap: 1px; padding: 4px; border-radius: 8px; }
   .tab em { font-size: 12px; }
-  /* the strip takes two short rows on the substrate: the name, the stamp and the live count; then the scope, the alarm and the clock. The eye and the pause fold into ⌘K. */
+  /* the strip takes two short rows on the substrate: the name, the stamp and the live count; then the scope, the alarm and the clock. The eye and the pause sit beside the clock as glyphs. */
   .conhead { height: auto; padding: 8px 12px; flex-wrap: wrap; gap: 4px 10px; white-space: nowrap; background-position: right 30%; background-size: auto 130%; }
   .conhead::before { background: linear-gradient(90deg, #070B13 0%, rgba(7, 11, 19, .96) 50%, rgba(7, 11, 19, .7) 100%); }
   .conhead h1 { order: 0; letter-spacing: .12em; } .conhead .vt { order: 1; letter-spacing: .12em; } .conhead .stamp { order: 2; } .conhead .cap.live { order: 3; }
@@ -1106,7 +1119,7 @@ body[data-present] [data-internal] { visibility: hidden; }
   .conhead .scope::before { margin-right: 8px; }
   .alertchip { order: 6; min-height: 30px; }
   .conhead .scan { display: none; }
-  .conhead .ctrls { display: none; }
+  .conhead .ctrls { order: 4; }
   .unit { min-height: 44px; }
   .seg button { min-height: 44px; padding: 0 12px; }
   .console, .console.two { grid-template-columns: 1fr; padding: 8px; gap: 8px; }

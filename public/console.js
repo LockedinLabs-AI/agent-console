@@ -631,11 +631,14 @@
     if (!roots.length) return null;
     const found = roots.reduce((a, r) => a + (r.exists && Number.isFinite(r.files) ? r.files : 0), 0);
     const held = (r) => (r.exists === false ? "not there" : r.exists === null ? "not read yet" : plural(r.files || 0, "file"));
-    const folder = (r, i) => present ? `Folder ${i + 1}` : homeShort(r.path);
-    const list = roots.map((r, i) => `<code title="${esc(TOOL[r.tool] || r.tool)} · ${esc(held(r))}">${esc(folder(r, i))}</code> <span class="held">(${esc(held(r))})</span>`).join(", ");
+    // while presenting no folder is drawn at all, not even shortened (J5-04): the line says "the configured folders" and what each tool's held
+    const folder = (r) => homeShort(r.path);
+    const heldAll = roots.map((r) => `${TOOL[r.tool] || r.tool} ${held(r)}`).join(" · ");
+    const list = present ? `the configured folders <span class="held">(${esc(heldAll)})</span>`
+      : roots.map((r) => `<code title="${esc(TOOL[r.tool] || r.tool)} · ${esc(held(r))}">${esc(folder(r))}</code> <span class="held">(${esc(held(r))})</span>`).join(", ");
     const hint = `<span class="hint">Elsewhere? Start with <code>--claude-root &lt;folder&gt;</code> or <code>--codex-root &lt;folder&gt;</code>, or set <code>CLAUDE_CONFIG_DIR</code> or <code>CODEX_HOME</code>.</span>`;
     return { found, head: found ? `Read ${plural(found, "transcript")} in` : "No Claude Code or Codex transcript found. Looked in", html: `<span class="roots">${list}.</span> ${found ? `<span class="hint">None has usage in the ${esc(PERIOD_TEXT[period][0])}.</span> ` : ""}${hint}`,
-      text: `${found ? `read ${plural(found, "transcript")} in` : "looked in"} ${roots.map((r, i) => `${folder(r, i)} (${held(r)})`).join(", ")} · elsewhere: --claude-root, --codex-root, CLAUDE_CONFIG_DIR, CODEX_HOME` };
+      text: `${found ? `read ${plural(found, "transcript")} in` : "looked in"} ${present ? `the configured folders (${heldAll})` : roots.map((r) => `${folder(r)} (${held(r)})`).join(", ")} · elsewhere: --claude-root, --codex-root, CLAUDE_CONFIG_DIR, CODEX_HOME` };
   }
   // A path under the home directory is written with ~ (R3-10): the screen never carries the account's name in a path
   const homeShort = (p) => String(p ?? "").replace(/^(?:\/Users\/[^/\s'"]+|\/home\/[^/\s'"]+|[A-Za-z]:\\Users\\[^\\\s'"]+)(?=[\\/]|$)/u, "~");
@@ -715,15 +718,49 @@
     if (id === "foldShipped") return Array.isArray(p.projects) && p.projects.some((x) => x.repo);
     return true;   // Effort always has its table once this machine has been read
   }
+  /* When no fold fits the room whole and more than 48px would stand bare (J5-03), the smallest fold left opens anyway, held to the room
+     it has: its body scrolls inside it, so the frame still never scrolls. The hold follows the room on every paint and lets go once
+     the reader opens or closes a fold by hand. */
+  let foldHeld = null;
+  function holdFold(id, px) {
+    const d = $(id), body = d && d.querySelector("summary + *");
+    if (!body) return;
+    d.classList.toggle("roomfit", px > 0);
+    body.style.maxHeight = px > 0 ? `${Math.floor(px)}px` : "";
+  }
+  function releaseFold() { if (foldHeld) { holdFold(foldHeld, 0); foldHeld = null; } }
   function autoFold(hugWanted, spare, rowH) {
     const openPx = () => [...$("fold").querySelectorAll(".foldrow[open]")].reduce((a, d) => a + d.offsetHeight, 0);
+    if (!hugWanted) releaseFold();
     if (!hugWanted) { if (foldAuto.size && !foldTouched) { for (const id of foldAuto) { const d = $(id); if (d.open) d.open = false; } foldAuto.clear(); } return openPx(); }
-    if (foldTouched || openPx() > 0) return openPx();
-    let left = spare * rowH;
+    if (foldTouched) { releaseFold(); return openPx(); }
+    // a little under the room the rows leave, so a hairline taller than a row never tips the frame into scrolling
+    const room = spare * rowH - 4;
+    if (openPx() > 0) {
+      if (foldHeld) {
+        const d = $(foldHeld), body = d.querySelector("summary + *");
+        const others = [...foldAuto].filter((id) => id !== foldHeld && $(id).open).reduce((a, id) => a + $(id).offsetHeight, 0);
+        const px = room - others - (d.offsetHeight - body.offsetHeight);
+        if (px >= 48) holdFold(foldHeld, px);
+        else { d.open = false; foldAuto.delete(foldHeld); releaseFold(); }
+      }
+      return openPx();
+    }
+    let left = room;
     // measured, never guessed: each fold's own rendered height; the tallest that fits takes the room first, then the next that fits what is left
     const sized = AUTO_FOLDS.filter(foldHasRows).map((id) => { const d = $(id); d.open = true; const h = d.offsetHeight; d.open = false; return [id, h]; }).sort((a, b) => b[1] - a[1]);
     let opened = 0;
     for (const [id, h] of sized) if (h <= left + 4) { $(id).open = true; foldAuto.add(id); opened += h; left -= h; }
+    // what no fold fits whole is not left as a bare tray: the smallest fold left takes it, held to that height
+    const rest = sized.filter(([id]) => !foldAuto.has(id)).sort((a, b) => a[1] - b[1]);
+    if (left > 48 && rest.length) {
+      const [id] = rest[0], d = $(id);
+      d.open = true;
+      const body = d.querySelector("summary + *");
+      const px = left - (d.offsetHeight - (body ? body.offsetHeight : 0));
+      if (body && px >= 48) { foldAuto.add(id); foldHeld = id; holdFold(id, px); opened += left; }
+      else d.open = false;
+    }
     return opened;
   }
   /* Rows are placed by position, never re-appended (R3-01): a row already where it belongs is left alone, so the row the keyboard is
@@ -1606,6 +1643,8 @@
       foldFetched.error = error.message;
     }
     paintFold();
+    // the folds' tables are in: a hugging card's room goes to them at once, not a poll later (J5-03)
+    if (D && !foldTouched && $("consoleCanvas").querySelector(".lanes.hug")) paintLanes();
   }
   function paintFold() {
     const p = foldFetched.data;
@@ -2749,9 +2788,10 @@
   }
   /* The restart command as the screen shows it (R3-10, R3-09, J4-09): every path under the home directory written with ~, and a
      path outside it masked at any segment that is the account's name (a temp folder named for it), so the name is never on screen;
-     while presenting, every option that names a machine, a person or a folder — --name, --person, --state-dir, --claude-root,
-     --codex-root — is masked to '…', since a folder's name is a project's. Copy gives the real one. */
+     while presenting, the whole command is hidden: quoted arguments and file: URLs can carry private paths too.
+     Copy gives the real one. */
   function shownCommand(command) {
+    if (present) return "Command hidden while presenting";
     const HOME_PATH = /(^|\s|["'=])(?:\/Users\/([^/\s'"]+)|\/home\/([^/\s'"]+)|[A-Za-z]:\\Users\\([^\\\s'"]+))(?=[\\/\s'"]|$)/u;
     const text = String(command);
     // the account's name, from a home path in the command itself or in the folders this console reads
@@ -2760,7 +2800,6 @@
     const user = home ? home[2] || home[3] || home[4] : null;
     let shown = text.replace(new RegExp(HOME_PATH.source, "gu"), "$1~");
     if (user) shown = shown.replace(new RegExp(`([\\\\/])${user.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}(?=[\\\\/\\s'"]|$)`, "gu"), "$1…");
-    if (present) shown = shown.replace(/(--(?:name|person|state-dir|claude-root|codex-root)(?:=|\s+))(?:'(?:[^']|'\\'')*'|"[^"]*"|\S+)/gu, "$1'…'");
     return shown;
   }
   function openAdd() {

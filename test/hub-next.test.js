@@ -53,8 +53,8 @@ function hub({ now = NOW, devices = [{ id: "dev_a", label: "Studio", person: "Yo
 }
 
 function demoHub() {
-  // Demo activity follows the local working day. These contract assertions
-  // need a fixed working hour, not the CI runner's wall clock or timezone.
+  // The demo's day is anchored to the moment it starts, whatever the wall
+  // clock says; a fixed clock keeps these contract assertions reproducible.
   const now = new Date(2026, 8, 24, 13, 30, 20).getTime();
   const clock = () => now;
   const store = createStore({ dir: null, retentionMs: 8 * DAY, prices: PRICES, now: clock });

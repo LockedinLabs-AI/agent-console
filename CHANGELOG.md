@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Anchor the demonstration team's day to the moment the demo starts, so a
+  console started on a weekend or at night shows the same working afternoon
+  and its burn never lands on the 999k boundary; tie each synthetic alert's
+  figure to its own records, and check every demo figure for coherence and
+  formatting cliffs.
 - Keep phones from scrolling sideways on Projects, keep a sheet's header and Close
   button in view when it opens at Context, fill the room under the lanes on wide
   screens, show the presenter controls on phones, and keep every folder and

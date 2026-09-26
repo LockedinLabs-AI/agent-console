@@ -48,6 +48,11 @@
  *     and every data attribute — and the strip reads PRESENTING;
  *   - the DEMO stamp on the join page follows /api/join/info, and a link
  *     without a join code disables Copy and says why.
+ *   - the last round (J5): no page scrolls sideways at 360 or 390 over a day
+ *     and a month; a lane opened at Context keeps its sheet's header and
+ *     × Close in view; no bare tray over 48px at 1920; no folder or command
+ *     path in the document while presenting; the presenter's controls are
+ *     named 24px glyph targets on a phone.
  *
  * The console polls its hub every two seconds, so the network is never idle:
  * every page is opened on DOMContentLoaded and then waited for by its own
@@ -91,7 +96,10 @@ const failures = [];
 const fail = (what) => { checks += 1; failures.push(what); process.stdout.write(`  ✗ ${what}\n`); };
 const ok = (what) => { checks += 1; process.stdout.write(`  ✓ ${what}\n`); };
 /* A section runs whole or fails whole by name: an error or a timeout inside it is one named ✗, and the sections after it still run. */
+/* UI_PROBES_ONLY=<text> runs only the sections whose name contains it (a quick re-check of one bar; the gate runs them all). */
+const ONLY = process.env.UI_PROBES_ONLY || "";
 async function section(name, fn) {
+  if (ONLY && !name.includes(ONLY)) return;
   process.stdout.write(name + "\n");
   try { await fn(); } catch (error) { fail(`${name}: ${String(error.message || error).split("\n")[0]}`); }
 }
@@ -836,6 +844,130 @@ await section("presenting after navigation", async () => {
         else ok(`${width}: ordinary mode restores its network tooltip`);
       }
     } finally { await context.close(); }
+  }
+});
+
+// ── 8. the last round (J5) ──────────────────────────────────────────────
+/* J5-01: no page scrolls sideways at 360 or 390, on every console given, over a day and over thirty days — a 1px screen-reader
+   reason inside a phone's sideways scroller (a void cell in the Effort table) once widened the whole Projects page. */
+await section("J5-01 no sideways scroll on a phone", async () => {
+  for (const hub of hubs) for (const width of [360, 390]) for (const period of ["24h", "30d"]) for (const view of ["console", "projects", "team"]) {
+    const { page, context } = await open(width, "dark", view, { hub, period });
+    const r = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+    if (r.sw > r.cw) fail(`${view} ${width} ${period}${tag(hub)}: the page scrolls sideways (${r.sw}px in a ${r.cw}px frame)`); else ok(`${view} ${width} ${period}${tag(hub)}: no sideways scroll`);
+    await context.close();
+  }
+});
+
+/* J5-02: a lane opened at its Context section — by its context button, or by #lane/<key>/context — scrolls the sheet's body, never
+   its header: the title and × Close stay in view and take the pointer. */
+await section("J5-02 the sheet's header stays in view at Context", async () => {
+  for (const hub of hubs) for (const width of [1440, 390]) for (const how of ["button", "address"]) {
+    const { page, context } = await open(width, "dark", "console", { hub });
+    const key = await page.evaluate((how) => {
+      const b = document.querySelector("#cLanes .lane .cx button");
+      if (!b || !b.checkVisibility()) { const row = document.querySelector("#cLanes .lane[data-key]"); if (!row) return null; location.hash = `lane/${row.dataset.key}/context`; return row.dataset.key; }
+      if (how === "button") { b.click(); return b.closest(".lane").dataset.key; }
+      const k = b.closest(".lane").dataset.key; location.hash = `lane/${k}/context`; return k;
+    }, how);
+    if (!key) { ok(`${width} ${how}${tag(hub)}: no lane to open (nothing to check)`); await context.close(); continue; }
+    await page.waitForSelector("#inspectDialog[open]");
+    await page.waitForTimeout(900);
+    const r = await page.evaluate(() => {
+      const d = document.getElementById("inspectDialog"), head = d.querySelector(".step > header"), x = d.querySelector(".x"), ctx = document.getElementById("inspectContext");
+      const hb = head.getBoundingClientRect(), xb = x.getBoundingClientRect(), cb = ctx ? ctx.getBoundingClientRect() : null;
+      return { top: Math.round(hb.top), xTop: Math.round(xb.top), hit: document.elementFromPoint(xb.left + xb.width / 2, xb.top + xb.height / 2) === x, ctx: cb ? Math.round(cb.top) : null, under: cb ? cb.top >= hb.bottom - 1 : false, scrolled: Math.round(d.scrollTop), hash: location.hash };
+    });
+    if (r.top < 0 || r.xTop < 0 || !r.hit) fail(`${width} ${how}${tag(hub)}: opening Context puts the sheet's header at ${r.top}px and × Close at ${r.xTop}px${r.hit ? "" : ", out of reach"}`);
+    else ok(`${width} ${how}${tag(hub)}: the header stays at ${r.top}px with × Close in reach; Context at ${r.ctx}px${r.under ? " under it" : ""} (body scrolled ${r.scrolled}px)`);
+    if (r.ctx === null || !r.under || !/\/context$/u.test(r.hash)) fail(`${width} ${how}${tag(hub)}: the Context section is not in view under the header (${JSON.stringify(r)})`);
+    await context.close();
+  }
+});
+
+/* J5-03: at 1920×1080 the lanes and the folds take the canvas: no bare tray taller than 48px under whatever is drawn last, and
+   neither the canvas nor the document scrolls for it. */
+await section("J5-03 no dead tray at 1920", async () => {
+  for (const hub of hubs) {
+    const { page, context } = await open(1920, "dark", "console", { hub });
+    const r = await page.evaluate(() => {
+      const canvas = document.getElementById("consoleCanvas"), cs = getComputedStyle(canvas), cb = canvas.getBoundingClientRect();
+      const drawn = [...canvas.children].filter((x) => x.getBoundingClientRect().height > 0);
+      const last = Math.max(...drawn.map((x) => x.getBoundingClientRect().bottom));
+      return { tray: Math.round(cb.bottom - parseFloat(cs.paddingBottom) - last), canvasScroll: canvas.scrollHeight > canvas.clientHeight + 1, docScroll: document.documentElement.scrollHeight > innerHeight + 1,
+        folds: [...document.querySelectorAll("#fold .foldrow[open]")].map((d) => d.id + (d.classList.contains("roomfit") ? " (held to the room)" : "")), hug: document.querySelector("#consoleCanvas .lanes").classList.contains("hug") };
+    });
+    if (r.tray > 48) fail(`console 1920${tag(hub)}: ${r.tray}px of bare tray under the canvas's last part (max 48)`); else ok(`console 1920${tag(hub)}: ${r.tray}px under the canvas's last part${r.hug ? " · the card hugs its rows" : ""}${r.folds.length ? " · open: " + r.folds.join(", ") : ""}`);
+    if (r.canvasScroll || r.docScroll) fail(`console 1920${tag(hub)}: filling the tray made the ${r.docScroll ? "document" : "canvas"} scroll`);
+    await context.close();
+  }
+});
+
+/* J5-04: while presenting, no folder this console reads and no path in its restart command is anywhere in the document — not shortened
+   to ~, not numbered, not in a title; the empty screen says "the configured folders". A hub without folders of its own (the demo) is
+   given synthetic ones, so the bar is checked on every console. */
+await section("J5-04 no path in the document while presenting", async () => {
+  const CANARY = "/srv/presentation-root-canary";
+  for (const hub of hubs) {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "dark" });
+    try {
+      let roots = null, command = null;
+      await context.route(/\/api\/console(?:\?|$)/u, async (route) => {
+        const response = await route.fetch();
+        const data = await response.json();
+        if (data.hub) {
+          const own = data.hub.local && data.hub.local.enabled && Array.isArray(data.hub.local.roots) && data.hub.local.roots.length;
+          if (!own) data.hub.local = { ...(data.hub.local || {}), enabled: true, firstRunComplete: true, roots: [{ tool: "claude-code", path: `${CANARY}/claude/projects`, exists: false, files: 0 }, { tool: "codex", path: `${CANARY}/codex/sessions`, exists: true, files: 3 }] };
+          if (!data.hub.networkCommand) data.hub.networkCommand = `node '${CANARY}/app dir/bin/agent-console.mjs' --claude-root '${CANARY}/claude/projects' --listen 0.0.0.0`;
+          roots = data.hub.local.roots.map((r) => r.path); command = data.hub.networkCommand;
+        }
+        await route.fulfill({ response, json: data });
+      });
+      const page = await context.newPage();
+      await page.goto(await signInUrl(hub), { waitUntil: "domcontentloaded" });
+      await page.goto(hub.base + "/", { waitUntil: "domcontentloaded" });
+      await settled(page);
+      await page.waitForTimeout(1200);
+      // the add sheet writes the restart command into the document; opened and closed, it stays there
+      // a real pointer click, so focus goes back to the button when the sheet closes and P reaches the page, not a field
+      await page.locator("#addBtn").click();
+      await page.waitForSelector("#addDialog[open]");
+      await page.keyboard.press("Escape");
+      await page.waitForSelector("#addDialog[open]", { state: "hidden" });
+      await page.waitForFunction(() => document.activeElement === document.getElementById("addBtn"));
+      // every folder, its ~ form, and its last two segments; every path in the command, the same way
+      const home = (p) => p.replace(/^(?:\/Users\/[^/]+|\/home\/[^/]+|[A-Za-z]:\\Users\\[^\\]+)(?=[\\/]|$)/u, "~");
+      const tail = (p) => p.split(/[\\/]/u).filter(Boolean).slice(-2).join("/");
+      const paths = [...(roots || []), ...((command || "").match(/(?:~|[A-Za-z]:)?[\\/][^\s'"]*[\\/][^\s'"]+|'(?:~|[A-Za-z]:)?[\\/][^']*'/gu) || []).map((t) => t.replace(/'/gu, ""))];
+      const needles = [...new Set(paths.flatMap((p) => [p, home(p), tail(p)]).filter((n) => n.length >= 6))];
+      const before = await page.evaluate(() => document.documentElement.outerHTML);
+      if (!needles.some((n) => before.includes(n))) { fail(`${hub.name}: no folder was drawn before presenting (the bar cannot be checked)`); continue; }
+      await page.keyboard.press("p");
+      await page.waitForFunction(() => !document.getElementById("presentStamp").hidden);
+      for (const phase of ["at once", "after a poll"]) {
+        if (phase === "after a poll") await page.waitForTimeout(2600);
+        const r = await page.evaluate(() => ({ outer: document.documentElement.outerHTML, reason: document.getElementById("voidReason").textContent }));
+        const left = needles.filter((n) => r.outer.includes(n));
+        if (left.length) fail(`${hub.name}: while presenting (${phase}) ${left.length} path(s) remain in the document`); else ok(`${hub.name}: while presenting (${phase}) no folder or command path is in the document (${needles.length} checked)`);
+        if (!/the configured folders/u.test(r.reason)) fail(`${hub.name}: while presenting the empty screen's line does not say "the configured folders" ("${r.reason.slice(0, 80)}")`);
+      }
+    } finally { await context.close(); }
+  }
+});
+
+/* J5-05: on a phone the presenter's controls stay on the strip as their glyphs: visible, at least 24×24, in reach, and named. */
+await section("J5-05 presenter controls on a phone", async () => {
+  for (const hub of hubs) for (const width of [390, 360]) {
+    const { page, context } = await open(width, "dark", "console", { hub });
+    const r = await page.evaluate(() => ["voidBtn", "motionBtn"].map((id) => {
+      const b = document.getElementById(id), rb = b.getBoundingClientRect();
+      return { id, visible: b.checkVisibility(), w: Math.round(rb.width), h: Math.round(rb.height), inFrame: rb.left >= 0 && rb.right <= innerWidth, hit: rb.width > 0 && document.elementFromPoint(rb.left + rb.width / 2, rb.top + rb.height / 2)?.closest("button") === b, name: b.getAttribute("aria-label") || "" };
+    }));
+    for (const b of r) {
+      if (!b.visible || b.w < 24 || b.h < 24 || !b.inFrame || !b.hit || !b.name) fail(`${width}${tag(hub)}: #${b.id} is not a named 24px target in reach (${JSON.stringify(b)})`);
+      else ok(`${width}${tag(hub)}: #${b.id} "${b.name}" is a ${b.w}×${b.h} target in reach`);
+    }
+    await context.close();
   }
 });
 

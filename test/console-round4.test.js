@@ -292,7 +292,9 @@ test("J4-08 / J4-09: presenting is switched on from the console before the scan,
   assert.doesNotMatch(plain, /someone/u);
   // while presenting: every folder option is masked as the names are
   const shown = run(true, cmd);
-  assert.equal(shown, "~/.nvm/bin/node ~/work/agent-console/bin/agent-console.mjs --name '…' --person '…' --state-dir '…' --claude-root '…' --listen 0.0.0.0");
+  // J5-04: and no path at all — the program and the script keep their file name only, quoted or not
+  assert.equal(shown, "…/node …/agent-console.mjs --name '…' --person '…' --state-dir '…' --claude-root '…' --listen 0.0.0.0");
+  assert.equal(run(true, "node '/Users/someone/My Work/bin/agent-console.mjs' --listen 0.0.0.0"), "node '…/agent-console.mjs' --listen 0.0.0.0");
   assert.doesNotMatch(shown, /atlas-web|someone|Mac Studio|Sam\b/u);
   assert.equal(run(true, "node x.mjs --codex-root=/srv/codex/sessions --listen 0.0.0.0"), "node x.mjs --codex-root='…' --listen 0.0.0.0");
   // with no home path in the command, the account's name comes from the folders this console reads

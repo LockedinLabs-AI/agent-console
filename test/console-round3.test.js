@@ -132,7 +132,8 @@ test("R3-09/R3-10: the restart command is shown with ~ for the home directory an
   const shown = run(true, cmd);
   assert.doesNotMatch(shown, /Mac Studio|Sam\b|\/Users\/someone/u);
   // while presenting a folder's name is a project's (J4-09): --state-dir and the transcript roots are masked as --name and --person are
-  assert.equal(shown, "~/.nvm/versions/node/v22.0.0/bin/node ~/work/agent-console/bin/agent-console.mjs --name '…' --person '…' --state-dir '…' --listen 0.0.0.0");
+  // and no path survives (J5-04): the program and the script keep their file name only
+  assert.equal(shown, "…/node …/agent-console.mjs --name '…' --person '…' --state-dir '…' --listen 0.0.0.0");
   assert.equal(run(true, "node x.mjs --name=\"Build box\" --person='O'\\''Neil' --listen 0.0.0.0"), "node x.mjs --name='…' --person='…' --listen 0.0.0.0");
   assert.equal(run(false, "C:\\Users\\someone\\node.exe \"C:\\Users\\someone\\x.mjs\""), "~\\node.exe \"~\\x.mjs\"");
   // the sheet takes the mask at once when presenting starts, and Copy still gives the hub's own command
@@ -210,7 +211,9 @@ test("U1: an empty console says where it looked, in mono, with the flag that poi
   D.hub.local.roots[1].path = "/srv/private-project/codex/sessions";
   const masked = fn("rootsLine", { ...helpers, present: true })();
   assert.doesNotMatch(masked.html + masked.text, /private-project|\/srv\//u);
-  assert.match(masked.html, /Folder 1[\s\S]*Folder 2/u);
+  // J5-04: while presenting no folder is drawn at all — the configured folders, and what each tool's held
+  assert.match(masked.html, /the configured folders <span class="held">\(Claude Code 42 files · Codex not there\)<\/span>/u);
+  assert.doesNotMatch(masked.html + masked.text, /<code title|[~\\/](?:\.claude|\.codex|projects|sessions)/u);
   assert.equal(masked.found, 42, "presenting preserves the observed file count");
   assert.match(line().html, /\/srv\/private-project\/claude\/projects/u, "ordinary view retains useful source locations");
   D.hub.local.roots = [];

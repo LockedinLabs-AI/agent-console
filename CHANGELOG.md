@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Keep phones from scrolling sideways on Projects, keep a sheet's header and Close
+  button in view when it opens at Context, fill the room under the lanes on wide
+  screens, show the presenter controls on phones, and keep every folder and
+  program path out of the page while presenting.
 - Keep keyboard focus on session rows and their Context buttons through live
   refreshes and row reordering, without overriding dialogs or another control.
 - Preserve older executable caches during upgrades so a running console keeps

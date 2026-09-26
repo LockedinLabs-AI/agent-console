@@ -122,7 +122,7 @@ test("R3-06: a project outside Git is one hatched sentence in its inspector, and
   assert.match(HTML, /<th scope="col" class="git">Branches<\/th>/u);
 });
 
-test("R3-09/R3-10: the restart command is shown with ~ for the home directory and, while presenting, masked names; Copy keeps the real one", () => {
+test("R3-09/R3-10: the restart command uses ~ normally and is hidden while presenting; Copy keeps the real one", () => {
   const source = JS.slice(JS.indexOf("  function shownCommand("), JS.indexOf("\n  }\n", JS.indexOf("  function shownCommand(")) + 4);
   const run = (present, cmd) => vm.runInNewContext(source + "\nshownCommand(cmd)", { present, cmd });
   const cmd = "/Users/someone/.nvm/versions/node/v22.0.0/bin/node /Users/someone/work/agent-console/bin/agent-console.mjs --name 'Mac Studio' --person Sam --state-dir /Users/someone/.agent-console/hub2 --listen 0.0.0.0";
@@ -131,10 +131,9 @@ test("R3-09/R3-10: the restart command is shown with ~ for the home directory an
   assert.equal(plain, "~/.nvm/versions/node/v22.0.0/bin/node ~/work/agent-console/bin/agent-console.mjs --name 'Mac Studio' --person Sam --state-dir ~/.agent-console/hub2 --listen 0.0.0.0");
   const shown = run(true, cmd);
   assert.doesNotMatch(shown, /Mac Studio|Sam\b|\/Users\/someone/u);
-  // while presenting a folder's name is a project's (J4-09): --state-dir and the transcript roots are masked as --name and --person are
-  // and no path survives (J5-04): the program and the script keep their file name only
-  assert.equal(shown, "…/node …/agent-console.mjs --name '…' --person '…' --state-dir '…' --listen 0.0.0.0");
-  assert.equal(run(true, "node x.mjs --name=\"Build box\" --person='O'\\''Neil' --listen 0.0.0.0"), "node x.mjs --name='…' --person='…' --listen 0.0.0.0");
+  // The complete command is hidden, including quoted values and installation paths.
+  assert.equal(shown, "Command hidden while presenting");
+  assert.equal(run(true, "node x.mjs --name=\"Build box\" --person='O'\\''Neil' --listen 0.0.0.0"), "Command hidden while presenting");
   assert.equal(run(false, "C:\\Users\\someone\\node.exe \"C:\\Users\\someone\\x.mjs\""), "~\\node.exe \"~\\x.mjs\"");
   // the sheet takes the mask at once when presenting starts, and Copy still gives the hub's own command
   assert.match(JS, /if \(D && D\.hub\.networkCommand\) \$\("networkCmdShown"\)\.textContent = shownCommand\(D\.hub\.networkCommand\);/u);

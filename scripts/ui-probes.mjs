@@ -71,6 +71,7 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { createRequire } from "node:module";
+import { executableCommand, invocation, releaseAsset } from "../lib/invocation.js";
 
 const argv = process.argv.slice(2);
 const hubs = [];
@@ -951,6 +952,78 @@ await section("J5-04 no path in the document while presenting", async () => {
         if (left.length) fail(`${hub.name}: while presenting (${phase}) ${left.length} path(s) remain in the document`); else ok(`${hub.name}: while presenting (${phase}) no folder or command path is in the document (${needles.length} checked)`);
         if (!/the configured folders/u.test(r.reason)) fail(`${hub.name}: while presenting the empty screen's line does not say "the configured folders" ("${r.reason.slice(0, 80)}")`);
       }
+    } finally { await context.close(); }
+  }
+});
+
+/* Generated commands include file: URLs and shell-escaped paths. Exercise the actual command generators, the complete document
+   while presenting, and ordinary Copy. The clipboard is intercepted; no real clipboard is changed. */
+await section("presenting generated restart commands", async () => {
+  const hub = hubs[0], marker = "presentation-install-canary";
+  const commands = [
+    ["verified package", invocation("0.4.0", path.resolve("_npx/synthetic/bin/agent-console.mjs"), {
+      AGENT_CONSOLE_PACKAGE: path.resolve(marker, "releases", releaseAsset("0.4.0")),
+    }, null) + " --listen 0.0.0.0"],
+    ["quoted executable", executableCommand("/srv/" + marker + "'s project/agent-console", {
+      platform: "darwin", env: { PATH: "" }, exists: () => false,
+    }) + " --listen 0.0.0.0"],
+  ];
+  for (const width of [1440, 390]) for (const [name, command] of commands) {
+    const label = width + " " + name;
+    const context = await browser.newContext({ viewport: { width, height: SIZES[width][1] } });
+    try {
+      await context.route(/\/api\/console(?:\?|$)/u, async (route) => {
+        const response = await route.fetch(), data = await response.json();
+        // A synthetic local-only console needs its restart command before another machine can join.
+        data.hub.demo = false;
+        data.hub.listen.network = false;
+        data.hub.networkCommand = command;
+        await route.fulfill({ response, json: data });
+      });
+      const page = await context.newPage();
+      await page.goto(await signInUrl(hub), { waitUntil: "domcontentloaded" });
+      await page.goto(hub.base + "/", { waitUntil: "domcontentloaded" });
+      await settled(page);
+      await page.evaluate(() => {
+        window.__probeCopiedCommand = null;
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+          writeText: async (text) => { window.__probeCopiedCommand = text; },
+        } });
+      });
+      await page.locator("#addBtn").click();
+      const ordinary = await page.locator("#networkCmdShown").textContent();
+      if (!ordinary.includes(marker)) { fail(label + ": no generated private path reached the ordinary command"); continue; }
+      ok(label + ": the ordinary command contains the synthetic installation path");
+      await page.locator("#copyNetworkCmd").click();
+      await page.waitForFunction((expected) => window.__probeCopiedCommand === expected, command);
+      ok(label + ": Copy receives the original generated command");
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => !document.getElementById("addDialog").open && document.activeElement === document.getElementById("addBtn"));
+      await page.keyboard.press("p");
+      await page.waitForFunction(() => !document.getElementById("presentStamp").hidden);
+      const privateCheck = async (phase) => {
+        const outer = await page.evaluate(() => document.documentElement.outerHTML);
+        if (outer.includes(marker)) fail(label + ": a private generated argument remains in the complete document " + phase);
+        else ok(label + ": no private generated argument in the complete document " + phase);
+      };
+      await privateCheck("on entering presenting");
+      await page.waitForTimeout(2600);
+      await privateCheck("after a poll");
+      await page.locator("#addBtn").click();
+      await page.waitForSelector("#addDialog[open]");
+      await privateCheck("with the add sheet open");
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => !document.getElementById("addDialog").open && document.activeElement === document.getElementById("addBtn"));
+      await privateCheck("after the add sheet closes");
+      await page.keyboard.press("p");
+      await page.waitForFunction(() => document.getElementById("presentStamp").hidden);
+      await page.locator("#addBtn").click();
+      if (await page.locator("#networkCmdShown").textContent() !== ordinary) fail(label + ": leaving presenting changed the ordinary command");
+      else ok(label + ": leaving presenting restores the ordinary command");
+      await page.locator("#copyNetworkCmd").click();
+      await page.waitForFunction((expected) => window.__probeCopiedCommand === expected, command);
+      await page.keyboard.press("Escape");
+      await shot(page, "presenting-command-" + width + "-" + name.replaceAll(" ", "-"));
     } finally { await context.close(); }
   }
 });

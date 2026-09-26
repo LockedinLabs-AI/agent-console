@@ -2788,9 +2788,10 @@
   }
   /* The restart command as the screen shows it (R3-10, R3-09, J4-09): every path under the home directory written with ~, and a
      path outside it masked at any segment that is the account's name (a temp folder named for it), so the name is never on screen;
-     while presenting, every option that names a machine, a person or a folder — --name, --person, --state-dir, --claude-root,
-     --codex-root — is masked to '…', since a folder's name is a project's. Copy gives the real one. */
+     while presenting, the whole command is hidden: quoted arguments and file: URLs can carry private paths too.
+     Copy gives the real one. */
   function shownCommand(command) {
+    if (present) return "Command hidden while presenting";
     const HOME_PATH = /(^|\s|["'=])(?:\/Users\/([^/\s'"]+)|\/home\/([^/\s'"]+)|[A-Za-z]:\\Users\\([^\\\s'"]+))(?=[\\/\s'"]|$)/u;
     const text = String(command);
     // the account's name, from a home path in the command itself or in the folders this console reads
@@ -2799,10 +2800,6 @@
     const user = home ? home[2] || home[3] || home[4] : null;
     let shown = text.replace(new RegExp(HOME_PATH.source, "gu"), "$1~");
     if (user) shown = shown.replace(new RegExp(`([\\\\/])${user.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}(?=[\\\\/\\s'"]|$)`, "gu"), "$1…");
-    if (present) shown = shown.replace(/(--(?:name|person|state-dir|claude-root|codex-root)(?:=|\s+))(?:'(?:[^']|'\\'')*'|"[^"]*"|\S+)/gu, "$1'…'");
-    // and no path survives either (J5-04): the program and the script keep their file name only
-    if (present) shown = shown.replace(/(^|\s)(['"])(?:~|[A-Za-z]:)?[\\/][^'"]*?([^'"\\/]+)\2(?=\s|$)/gu, "$1$2…/$3$2")
-      .replace(/(^|\s)(?:~|[A-Za-z]:)?[\\/](?:[^\s'"]*[\\/])?([^\s'"\\/]+)(?=\s|$)/gu, "$1…/$2");
     return shown;
   }
   function openAdd() {

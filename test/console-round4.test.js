@@ -290,13 +290,12 @@ test("J4-08 / J4-09: presenting is switched on from the console before the scan,
   const plain = run(false, cmd);
   assert.equal(plain, "~/.nvm/bin/node ~/work/agent-console/bin/agent-console.mjs --name 'Mac Studio' --person Sam --state-dir /private/tmp/claude-1/…/atlas-web/state --claude-root /private/tmp/claude-1/…/atlas-web/synthetic/.claude/projects --listen 0.0.0.0");
   assert.doesNotMatch(plain, /someone/u);
-  // while presenting: every folder option is masked as the names are
+  // while presenting the whole command is hidden, including every path and option
   const shown = run(true, cmd);
-  // J5-04: and no path at all — the program and the script keep their file name only, quoted or not
-  assert.equal(shown, "…/node …/agent-console.mjs --name '…' --person '…' --state-dir '…' --claude-root '…' --listen 0.0.0.0");
-  assert.equal(run(true, "node '/Users/someone/My Work/bin/agent-console.mjs' --listen 0.0.0.0"), "node '…/agent-console.mjs' --listen 0.0.0.0");
+  assert.equal(shown, "Command hidden while presenting");
+  assert.equal(run(true, "node '/Users/someone/My Work/bin/agent-console.mjs' --listen 0.0.0.0"), "Command hidden while presenting");
   assert.doesNotMatch(shown, /atlas-web|someone|Mac Studio|Sam\b/u);
-  assert.equal(run(true, "node x.mjs --codex-root=/srv/codex/sessions --listen 0.0.0.0"), "node x.mjs --codex-root='…' --listen 0.0.0.0");
+  assert.equal(run(true, "node x.mjs --codex-root=/srv/codex/sessions --listen 0.0.0.0"), "Command hidden while presenting");
   // with no home path in the command, the account's name comes from the folders this console reads
   const roots = { hub: { local: { roots: [{ path: "/Users/someone/.claude/projects" }] } } };
   assert.equal(run(false, "node x.mjs --state-dir /private/tmp/someone/state", roots), "node x.mjs --state-dir /private/tmp/…/state");

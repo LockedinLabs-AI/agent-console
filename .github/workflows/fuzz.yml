@@ -1,0 +1,35 @@
+name: Fuzz
+
+# Property-based fuzzing (fast-check) of the parsers that read untrusted input:
+# policy documents, shell commands, tool calls and secret redaction.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "41 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Fuzz parsers
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Install fast-check from the lockfile
+        working-directory: fuzz
+        run: npm ci --no-audit --no-fund
+      - name: Fuzz
+        working-directory: fuzz
+        env:
+          FUZZ_RUNS: "20000"
+        run: node --test parsers.fuzz.mjs

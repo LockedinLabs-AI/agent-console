@@ -1,0 +1,9 @@
+{
+  "name": "agent-console-ui-probes",
+  "private": true,
+  "description": "Pinned tools for the UI probes workflow; installed with npm ci from the lockfile beside this file.",
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
+    "playwright": "1.59.1"
+  }
+}

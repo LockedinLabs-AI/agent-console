@@ -74,8 +74,10 @@
   <main id="app">
 
   <section class="signin" id="signedOut" hidden aria-live="polite">
-    <h1>Sign in to this console</h1>
-    <p>The console only shows its figures to a browser that has signed in. Use a sign-in link the console printed in its terminal window (each works once), or have it print a new one there.</p>
+    <h1 id="signInTitle">Sign in to this console</h1>
+    <p id="signInHelp">The console only shows its figures to a browser that has signed in. Use a sign-in link the console printed in its terminal window (each works once), or have it print a new one there.</p>
+    <p id="signOutError" role="alert" hidden></p>
+    <p><button type="button" class="btn primary" id="retrySignOut" hidden>Retry sign-out</button></p>
     <p><button type="button" class="btn primary" id="printSignIn">Print a new sign-in link</button></p>
     <p class="fine" id="printSay" role="status" aria-live="polite" hidden></p>
   </section>

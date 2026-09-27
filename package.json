@@ -50,6 +50,7 @@
     "test": "node scripts/test.mjs",
     "pack:check": "npm pack --dry-run --json",
     "smoke:pack": "node scripts/pack-smoke.mjs",
+    "release:gate": "npm test && npm run smoke:pack",
     "check:public": "node scripts/public-safety/check.mjs",
     "lint": "node scripts/lint.mjs"
   },

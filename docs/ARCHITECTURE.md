@@ -5,7 +5,7 @@ Codex. It reads usage already recorded by those tools, combines reports from
 enrolled machines, and presents sessions, tokens, cache use and estimated cost
 in a browser on the hub's computer. It runs on Node.js with no npm dependencies.
 
-This document describes the integrated v0.3 source at this revision; a
+This document describes the integrated source at this revision; a
 published release may contain an earlier revision. The package includes
 observability, an optional project policy compiler for Claude Code, and
 opt-in local telemetry adapters. Agent Console observes; it does not route or

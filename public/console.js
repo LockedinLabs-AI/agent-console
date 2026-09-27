@@ -292,6 +292,7 @@
   const inspect = { open: false, kind: null, id: null, confirm: null };   // what the inspector beside the canvas shows, and whether Remove is armed
   let projCache = null;         // the last /api/projects answer, for the Projects band and its inspector
   let pollTimer = null;
+  let signOutStarted = false;
   let offline = false;
   let scanMs = null;            // how long the last /api/console answer took
   const target = { total: 0, spend: 0, msgs: 0, burn: 0 };
@@ -312,11 +313,13 @@
     try {
       const asked = performance.now();
       const response = await fetch("/api/console", { headers: HEADERS, cache: "no-store" });
+      if (signOutStarted) return;
       if (response.status === 401) { signedOut(); return; }
       if (!response.ok) throw new Error(String(response.status));
       document.body.classList.remove("signed-out");
       $("signedOut").hidden = true;
       D = await response.json();
+      if (signOutStarted) return;
       receivedAt = performance.now();
       scanMs = Math.round(receivedAt - asked);   // how long the hub took to answer, for the strip
       offline = false;
@@ -2750,6 +2753,7 @@
   /* Every console request needs the sign-in cookie. Without it the page says
      how to get one instead of showing an empty console. */
   function signedOut() {
+    for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
     document.body.classList.add("signed-out");
     $("signedOut").hidden = false;
   }
@@ -2768,17 +2772,37 @@
     say.hidden = false;
   });
   // Ends this browser's session on the console, not just the page.
-  $("signOutBtn").addEventListener("click", async () => {
+  async function signOut() {
+    signOutStarted = true;
+    clearTimeout(pollTimer);
+    signedOut();
+    $("signInTitle").textContent = "Signing out…";
+    $("signInHelp").hidden = true;
+    $("printSignIn").hidden = true;
+    $("printSay").hidden = true;
+    $("signOutError").hidden = true;
+    $("retrySignOut").hidden = true;
     try {
       const response = await fetch("/api/signout", { method: "POST", headers: HEADERS, cache: "no-store" });
-      if (!response.ok) throw new Error(String(response.status));
-      clearTimeout(pollTimer);
-      closeAdd();
-      signedOut();
+      const body = await response.json();
+      if (!response.ok || body.ok !== true) {
+        $("signOutError").textContent = body.reason || "The console could not confirm sign-out. Retry before closing this page.";
+      } else {
+        $("signInTitle").textContent = "Sign in to this console";
+        $("signInHelp").hidden = false;
+        $("printSignIn").hidden = false;
+        return;
+      }
     } catch {
-      toast("Signing out did not reach the console. Try again.");
+      $("signOutError").textContent = "The console did not answer. Sign-out has not been confirmed. Retry before closing this page.";
     }
-  });
+    $("signInTitle").textContent = "Sign-out is not confirmed";
+    $("signOutError").hidden = false;
+    $("retrySignOut").hidden = false;
+    $("retrySignOut").focus();
+  }
+  $("signOutBtn").addEventListener("click", signOut);
+  $("retrySignOut").addEventListener("click", signOut);
 
   // ── add a machine ───────────────────────────────────────────────────
   const addDialog = $("addDialog");

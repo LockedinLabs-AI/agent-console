@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Agent Console · LockedIn Labs</title>
-<meta name="description" content="Fleet accounting for Claude Code and Codex. Every session's tokens, cache reads and writes, models and list-price cost, on every machine you connect, in one local console. MIT, zero dependencies, nothing leaves a machine but counts.">
+<meta name="description" content="Local and team observability for Claude Code and Codex. Sessions, tokens, cache activity and estimated costs across the machines you connect. Open source from LockedIn Labs, with no model API key required.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='96 64 880 896'%3E%3Cpath fill='%23EEF2F8' d='M105 72H275V775H703V952H105Z'/%3E%3Cpath d='M380 72H968V952H803V243H380Z' fill='%230B5CFF'/%3E%3Cpath fill='%23EEF2F8' d='M383 392L527 472V510L383 590V545L482 491L383 437Z'/%3E%3Crect fill='%23EEF2F8' x='556' y='585' width='147' height='34'/%3E%3C/svg%3E">
 <script>(function(){var d=document.documentElement,q=new URLSearchParams(location.search).get('theme'),p=null;try{p=localStorage.getItem('ll-theme')}catch(e){}var t=(q==='light'||q==='dark')?q:(p==='light'?'light':'dark');d.setAttribute('data-theme',t);d.style.colorScheme=t;})();</script>
 <link rel="stylesheet" href="assets/site.css">
@@ -70,8 +70,8 @@
         <div class="pane brief-pane">
           <div class="brief">
             <div class="say">
-              <h1>Fleet accounting for Claude&nbsp;Code and Codex.</h1>
-              <p>Every session's tokens, cache reads and writes, models and list-price cost, on this computer and on every computer you connect, in one local console. No account, no dependencies, and nothing leaves a machine but counts.</p>
+              <h1>See your AI coding work across every machine.</h1>
+              <p>Claude Code and Codex sessions, token usage, cache activity and estimated costs, on this computer and every machine you connect. One local console, with no account or model API key required.</p>
             </div>
             <div class="get">
               <div class="cmd" data-cmd="npx">
@@ -99,17 +99,28 @@
       <section class="space" data-space="install" aria-label="Install">
         <div class="col main">
           <div class="pane">
-            <div class="pane-h"><h2>Three ways in</h2><span class="sub">one package for every operating system; Node 22 or newer runs it</span>
+            <div class="pane-h"><h2>Choose how to install</h2><span class="sub">one package for every operating system; Node 22 or newer runs it</span>
               <span class="r"><span class="lenses os" id="osSeg" role="group" aria-label="Operating system"><button type="button" data-os="mac">macOS</button><button type="button" data-os="linux">Linux</button><button type="button" data-os="win">Windows</button></span></span></div>
             <div class="pane-b">
               <div class="way">
-                <div class="k"><b>Terminal, one line</b><span>fetches the packaged console from the v0.3.0 release, reads the Claude Code and Codex history already on this computer, and opens it signed in at <code>127.0.0.1:6787</code>. CI runs this exact line against the published release.</span></div>
+                <div class="k"><b>Try the published release</b><span>Fetches the packaged console from the v0.3.0 release, reads the Claude Code and Codex history already on this computer, and opens it signed in at <code>127.0.0.1:6787</code>. Use the demo command to look around before reading your sessions.</span></div>
                 <div class="cmd"><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz --open</code><button class="tb primary copy" type="button" data-copy="npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz --open"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
                 <div class="cmd quiet-cmd"><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz --demo --open</code><button class="tb copy" type="button" data-copy="npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz --demo --open"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
                 <div class="fine">The second line looks around first: a synthetic team of five machines, stamped DEMO, reading nothing of yours.</div>
               </div>
+              <div class="way" id="assistant-install">
+                <div class="k"><b>Install with Claude Code or Codex</b><span>Give your coding assistant the official repo link and ask it to follow <a href="https://github.com/LockedinLabs-AI/agent-console/blob/main/INSTALL.md" target="_blank" rel="noopener">INSTALL.md</a>. The guide covers the source version, published downloads, version checks and opening the console. No model API key is required.</span></div>
+                <div class="cmd"><svg class="pr" aria-hidden="true"><use href="#mk-github"/></svg><code>https://github.com/LockedinLabs-AI/agent-console</code><button class="tb copy" type="button" data-copy="https://github.com/LockedinLabs-AI/agent-console"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy repo link</span></button></div>
+              </div>
+              <!-- fact:npm-install -->
               <div class="way">
-                <div class="k"><b>Download</b><span>the same package, by hand. Unzip nowhere: <code>npx</code> runs the file where it sits. <span data-os-only="win">On Windows, use PowerShell.</span><span data-os-only="mac">On a Mac, use Terminal.</span><span data-os-only="linux">Any shell.</span></span></div>
+                <div class="k"><b>Install with npm</b><span>Install the published v0.3.0 archive from GitHub, then use the same command to open it tomorrow. This works before the npm registry name is published.</span></div>
+                <div class="cmd"><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz</code><button class="tb copy" type="button" data-copy="npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
+                <div class="cmd"><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>agent-console --open</code><button class="tb copy" type="button" data-copy="agent-console --open"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
+              </div>
+              <!-- /fact:npm-install -->
+              <div class="way">
+                <div class="k"><b>Download the Node.js package</b><span>Download the archive, then run it without unpacking it. <code>npx</code> handles that for you. <span data-os-only="win">On Windows, use PowerShell.</span><span data-os-only="mac">On a Mac, use Terminal.</span><span data-os-only="linux">Use your terminal.</span></span></div>
                 <div class="dl">
                   <a class="tb" href="https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz"><svg aria-hidden="true"><use href="#i-down"/></svg><span>lockedinlabs-agent-console-0.3.0.tgz</span></a>
                   <span class="fine mono">SHA-256 <span class="hash">c6377c1c…fef4f3</span> · <a href="#/verify">verify it</a></span>
@@ -118,8 +129,10 @@
                 <div class="cmd" data-os-only="win"><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>npx --yes $HOME\Downloads\lockedinlabs-agent-console-0.3.0.tgz --open</code><button class="tb copy" type="button" data-copy="npx --yes $HOME\Downloads\lockedinlabs-agent-console-0.3.0.tgz --open"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
               </div>
               <div class="way">
-                <div class="k"><b>From the source</b><span>clone it, or press <b>Code → Download ZIP</b> on GitHub, then start it with Node directly. No build step; there are no dependencies to install.</span></div>
-                <div class="cmd"><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>git clone https://github.com/LockedinLabs-AI/agent-console.git &amp;&amp; cd agent-console &amp;&amp; node bin/agent-console.mjs --open</code><button class="tb copy" type="button" data-copy="git clone https://github.com/LockedinLabs-AI/agent-console.git && cd agent-console && node bin/agent-console.mjs --open"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
+                <div class="k"><b>Run the current source</b><span>Source on <code>main</code> can include changes that are not in the published download. Clone into a new folder, or use <b>Code → Download ZIP</b>, then start with Node. No build step or dependency install. Run each line only after the previous one succeeds.</span></div>
+                <div class="cmd multiline"><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>git clone https://github.com/LockedinLabs-AI/agent-console.git
+cd agent-console
+node bin/agent-console.mjs --open</code><button class="tb copy" type="button" data-copy="git clone https://github.com/LockedinLabs-AI/agent-console.git&#10;cd agent-console&#10;node bin/agent-console.mjs --open"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
               </div>
               <!-- fact:standalone -->
               <div class="way">
@@ -128,7 +141,7 @@
               <!-- /fact:standalone -->
               <!-- fact:registries -->
               <div class="way coming">
-                <div class="k"><b>npm and Homebrew <span class="chip" data-tone="quiet">coming</span></b><span>The package is not on the npm registry yet, and there is no Homebrew formula. When it is published, this becomes the one line: <code>npx @lockedinlabs/agent-console --open</code>. Until then the release link above is the install, and it is the one CI tests.</span></div>
+                <div class="k"><b>Registry shortcuts <span class="chip" data-tone="quiet">coming</span></b><span>The package name is not on the npm registry yet, and there is no Homebrew formula. You can already install the verified GitHub archive with npm above. A registry shortcut appears here only after its published package is verified.</span></div>
               </div>
               <!-- /fact:registries -->
             </div>

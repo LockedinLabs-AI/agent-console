@@ -329,8 +329,8 @@ test("the download page marks the executables, npm and Homebrew coming until the
   assert.equal(standalone, false);
   assert.doesNotMatch(html, /fact:/u, "no template markers ship");
   assert.match(html, /Standalone executable <span class="chip" data-tone="quiet">coming<\/span>/u);
-  assert.match(html, /npm and Homebrew <span class="chip" data-tone="quiet">coming<\/span>/u);
-  assert.match(html, /<h2>Three ways in<\/h2>/u);
+  assert.match(html, /Registry shortcuts <span class="chip" data-tone="quiet">coming<\/span>/u);
+  assert.match(html, /<h2>Choose how to install<\/h2>/u);
   assert.deepEqual(nativeScript(html), {});
   assert.doesNotMatch(html, /install\.sh|brew install|npx --yes @lockedinlabs/u, "no install path that does not exist");
   assert.match(html, /releases\/download\/v9\.9\.9\/lockedinlabs-agent-console-9\.9\.9\.tgz/u);
@@ -338,12 +338,23 @@ test("the download page marks the executables, npm and Homebrew coming until the
   assert.equal(shortDate("2026-09-23T01:00:00Z"), "23 Sep 2026", "three-letter months whatever the ICU");
 });
 
+test("npm installation uses a real release archive until the exact registry version is verified", () => {
+  const archive = "npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v9.9.9/lockedinlabs-agent-console-9.9.9.tgz";
+  const offlineRegistry = copied(renderSite(FACTS).html);
+  assert.ok(offlineRegistry.includes(archive));
+  assert.ok(offlineRegistry.includes("agent-console --open"));
+  assert.ok(!offlineRegistry.some((command) => command.startsWith("npm install") && command.includes("@lockedinlabs/")));
+  const available = copied(renderSite({ ...FACTS, npm: true }).html);
+  assert.ok(available.includes("npm install --global --ignore-scripts @lockedinlabs/agent-console@9.9.9"));
+  assert.ok(!available.includes(archive));
+});
+
 test("a release that carries the executables gets them on the Download button and a tag-pinned installer", () => {
   const sums = parseSums(["agent-console-darwin-arm64", "agent-console-win32-x64.exe"].map((n, i) => `${String(i + 3).repeat(64)}  ${n}`).join("\n"));
   const native = nativeDownloads({ tag: "v9.9.9", assetNames: new Set(["agent-console-darwin-arm64", "agent-console-win32-x64.exe", "SHA256SUMS"]), sums });
   const { html, standalone } = renderSite({ ...FACTS, native, installers: true });
   assert.equal(standalone, true);
-  assert.match(html, /<h2>Four ways in<\/h2>/u);
+  assert.match(html, /<h2>Choose how to install<\/h2>/u);
   // Both installers are told the checked tag: without it they install whatever "latest" is.
   assert.ok(copied(html).includes("curl -fsSLO https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/v9.9.9/install.sh && AGENT_CONSOLE_VERSION=v9.9.9 sh ./install.sh"));
   const windows = copied(html).find((command) => command.includes("install.ps1"));
@@ -365,7 +376,7 @@ test("npm and Homebrew each go live on their own, and an executable missing from
   assert.match(npmOnly, /Homebrew <span class="chip" data-tone="quiet">coming<\/span>/u);
   const brewOnly = renderSite({ ...FACTS, brew: true }).html;
   assert.match(brewOnly, /brew install LockedinLabs-AI\/tap\/agent-console/u);
-  assert.match(brewOnly, /npm <span class="chip" data-tone="quiet">coming<\/span>/u);
+  assert.match(brewOnly, /npm registry <span class="chip" data-tone="quiet">coming<\/span>/u);
   assert.throws(() => nativeDownloads({ tag: "v9.9.9", assetNames: new Set(["agent-console-linux-x64"]), sums: new Map() }), /Missing release checksum/u);
   assert.throws(() => parseSums(`${"a".repeat(64)}  x\n${"b".repeat(64)}  x\n`), /duplicate/u);
 });

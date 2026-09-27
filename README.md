@@ -22,7 +22,10 @@
   on this computer and on every computer you connect, in one local console.
 </p>
 
-![Agent Console in demo mode, dark](docs/console-demo-dark.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/console-demo-dark.png">
+  <img src="docs/console-demo-light.png" alt="Agent Console in demo mode: sessions, machines, token usage and estimated costs. All figures are synthetic.">
+</picture>
 
 *Captured from `--demo`. Every figure in it is generated and stamped DEMO.
 [The same screen in the light theme.](docs/console-demo-light.png)*
@@ -30,6 +33,11 @@
 [Get started](#install) · [Documentation](docs/README.md) ·
 [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) ·
 [Contribute](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+
+**Installing with Claude Code or Codex?** Give it this repository's URL and ask
+it to follow [INSTALL.md](INSTALL.md). The same guide works if you prefer to
+install it yourself: choose the current source, an npm archive, or a standalone
+download, then verify the version and open the console.
 
 This page describes the **v0.4.0 source on main**. The latest published
 download is [v0.3.0](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.3.0),
@@ -67,6 +75,12 @@ sends each project folder's *name*, never its path; `--share-alerts` and
 
 ## Install
 
+The [installation guide](INSTALL.md) covers all three routes and what to do
+after closing the console. Downloads live in
+[GitHub Releases](https://github.com/LockedinLabs-AI/agent-console/releases/latest).
+There is no separate desktop installer or hosted dashboard to sign up for;
+the executable starts the console in your browser.
+
 Choose a version as well as an installation method:
 
 | Channel | Current availability |
@@ -76,6 +90,18 @@ Choose a version as well as an installation method:
 | npm registry | `@lockedinlabs/agent-console` is not published. Use the source checkout or a published GitHub release archive. |
 | Homebrew | The documented tap has not been verified as available. Use source or the listed GitHub release. |
 | Published container image | A v0.4.0 image has not been verified. Do not assume the source version is an available image tag. |
+
+**Prefer `npm install`?** npm can install a published GitHub archive even while
+the registry name is unavailable. For the currently published **v0.3.0**:
+
+```sh
+npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz
+agent-console --open
+```
+
+In Windows PowerShell use `npm.cmd` and `agent-console.cmd`.
+For the new v0.4.0 console use the source commands above. If npm reports a
+permission error, use the source route; administrator access is unnecessary.
 
 <details>
 <summary>v0.4.0 package commands — only after its release is published</summary>

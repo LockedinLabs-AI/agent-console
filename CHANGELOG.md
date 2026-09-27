@@ -6,6 +6,9 @@
   its open descriptor on all platforms, and bound state-record reads even during
   replacement or growth. Reject reserved and malformed policy property names
   before merging and use unbiased random typed invitation codes.
+- Add a first-install guide for people and coding assistants, npm archive
+  installation, and operating-system-aware copy commands on the download page.
+- Match the README's console screenshot to the reader's light or dark theme.
 - Point source, installation, support and new release verification at the
   company repository, preserving the original v0.3.0 attestation identity.
 - Anchor the demonstration team's day to the moment the demo starts, so a

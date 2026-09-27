@@ -163,6 +163,12 @@ p code, span code, li code, td code, .what code { padding: 1px 5px; border-radiu
 .cmd .tb.primary { height: 30px; }
 .cmd.quiet-cmd { background: transparent; border-style: dashed; }
 .cmd.quiet-cmd code { color: var(--ink-2); }
+.cmd.multiline { align-items: start; }
+.cmd.multiline code { white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 4px; -webkit-mask-image: none; mask-image: none; }
+@media (max-width: 599px) {
+  .cmd.multiline { grid-template-columns: 18px minmax(0, 1fr); }
+  .cmd.multiline .copy { grid-column: 2; justify-self: end; }
+}
 .tb.copy[data-done="yes"] { border-color: var(--good); color: var(--good); background: var(--good-wash); }
 .tb.copy[data-done="yes"].primary { background: var(--good); border-color: var(--good); color: var(--on-cobalt); }
 .brief .cmd { min-height: 46px; }

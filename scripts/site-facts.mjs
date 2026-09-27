@@ -87,6 +87,18 @@ function cmdRow(command, { osOnly, quiet } = {}) {
   return `<div class="cmd${quiet ? ' quiet-cmd' : ''}"${attr}><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>${text}</code><button class="tb copy" type="button" data-copy="${text}"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>`;
 }
 
+function npmInstallBlock(tag, registryAvailable) {
+  const version = tag.slice(1);
+  const source = registryAvailable ? `${NPM_NAME}@${version}`
+    : `https://github.com/${REPO}/releases/download/${tag}/lockedinlabs-agent-console-${version}.tgz`;
+  return `<div class="way">
+                <div class="k"><b>Install with npm</b><span>Keep an <code>agent-console</code> command on this computer. ${registryAvailable ? 'Installs this exact version from the verified npm registry package.' : 'Installs this exact release archive from GitHub; the npm registry name does not need to be published.'} Node.js 22 or newer is required.</span></div>
+                ${cmdRow(`npm install --global --ignore-scripts ${source}`)}
+                ${cmdRow('agent-console --open')}
+                <div class="fine">If npm reports a permission error, use the source option below. No administrator access is needed. <a href="https://github.com/${REPO}/blob/main/INSTALL.md">Full installation guide</a></div>
+              </div>`;
+}
+
 /**
  * The Windows one-line install. PowerShell has no &&, so the line runs in its
  * own scope with every error stopping it: the installer is downloaded to a new
@@ -144,7 +156,7 @@ function registriesBlock({ npm, brew, version }) {
                 ${cmdRow(`npx --yes ${NPM_NAME}@${version} --open`)}
               </div>`
     : `<div class="way coming">
-                <div class="k"><b>npm <span class="chip" data-tone="quiet">coming</span></b><span>The package is not on the npm registry for this release yet. Until it is, the release link above is the install, and it is the one CI tests.</span></div>
+                <div class="k"><b>npm registry <span class="chip" data-tone="quiet">coming</span></b><span>The package name is not on the npm registry for this release yet. Use npm to install the verified GitHub archive above.</span></div>
               </div>`);
   rows.push(brew
     ? `<div class="way">
@@ -187,11 +199,11 @@ export function renderSite({ html, script, tag, publishedAt, digest, cert, logge
   const standalone = installers && Object.keys(native).length > 0;
   if (standalone) {
     html = swapFact(html, 'standalone', standaloneBlock(tag, macSigned));
-    html = replace(html, '<h2>Three ways in</h2>', '<h2>Four ways in</h2>');
     html = replace(html, 'one package for every operating system; Node 22 or newer runs it', 'the package runs on Node 22 or newer; the standalone executable needs nothing');
   } else {
     html = swapFact(html, 'standalone', STANDALONE_COMING);
   }
+  html = swapFact(html, 'npm-install', npmInstallBlock(tag, npm));
   html = npm || brew
     ? swapFact(html, 'registries', registriesBlock({ npm, brew, version }))
     : swapFact(html, 'registries', html.slice(html.indexOf('<!-- fact:registries -->') + '<!-- fact:registries -->'.length, html.indexOf('<!-- /fact:registries -->')).trim());

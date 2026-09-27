@@ -80,12 +80,23 @@
     return null; // unknown (a phone, a tablet): say "your OS" and show the shell-neutral lines
   }
   const OS_NAME = { mac: "macOS", win: "Windows", linux: "Linux" };
+  // Keep the authored command so changing the OS never compounds a suffix or
+  // leaves the visible command different from the text copied to the clipboard.
+  const commands = $$(".cmd").map((row) => {
+    const code = $("code", row), button = $(".copy[data-copy]", row);
+    return code && button ? { code, button, text: button.dataset.copy } : null;
+  }).filter(Boolean);
   let os = null;
   function setOS(next) {
     os = next;
     $$("[data-os]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.os === os ? "true" : "false"));
     $$("[data-os-only]").forEach((el) => { const list = el.dataset.osOnly.split(/\s+/); const on = os ? list.includes(os) : list.includes("mac"); el.setAttribute("data-os-on", on ? "yes" : "no"); });
     $("#osName").textContent = os ? OS_NAME[os] : "your OS";
+    commands.forEach(({ code, button, text }) => {
+      const command = os === "win" ? text.replace(/^(npm|npx|agent-console)(?= )/gm, "$1.cmd") : text;
+      code.textContent = command;
+      button.dataset.copy = command;
+    });
   }
   $$("[data-os]").forEach((b) => b.addEventListener("click", () => setOS(b.dataset.os)));
   setOS(detectOS());
@@ -95,6 +106,7 @@
   const download = $("#osBtn");
   const picker = document.createElement("dialog");
   picker.className = "download-picker";
+  picker.setAttribute("aria-labelledby", "download-picker-title");
   document.body.appendChild(picker);
   download.addEventListener("click", (e) => {
     const platform = os === "mac" ? "darwin" : os === "win" ? "win32" : os;
@@ -103,7 +115,7 @@
     e.preventDefault();
     if (choices.length === 1) { location.href = choices[0][1].url; return; }
     picker.replaceChildren();
-    const title = document.createElement("h2"); title.textContent = "Choose your processor"; picker.appendChild(title);
+    const title = document.createElement("h2"); title.id = "download-picker-title"; title.textContent = "Choose your processor"; picker.appendChild(title);
     const sub = document.createElement("p"); sub.textContent = "Check your computer's About screen if you are unsure."; picker.appendChild(sub);
     choices.forEach(([name, item]) => {
       const a = document.createElement("a"); a.className = "tb"; a.href = item.url;
@@ -122,12 +134,12 @@
   /* ── copy: the clipboard when the page has it; a selection when it does not ── */
   function copyFallback(text) { const ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; } ta.remove(); return ok; }
   $$(".copy[data-copy]").forEach((b) => {
-    const label = $("span", b);
+    const label = $("span", b), originalLabel = label?.textContent;
     b.addEventListener("click", async () => {
       const text = b.dataset.copy; let ok = false;
       try { if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(text); ok = true; } } catch (e) { ok = false; }
       if (!ok) ok = copyFallback(text);
-      if (ok) { b.setAttribute("data-done", "yes"); if (label) label.textContent = "Copied"; note("Copied to the clipboard"); setTimeout(() => { b.removeAttribute("data-done"); if (label) label.textContent = "Copy"; }, 1600); }
+      if (ok) { b.setAttribute("data-done", "yes"); if (label) label.textContent = "Copied"; note("Copied to the clipboard"); setTimeout(() => { b.removeAttribute("data-done"); if (label) label.textContent = originalLabel; }, 1600); }
       else { const code = b.parentElement && b.parentElement.querySelector("code"); if (code) { const r = document.createRange(); r.selectNodeContents(code); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } note("Select the line and copy it"); }
     });
   });

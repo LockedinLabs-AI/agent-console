@@ -1,14 +1,19 @@
-# LockedIn Labs Homebrew tap
+# Homebrew tap packaging
 
-Homebrew formulae for [Agent Console](https://github.com/SamSnead85/agent-console),
-local fleet accounting for Claude Code and Codex by LockedIn Labs.
+This directory contains the formula template for
+[Agent Console](https://github.com/LockedinLabs-AI/agent-console), local and
+team observability for Claude Code and Codex by LockedIn Labs. It is not a
+published tap. Use the main README's installation route until the release
+download page confirms that the company tap serves that exact version.
+
+Once published and verified, its command is:
 
 ```sh
-brew install SamSnead85/tap/agent-console
+brew install LockedinLabs-AI/tap/agent-console
 agent-console --open
 ```
 
-The formula installs the release's standalone executable for your machine
+The generated formula installs the release's standalone executable for your machine
 (macOS on Apple silicon or Intel, Linux on arm64 or x64). It is Node.js with
 the console inside, so nothing else is needed. On macOS the executable is
 signed with an Apple Developer ID and notarized by Apple.
@@ -18,13 +23,13 @@ values are copied from the release's own `SHA256SUMS`, never computed here.
 To check a download yourself:
 
 ```sh
-gh attestation verify "$(brew --cache agent-console)" -R SamSnead85/agent-console
+gh attestation verify "$(brew --cache agent-console)" -R LockedinLabs-AI/agent-console
 ```
 
 Upgrade with `brew upgrade agent-console`; remove with
 `brew uninstall agent-console`. The console's data in `~/.agent-console/` is
 yours and stays until you delete it;
-[the uninstall guide](https://github.com/SamSnead85/agent-console/blob/main/docs/uninstall.md)
+[the uninstall guide](https://github.com/LockedinLabs-AI/agent-console/blob/main/docs/uninstall.md)
 lists everything Agent Console creates.
 
 ## How this tap is updated
@@ -43,4 +48,4 @@ archive against it and against its signed build attestation, renders
 `packaging/homebrew-tap/Formula/agent-console.rb.in`, and commits it.
 
 Agent Console is MIT licensed. Issues belong in the
-[Agent Console repository](https://github.com/SamSnead85/agent-console/issues).
+[Agent Console repository](https://github.com/LockedinLabs-AI/agent-console/issues).

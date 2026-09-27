@@ -99,7 +99,7 @@ test("C1: the hub serves no code, and every command installs from the GitHub rel
   }
   const invite = JSON.parse((await raw(hub.port, "/api/invitations", { method: "POST", headers: { ...INTENT, cookie }, body: JSON.stringify({ person: "You" }) })).body);
   for (const command of [invite.command, invite.typed]) {
-    assert.match(command, /^node -e '[^']+' https:\/\/github\.com\/SamSnead85\/agent-console\/releases\/download\/v[\d.]+\/lockedinlabs-agent-console-[\d.]+\.tgz join /u);
+    assert.match(command, /^node -e '[^']+' https:\/\/github\.com\/LockedinLabs-AI\/agent-console\/releases\/download\/v[\d.]+\/lockedinlabs-agent-console-[\d.]+\.tgz join /u);
     assert.doesNotMatch(command, /127\.0\.0\.1:\d+\/[^j]/u, "a command points at the hub for code");
   }
   const joinPage = fs.readFileSync(new URL("../public/join.js", import.meta.url), "utf8");

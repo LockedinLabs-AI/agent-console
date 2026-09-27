@@ -64,4 +64,4 @@ protection and a successful run on an exact commit establish what was enforced.
 - [Code of Conduct](../CODE_OF_CONDUCT.md), [MIT license](../LICENSE) and [third-party notices](../THIRD_PARTY_NOTICES.md).
 
 Maintained by [LockedIn Labs](https://lockedinlabs.ai). Report ordinary bugs or
-propose changes through [GitHub Issues](https://github.com/SamSnead85/agent-console/issues).
+propose changes through [GitHub Issues](https://github.com/LockedinLabs-AI/agent-console/issues).

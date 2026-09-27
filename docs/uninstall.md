@@ -61,10 +61,10 @@ Whichever way you installed it:
 | --- | --- |
 | The release link (`npx --yes <release link>`) or a join command | Nothing was installed; npm keeps a copy in its cache (below). |
 | npm | `npm uninstall -g @lockedinlabs/agent-console` |
-| Homebrew | `brew uninstall agent-console`, then `brew untap SamSnead85/tap` if nothing else uses the tap |
+| Homebrew | `brew uninstall agent-console`, then `brew untap LockedinLabs-AI/tap` if nothing else uses the tap |
 | `install.sh` | `rm ~/.local/bin/agent-console` (or the `agent-console` in `$XDG_BIN_HOME` or the `AGENT_CONSOLE_INSTALL_DIR` you chose). If you added a `PATH` line to `~/.zshrc`, `~/.bashrc`, `~/.bash_profile` or `~/.profile` for it, delete that line. |
 | `install.ps1` | The PowerShell lines below |
-| Docker | `docker rm -f agent-console-hub`, `docker volume rm agent-console-state` (the hub's data), and `docker image rm ghcr.io/samsnead85/agent-console:<tag>` |
+| Docker | `docker rm -f agent-console-hub`, `docker volume rm agent-console-state` (the hub's data), and `docker image rm ghcr.io/lockedinlabs-ai/agent-console:<tag>` |
 | A download or `git clone` | Delete the folder |
 
 `install.ps1` put the executable in its own folder and that folder on your

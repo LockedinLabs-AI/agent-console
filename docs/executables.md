@@ -33,8 +33,11 @@ signed build attestation as the package:
 
 ```sh
 shasum -a 256 agent-console-darwin-arm64       # must match its line in SHA256SUMS
-gh attestation verify agent-console-darwin-arm64 -R SamSnead85/agent-console
+gh attestation verify agent-console-darwin-arm64 -R LockedinLabs-AI/agent-console
 ```
+
+For v0.3.0 files, use `-R SamSnead85/agent-console`: those attestations retain
+their original signing identity after the repository transfer.
 
 On Windows, `Get-FileHash agent-console-win32-x64.exe` prints the same hash in
 upper case.

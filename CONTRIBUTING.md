@@ -13,7 +13,7 @@ Windows. CI checks each of those it can.
 
 ## Where to start
 
-Issues labelled [`good first issue`](https://github.com/SamSnead85/agent-console/labels/good%20first%20issue)
+Issues labelled [`good first issue`](https://github.com/LockedinLabs-AI/agent-console/labels/good%20first%20issue)
 are small, self-contained and described well enough to start without asking.
 Each says which file to look at and how to know it works. Comment on one to
 take it, so two people don't do the same work.
@@ -26,7 +26,7 @@ tools; see [executables](docs/executables.md) and
 [third-party notices](THIRD_PARTY_NOTICES.md).
 
 ```sh
-git clone https://github.com/SamSnead85/agent-console.git
+git clone https://github.com/LockedinLabs-AI/agent-console.git
 cd agent-console
 node bin/agent-console.mjs --demo --open   # synthetic data; reads nothing of yours
 node bin/agent-console.mjs --open          # your own machine's sessions

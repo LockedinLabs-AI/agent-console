@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/SamSnead85/agent-console/docs/console-v0.4.schema.json",
+  "$id": "https://github.com/LockedinLabs-AI/agent-console/docs/console-v0.4.schema.json",
   "title": "Agent Console /api/console, v0.4 fields",
   "description": "GET /api/console. Every section is computed at one clock (asOf). Existing v0.3 sections are required by name; the fields added for v0.4 are described in full. An unknown reading is null, never 0. fixtures/console-v0.4.json is a demo payload of this shape.",
   "type": "object",

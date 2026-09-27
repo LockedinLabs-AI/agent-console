@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Thanks for reporting. **Issues are public.** Don't paste prompts, transcripts, file paths, join links or codes, device tokens, or screenshots of real sessions. Start the console with `--demo` if you need a screenshot.
-        A security problem goes to [a private report](https://github.com/SamSnead85/agent-console/security/advisories/new), not here.
+        A security problem goes to [a private report](https://github.com/LockedinLabs-AI/agent-console/security/advisories/new), not here.
   - type: textarea
     id: what-happened
     attributes:

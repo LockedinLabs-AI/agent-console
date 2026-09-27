@@ -15,7 +15,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { signingNotes } from "../scripts/release-signing-notes.mjs";
-import { formulaMatches, macSignedFromLabels, nativeDownloads, parseSums, renderSite, shortDate, windowsInstallCommand } from "../scripts/site-facts.mjs";
+import { attestationRepository, formulaMatches, macSignedFromLabels, nativeDownloads, parseSums, renderSite, shortDate, windowsInstallCommand } from "../scripts/site-facts.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 // Windows checks the tree out with CRLF; the checks below read lines.
@@ -62,7 +62,7 @@ while [ $# -gt 0 ]; do
     *) url="$1"; shift ;;
   esac
 done
-case "$url" in https://github.com/SamSnead85/agent-console/releases/download/v9.9.9/*) ;; *) exit 22 ;; esac
+case "$url" in https://github.com/LockedinLabs-AI/agent-console/releases/download/v9.9.9/*) ;; *) exit 22 ;; esac
 cp "${release}/\${url##*/}" "$out"
 `, { mode: 0o755 });
   const run = () => spawnSync("sh", [path.join(ROOT, "install.sh")], {
@@ -137,7 +137,7 @@ test("install.sh refuses a Linux its executable cannot run, and names the npx li
       const result = run();
       assert.notEqual(result.status, 0);
       assert.ok(result.stderr.includes(`This Linux has ${named}; the Agent Console executable needs glibc 2.28 or newer. Nothing was installed.`), result.stderr);
-      assert.ok(result.stderr.includes("npx --yes https://github.com/SamSnead85/agent-console/releases/download/v9.9.9/lockedinlabs-agent-console-9.9.9.tgz --open"));
+      assert.ok(result.stderr.includes("npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v9.9.9/lockedinlabs-agent-console-9.9.9.tgz --open"));
       assert.equal(fs.existsSync(dest), false);
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   }
@@ -236,7 +236,7 @@ test("the Homebrew formula is rendered from the release's SHA256SUMS, and a miss
 test("a formula for another version, or with a checksum that differs from the release, does not count as published", () => {
   const sums = new Map(ARCHIVES.map((name, i) => [name, String(i + 1).repeat(64)]));
   const formula = (version, first) => `version "${version}"\n` + ARCHIVES.map((name, i) =>
-    `url "https://github.com/SamSnead85/agent-console/releases/download/v${version}/${name}"\nsha256 "${i === 0 ? first : sums.get(name)}"`).join("\n");
+    `url "https://github.com/LockedinLabs-AI/agent-console/releases/download/v${version}/${name}"\nsha256 "${i === 0 ? first : sums.get(name)}"`).join("\n");
   assert.equal(formulaMatches(formula("9.9.9", sums.get(ARCHIVES[0])), "9.9.9", sums), true);
   assert.equal(formulaMatches(formula("9.9.8", sums.get(ARCHIVES[0])), "9.9.9", sums), false);
   assert.equal(formulaMatches(formula("9.9.9", "f".repeat(64)), "9.9.9", sums), false);
@@ -310,6 +310,18 @@ const copied = (html) => [...html.matchAll(/data-copy="([^"]*)"/gu)].map((m) => 
   .replace(/&quot;/gu, '"').replace(/&lt;/gu, "<").replace(/&gt;/gu, ">").replace(/&amp;/gu, "&"));
 const nativeScript = (html) => JSON.parse(/<script id="native-downloads" type="application\/json">(.*?)<\/script>/u.exec(html)[1]);
 
+test("the company move preserves the old release signer without trusting it for new releases", () => {
+  assert.equal(attestationRepository("v0.3.0"), "SamSnead85/agent-console");
+  assert.equal(attestationRepository("v0.4.0"), "LockedinLabs-AI/agent-console");
+  assert.equal(attestationRepository("v9.9.9"), "LockedinLabs-AI/agent-console");
+  const legacy = copied(renderSite({ ...FACTS, tag: "v0.3.0" }).html);
+  assert.ok(legacy.includes("gh attestation verify lockedinlabs-agent-console-0.3.0.tgz -R SamSnead85/agent-console"));
+  assert.ok(legacy.includes("npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz --open"));
+  const current = copied(renderSite({ ...FACTS, tag: "v0.4.0" }).html);
+  assert.ok(current.includes("gh attestation verify lockedinlabs-agent-console-0.4.0.tgz -R LockedinLabs-AI/agent-console"));
+  assert.ok(current.every((command) => !command.includes("SamSnead85")));
+});
+
 test("the download page marks the executables, npm and Homebrew coming until the release really has them", () => {
   const { html, standalone } = renderSite(FACTS);
   assert.equal(standalone, false);
@@ -331,9 +343,9 @@ test("a release that carries the executables gets them on the Download button an
   assert.equal(standalone, true);
   assert.match(html, /<h2>Four ways in<\/h2>/u);
   // Both installers are told the checked tag: without it they install whatever "latest" is.
-  assert.ok(copied(html).includes("curl -fsSLO https://raw.githubusercontent.com/SamSnead85/agent-console/v9.9.9/install.sh && AGENT_CONSOLE_VERSION=v9.9.9 sh ./install.sh"));
+  assert.ok(copied(html).includes("curl -fsSLO https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/v9.9.9/install.sh && AGENT_CONSOLE_VERSION=v9.9.9 sh ./install.sh"));
   const windows = copied(html).find((command) => command.includes("install.ps1"));
-  assert.equal(windows, windowsInstallCommand("https://raw.githubusercontent.com/SamSnead85/agent-console/v9.9.9/install.ps1", "v9.9.9"));
+  assert.equal(windows, windowsInstallCommand("https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/v9.9.9/install.ps1", "v9.9.9"));
   assert.ok(windows.includes("$env:AGENT_CONSOLE_VERSION = 'v9.9.9'"));
   assert.deepEqual(Object.keys(nativeScript(html)), ["agent-console-darwin-arm64", "agent-console-win32-x64.exe"]);
   assert.equal(nativeScript(html)["agent-console-darwin-arm64"].sha256, "3".repeat(64));
@@ -350,7 +362,7 @@ test("npm and Homebrew each go live on their own, and an executable missing from
   assert.doesNotMatch(npmOnly, /@lockedinlabs\/agent-console --open/u);
   assert.match(npmOnly, /Homebrew <span class="chip" data-tone="quiet">coming<\/span>/u);
   const brewOnly = renderSite({ ...FACTS, brew: true }).html;
-  assert.match(brewOnly, /brew install SamSnead85\/tap\/agent-console/u);
+  assert.match(brewOnly, /brew install LockedinLabs-AI\/tap\/agent-console/u);
   assert.match(brewOnly, /npm <span class="chip" data-tone="quiet">coming<\/span>/u);
   assert.throws(() => nativeDownloads({ tag: "v9.9.9", assetNames: new Set(["agent-console-linux-x64"]), sums: new Map() }), /Missing release checksum/u);
   assert.throws(() => parseSums(`${"a".repeat(64)}  x\n${"b".repeat(64)}  x\n`), /duplicate/u);
@@ -402,10 +414,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 case "$url" in
-  https://raw.githubusercontent.com/SamSnead85/agent-console/v9.9.9/install.sh) [ -n "$remote" ] && cp "${release}/install.sh" ./install.sh ;;
-  https://github.com/SamSnead85/agent-console/releases/latest) printf '%s' https://github.com/SamSnead85/agent-console/releases/tag/v9.9.10 ;;
-  https://github.com/SamSnead85/agent-console/releases/download/v9.9.9/*|https://github.com/SamSnead85/agent-console/releases/download/v9.9.10/*)
-    rest=\${url#https://github.com/SamSnead85/agent-console/releases/download/}; cp "${release}/\${rest%%/*}/\${url##*/}" "$out" ;;
+  https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/v9.9.9/install.sh) [ -n "$remote" ] && cp "${release}/install.sh" ./install.sh ;;
+  https://github.com/LockedinLabs-AI/agent-console/releases/latest) printf '%s' https://github.com/LockedinLabs-AI/agent-console/releases/tag/v9.9.10 ;;
+  https://github.com/LockedinLabs-AI/agent-console/releases/download/v9.9.9/*|https://github.com/LockedinLabs-AI/agent-console/releases/download/v9.9.10/*)
+    rest=\${url#https://github.com/LockedinLabs-AI/agent-console/releases/download/}; cp "${release}/\${rest%%/*}/\${url##*/}" "$out" ;;
   *) exit 22 ;;
 esac
 `, { mode: 0o755 });
@@ -424,7 +436,7 @@ esac
 });
 
 test("the copied Windows command downloads to a new temporary file, stops on any failure, and only then runs it", () => {
-  const url = "https://raw.githubusercontent.com/SamSnead85/agent-console/v9.9.9/install.ps1";
+  const url = "https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/v9.9.9/install.ps1";
   const command = windowsInstallCommand(url, "v9.9.9");
   const at = (text) => { const i = command.indexOf(text); assert.ok(i >= 0, `missing: ${text}`); return i; };
   // Its own scope, so the stop-on-error preference does not outlive the command.
@@ -444,7 +456,7 @@ test("the copied Windows command downloads to a new temporary file, stops on any
   assert.doesNotMatch(command, /-OutFile install\.ps1|\.\\install\.ps1|install\.ps1; powershell/u);
   assert.equal(windowsInstallCommand(url, null).includes("AGENT_CONSOLE_VERSION"), false, "no tag, no pin");
   // The documented one-line form is the same command.
-  assert.ok(read("docs/standalone-install.md").includes(windowsInstallCommand("https://raw.githubusercontent.com/SamSnead85/agent-console/main/install.ps1", null)));
+  assert.ok(read("docs/standalone-install.md").includes(windowsInstallCommand("https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/main/install.ps1", null)));
   assert.doesNotMatch(read("docs/standalone-install.md"), /install\.ps1; powershell/u);
 });
 
@@ -520,7 +532,7 @@ test("unreleased source has a runnable quick start and conditional, version-pinn
   const { version } = JSON.parse(read("package.json"));
   const install = readme.slice(readme.indexOf("\n## Install\n"), readme.indexOf("\n## Start here\n"));
   const firstCommand = /```sh\n([\s\S]*?)\n```/u.exec(readme)?.[1];
-  assert.equal(firstCommand, "git clone https://github.com/SamSnead85/agent-console.git\ncd agent-console\nnode bin/agent-console.mjs --open");
+  assert.equal(firstCommand, "git clone https://github.com/LockedinLabs-AI/agent-console.git\ncd agent-console\nnode bin/agent-console.mjs --open");
   assert.ok(fs.existsSync(path.join(ROOT, "bin/agent-console.mjs")), "the source entry point exists");
   const conditional = /<details>\s*<summary>([^<]+)<\/summary>([\s\S]*?)<\/details>/u.exec(install);
   assert.ok(conditional, "unpublished package instructions are explicitly conditional");
@@ -536,7 +548,7 @@ test("unreleased source has a runnable quick start and conditional, version-pinn
 test("the README gives Windows PowerShell lines its default policy runs, and says the executable is unsigned", () => {
   const readme = read("README.md");
   const { version } = JSON.parse(read("package.json"));
-  const url = `https://github.com/SamSnead85/agent-console/releases/download/v${version}/lockedinlabs-agent-console-${version}.tgz`;
+  const url = `https://github.com/LockedinLabs-AI/agent-console/releases/download/v${version}/lockedinlabs-agent-console-${version}.tgz`;
   const install = readme.slice(readme.indexOf("\n## Install\n"), readme.indexOf("\n## Start here\n"));
   const start = readme.slice(readme.indexOf("\n## Start here\n"), readme.indexOf("\n### Add another computer\n"));
   // npx.ps1 and npm.ps1 are what plain npx and npm resolve to in PowerShell; the Restricted policy refuses them.

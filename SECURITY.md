@@ -15,10 +15,12 @@ customer data. `--demo` is useful for reproductions and screenshots.
 
 ## What happens after you report
 
-| Step | Within |
+These are targets, not contractual commitments:
+
+| Step | Target |
 | --- | --- |
-| We confirm we have your report | 3 business days |
-| We tell you whether we can reproduce it, and how severe we think it is | 7 days |
+| We confirm we have your report | 2 business days |
+| We tell you whether we can reproduce it, and how severe we think it is (CVSS) | 5 business days |
 | A fixed release for a critical or high-severity issue | 30 days |
 | A fixed release for anything else | 90 days |
 
@@ -29,8 +31,64 @@ say why in the advisory and agree a disclosure date with you.
 
 ## Supported versions
 
-Fixes go into the latest release. Older releases are not patched, so upgrade to
+| Version | Security fixes |
+| --- | --- |
+| 0.4.x | Yes |
+| Earlier | No: upgrade to the latest 0.4 release |
+
+Fixes go into a new patch release of the supported line. Please reproduce on
 the latest release before you report.
+
+## Scope
+
+In scope: the code in this repository, the files attached to its GitHub
+releases (the npm package, the standalone executables and their archives,
+`SHA256SUMS`, the SBOMs), the `@lockedinlabs/agent-console` npm package and the
+team hub image on GHCR, and the installers (`install.sh`, `install.ps1`).
+
+Out of scope: attacks that need code already running as the same user on the
+same computer (it can read the agents' transcripts directly); Claude Code,
+Codex and other tools whose transcripts the console reads; denial of service
+by volume against a hub deliberately exposed with `--allow-public`; and
+findings in the website (`site/`) that do not affect the product.
+
+## Verifying a download
+
+Every file on a release is listed in its `SHA256SUMS` and has a signed build
+provenance attestation. From 0.4.0 on, each also has a CycloneDX SBOM on the
+release page (`*.cdx.json`), attested against the files it describes.
+
+```sh
+# 1. The SHA-256 matches the release's SHA256SUMS
+shasum -a 256 -c SHA256SUMS --ignore-missing                     # macOS, Linux
+Get-FileHash agent-console-win32-x64.exe                         # Windows: compare by eye
+
+# 2. It was built by this repository's release workflow (GitHub CLI)
+gh attestation verify agent-console-darwin-arm64 -R LockedinLabs-AI/agent-console
+
+# 3. Its SBOM is the one the release workflow attested
+gh attestation verify agent-console-darwin-arm64 -R LockedinLabs-AI/agent-console \
+  --predicate-type https://cyclonedx.org/bom
+
+# 4. macOS: signed with a Developer ID and notarized
+codesign --verify --strict --verbose=2 agent-console-darwin-arm64
+spctl --assess --type install -vv agent-console-darwin-arm64     # "source=Notarized Developer ID"
+```
+
+`install.sh` and `install.ps1` perform step 1 themselves and install nothing
+that does not match. The Windows executable is not code-signed: steps 1 to 3
+are its checks. The hub image's digest is attested too:
+`gh attestation verify oci://ghcr.io/lockedinlabs-ai/agent-console:v<version> -R LockedinLabs-AI/agent-console`.
+
+## Security documentation
+
+- [Data flows](docs/security/DATA-FLOWS.md): what each part reads, writes and
+  sends, with the code that does it.
+- [Threat model](docs/security/THREAT-MODEL.md): assets, trust boundaries,
+  mitigations and residual risks.
+- [NIST SSDF self-assessment](docs/security/SSDF.md), with the SLSA build level.
+- [Enterprise security FAQ](docs/security/ENTERPRISE-FAQ.md): the questions a
+  security review asks, answered.
 
 ## How the console is protected
 

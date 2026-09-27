@@ -1,0 +1,24 @@
+# Every path has an owner who is asked to review a change to it. The sections
+# below name the paths whose changes carry the most risk, so a future split of
+# ownership starts from them; today one maintainer owns all of them.
+
+*                                   @SamSnead85
+
+# Release, signing and supply chain
+/.github/                           @SamSnead85
+/packaging/                         @SamSnead85
+/install.sh                         @SamSnead85
+/install.ps1                        @SamSnead85
+/Dockerfile                         @SamSnead85
+/scripts/release-*                  @SamSnead85
+
+# What leaves a machine, and who may connect
+/lib/collector/                     @SamSnead85
+/lib/hub/                           @SamSnead85
+/lib/invocation.js                  @SamSnead85
+/lib/redact.js                      @SamSnead85
+/lib/reporter.js                    @SamSnead85
+
+# Security policy and evidence
+/SECURITY.md                        @SamSnead85
+/docs/security/                     @SamSnead85

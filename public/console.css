@@ -1239,4 +1239,6 @@ body[data-present] [data-internal] { visibility: hidden; }
 .signin code { font: 400 .92em var(--mono); color: var(--ink); }
 .signin .btn { min-height: 44px; }
 .signin [hidden] { display: none; }
-body.signed-out #view-console, body.signed-out #view-team, body.signed-out #view-projects, body.signed-out #addBtn, body.signed-out .conhead { display: none; }
+body.signed-out .view, body.signed-out .conhead, body.signed-out dialog,
+body.signed-out #addBtn, body.signed-out #palBtn, body.signed-out #tabs,
+body.signed-out #reach, body.signed-out #signOutBtn { display: none; }

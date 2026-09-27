@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Clear cached readings, join details and closed dialogs on sign-out. Ignore late
+  responses and prevent keyboard shortcuts or URL changes from reopening them.
 - Add a documentation index linking architecture, public contracts and verification
   evidence; run the existing JavaScript syntax and JSON checks in CI.
 - Report failed sign-out storage, keep the session denied in the running

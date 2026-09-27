@@ -13,7 +13,7 @@ transcript files that are already on that machine
 a console is usage metadata only: token counts, model id, the minute, and
 salted hashes of the session and project. Never a prompt, a reply, a file
 path, file contents, a command or a tool argument
-([lib/collector/collector.js:294-327](../../lib/collector/collector.js#L294-L327)).
+([lib/collector/collector.js:305-338](../../lib/collector/collector.js#L305-L338)).
 Project names, alerts and tool-call counts are sent only when the person
 running the reporter opts in on that run.
 
@@ -56,7 +56,13 @@ Reporter-to-hub traffic stays on your internal network.
 ## Authentication and encryption
 
 **How do machines authenticate to each other?** The console's owner creates a
-join link with a single-use code (128 random bits, at most one hour). The
+join link that carries a single-use code of 128 random bits; the same join
+can instead be made by typing an eight-character code, about 39 bits, for a
+machine where pasting the link is awkward. Either code lives at most one hour
+and works once, and join attempts are counted before they are checked: at
+most 10 per address and 60 in total per 10 minutes
+([lib/hub/registry.js:30-39](../../lib/hub/registry.js#L30-L39),
+[lib/hub/routes.js:37-40](../../lib/hub/routes.js#L37-L40)). The
 joining machine spends it once over TLS and receives its own device token,
 which it keeps in a mode-600 file. The hub stores only a SHA-256 verifier of
 each token, and **Remove** revokes one at once
@@ -64,15 +70,19 @@ each token, and **Remove** revokes one at once
 [lib/hub/registry.js:318-352](../../lib/hub/registry.js#L318-L352)).
 
 **Who can use the console?** The person at that computer: the console is on
-loopback only, and every API call needs a sign-in cookie started from a
-single-use link printed in the console's own terminal. The cookie is
+loopback only, and every call that reads or changes data needs a sign-in
+cookie started from a single-use link printed in the console's own terminal.
+A few calls answer before that check, and none returns data: the product name
+and version, the key challenge a second start of the console answers, a
+request to print a new sign-in link in the console's own window, and sign out
+([lib/hub/routes.js:571-619](../../lib/hub/routes.js#L571-L619)). The cookie is
 `HttpOnly; SameSite=Strict` and lasts 30 days; Sign out ends it
 ([lib/hub/admin.js:1-33](../../lib/hub/admin.js#L1-L33)). There is no SSO,
 LDAP or role model in this version.
 
 **Encryption in transit?** Reporter to hub: TLS 1.2 or later, pinned to the
 hub's own ECDSA P-256 certificate, whose fingerprint is in the join link
-([server.js:314](../../server.js#L314),
+([server.js:319](../../server.js#L319),
 [lib/collector/pinned.js](../../lib/collector/pinned.js)). Browser to console:
 plain HTTP on `127.0.0.1`, which never leaves the computer.
 

@@ -10,7 +10,7 @@ process is in [SECURITY.md](../../SECURITY.md).
 | --- | --- | --- |
 | AI coding-agent transcripts (prompts, replies, commands, file contents) | The user's own `~/.claude`, `~/.codex` folders | The most sensitive thing on the machine. Agent Console reads them and must never move them. |
 | Usage metadata (token counts, model ids, minutes, salted hashes) | Reporter spool, hub `records-<day>.ndjson` | What the product exists to move. Reveals activity patterns and spend, not content. |
-| Project folder names and Git branches | Hub's own `names.json`; reporters only with `--share-project-names` | Can reveal client or project names. |
+| Project folder names, full project paths and Git branches | Hub's own `names.json`, for its own machine only; a reporter sends only a folder's last name, and only with `--share-project-names` | Can reveal client or project names, and a path can reveal the user name. |
 | Console key (`admin.key`) and browser sessions | Hub state directory | Whoever holds them controls the console: can make join links and remove machines. |
 | Device tokens | Reporter `credentials.json`; hub keeps SHA-256 verifiers only | Let a machine report as itself. |
 | Hub TLS private key | Hub `tls-key.pem` | Whoever holds it can impersonate the hub to its reporters. |
@@ -25,8 +25,14 @@ process is in [SECURITY.md](../../SECURITY.md).
 2. **Loopback.** The console's page and API accept only loopback connections
    with a loopback `Host` and no proxy headers
    ([lib/hub/routes.js:90-100](../../lib/hub/routes.js#L90-L100),
-   [lib/hub/routes.js:505-508](../../lib/hub/routes.js#L505-L508)) and a sign-in
-   cookie ([lib/hub/admin.js:1-33](../../lib/hub/admin.js#L1-L33)).
+   [lib/hub/routes.js:509-512](../../lib/hub/routes.js#L509-L512)); every call
+   that reads or changes data also needs a sign-in cookie
+   ([lib/hub/admin.js:1-33](../../lib/hub/admin.js#L1-L33),
+   [lib/hub/routes.js:619](../../lib/hub/routes.js#L619)). The calls answered
+   before that check return no data: the product name and version, the key
+   challenge and ticket of a second start, a request to print a sign-in link
+   in the console's own window, and sign out
+   ([lib/hub/routes.js:571-617](../../lib/hub/routes.js#L571-L617)).
 3. **The local network.** Only the reporting port crosses it, and only when the
    console is started with `--listen` ([lib/config.js:123](../../lib/config.js#L123)).
 4. **Between a reporter and its hub.** TLS pinned to the certificate named in
@@ -53,13 +59,18 @@ read by descriptor, refusing symlinks and swapped files
 
 ### Another local user, a local web page, or a local program on another port
 
-- A web page in the user's browser cannot call the console's API: every call
-  needs the sign-in cookie, which is `HttpOnly; SameSite=Strict`
+- A web page in the user's browser cannot read or change the console's data:
+  apart from `GET /api/hello` (product name and version), every API call needs
+  the `X-Agent-Console: 1` header, which a page on another origin cannot send
+  without a preflight the console never grants
+  ([lib/hub/routes.js:575-578](../../lib/hub/routes.js#L575-L578)); every call
+  that reads or changes data needs the sign-in cookie, which is
+  `HttpOnly; SameSite=Strict`
   ([lib/hub/admin.js:212](../../lib/hub/admin.js#L212)), and a loopback `Host`,
   which defeats DNS rebinding ([lib/hub/routes.js:90-96](../../lib/hub/routes.js#L90-L96)).
 - A program that takes the console's port first learns nothing: a second
   start proves it holds the key by HMAC challenge, and opens the browser only
-  on a console that proved itself ([server.js:118-180](../../server.js#L118-L180),
+  on a console that proved itself ([server.js:118-185](../../server.js#L118-L185),
   [lib/hub/admin.js:24-33](../../lib/hub/admin.js#L24-L33)).
 - Residual: a browser sends a `127.0.0.1` cookie to every port on that
   address, so another local web server the user visits can see it. It is
@@ -69,14 +80,14 @@ read by descriptor, refusing symlinks and swapped files
 ### An attacker on the same network
 
 - The console's page and API are never on the network, whatever `--listen`
-  says ([server.js:342](../../server.js#L342)).
+  says ([server.js:347](../../server.js#L347)).
 - The reporting port answers only private addresses unless `--allow-public`
   ([lib/hub/routes.js:190-196](../../lib/hub/routes.js#L190-L196)).
 - Joins, reports and leaves are refused over plain HTTP
   ([lib/hub/routes.js:212-218](../../lib/hub/routes.js#L212-L218)); TLS 1.2+
-  ([server.js:314](../../server.js#L314)).
+  ([server.js:319](../../server.js#L319)).
 - A reporter accepts only the certificate whose fingerprint is in its join
-  link, on every connection ([lib/collector/pinned.js:57-69](../../lib/collector/pinned.js#L57-L69)),
+  link, on every connection ([lib/collector/pinned.js:68-80](../../lib/collector/pinned.js#L68-L80)),
   so a machine that answers at the hub's address gets no code, no token and
   no record.
 - Join codes are 128 random bits in a link (or eight characters typed), single
@@ -94,15 +105,15 @@ read by descriptor, refusing symlinks and swapped files
 ### A malicious or compromised hub (a reporter joined to the wrong console)
 
 - What it can get: the allowlisted usage metadata of the machines that joined
-  it ([lib/collector/collector.js:294-327](../../lib/collector/collector.js#L294-L327)).
+  it ([lib/collector/collector.js:305-338](../../lib/collector/collector.js#L305-L338)).
   It cannot ask for more: the reporter has no request the hub can make it
   answer, and project hashes use a key the hub never has
-  ([lib/reporter.js:364-371](../../lib/reporter.js#L364-L371)).
+  ([lib/reporter.js:382-389](../../lib/reporter.js#L382-L389)).
 - What it sends back is checked before use: identifiers must match their
   exact pattern, so none can steer a file path, and text is stripped of
   control characters before printing
   ([lib/reporter.js:107-110](../../lib/reporter.js#L107-L110),
-  [lib/reporter.js:341-346](../../lib/reporter.js#L341-L346)). Responses are
+  [lib/reporter.js:359-364](../../lib/reporter.js#L359-L364)). Responses are
   capped at 1 MiB ([lib/collector/pinned.js:20](../../lib/collector/pinned.js#L20)).
 
 ### A malicious reporter (a machine that joined, then misbehaves)
@@ -126,9 +137,10 @@ read by descriptor, refusing symlinks and swapped files
 - Credential-shaped strings are masked on the server before the browser
   receives them ([lib/hub/http.js:52-58](../../lib/hub/http.js#L52-L58),
   [lib/redact.js](../../lib/redact.js)).
-- Residual: CodeQL reports open alerts in this area (see
-  [SSDF.md](SSDF.md), RV.1). Each is being judged on its code path; the CSP is
-  the backstop for any escape that is missed.
+- Residual: an escaping mistake a future change introduces. CodeQL (extended
+  queries) runs on every change and no alert is open in runtime code
+  ([SSDF.md](SSDF.md), RV.1); the CSP is the backstop for any escape that is
+  missed.
 
 ### A compromised supply chain (GitHub, npm, CI, a dependency)
 
@@ -160,9 +172,9 @@ read by descriptor, refusing symlinks and swapped files
 
 | Component | Spoofing | Tampering | Repudiation | Information disclosure | Denial of service | Elevation of privilege |
 | --- | --- | --- | --- | --- | --- | --- |
-| Console (loopback page and API) | Sign-in cookie + loopback Host + no proxy headers ([routes.js:505](../../lib/hub/routes.js#L505)) | Same; state files mode 600 | Joins and leaves are printed as they happen ([server.js:290-296](../../server.js#L290-L296)); no persistent audit log of console actions | Loopback only ([server.js:342](../../server.js#L342)); redaction ([http.js:52-58](../../lib/hub/http.js#L52-L58)) | Local only | Runs as the user; no privileged operation |
-| Reporting listener (hub) | Device tokens, SHA-256 verifiers ([registry.js:352](../../lib/hub/registry.js#L352)) | TLS; exact record shape | Per-device records keyed by device id | Private addresses only by default ([routes.js:190-196](../../lib/hub/routes.js#L190-L196)) | Join, ingest and bad-token rate limits ([routes.js:37-39](../../lib/hub/routes.js#L37-L39)); body caps; socket timeouts ([server.js:316-321](../../server.js#L316-L321)) | Serves only join and ingest routes ([routes.js:1-20](../../lib/hub/routes.js#L1-L20)) |
-| Reporter | Pinned hub certificate ([pinned.js:57-69](../../lib/collector/pinned.js#L57-L69)) | Response validation ([reporter.js:341-346](../../lib/reporter.js#L341-L346)) | Local `reporter.log` in background mode | One allowlist for what leaves ([collector.js:294-327](../../lib/collector/collector.js#L294-L327)); opt-ins per run | Bounded retries ([transport.js](../../lib/collector/transport.js)) | Runs as the user |
+| Console (loopback page and API) | Sign-in cookie + loopback Host + no proxy headers ([routes.js:509](../../lib/hub/routes.js#L509)) | Same; state files mode 600 | Joins and leaves are printed as they happen ([server.js:295-301](../../server.js#L295-L301)); no persistent audit log of console actions | Loopback only ([server.js:347](../../server.js#L347)); redaction ([http.js:52-58](../../lib/hub/http.js#L52-L58)) | Local only | Runs as the user; no privileged operation |
+| Reporting listener (hub) | Device tokens, SHA-256 verifiers ([registry.js:352](../../lib/hub/registry.js#L352)) | TLS; exact record shape | Per-device records keyed by device id | Private addresses only by default ([routes.js:190-196](../../lib/hub/routes.js#L190-L196)) | Join, ingest and bad-token rate limits ([routes.js:37-39](../../lib/hub/routes.js#L37-L39)); body caps; socket timeouts ([server.js:321-326](../../server.js#L321-L326)) | Serves only join and ingest routes ([routes.js:1-20](../../lib/hub/routes.js#L1-L20)) |
+| Reporter | Pinned hub certificate ([pinned.js:68-80](../../lib/collector/pinned.js#L68-L80)) | Response validation ([reporter.js:359-364](../../lib/reporter.js#L359-L364)) | Local `reporter.log` in background mode | One allowlist for what leaves ([collector.js:305-338](../../lib/collector/collector.js#L305-L338)); opt-ins per run | Bounded retries ([transport.js](../../lib/collector/transport.js)) | Runs as the user |
 | Collector | n/a | Reads transcripts read-only; spool mode 600 | n/a | Salted HMAC hashes ([collector.js:96](../../lib/collector/collector.js#L96)) | Bounded by retention window | n/a |
 | Installers / join command | HTTPS to github.com | SHA-256 check before install or run | n/a | n/a | n/a | User directories only; no admin ([install.sh:91-94](../../install.sh#L91-L94), [install.ps1:75](../../install.ps1#L75)) |
 | Release pipeline | OIDC-signed attestations | Pinned actions; tag ruleset; no `--clobber` | Attestations record workflow, commit and run | Public logs print no secret or certificate name | n/a | Per-job permissions |
@@ -175,11 +187,16 @@ read by descriptor, refusing symlinks and swapped files
   with `gh attestation verify`.
 - **Single maintainer.** One person holds admin rights and owns every path
   (`.github/CODEOWNERS`). There is no second reviewer on changes, and `main`
-  does not require reviews or signed commits. Required status checks do gate
-  every merge.
-- **Open CodeQL alerts.** The repository has open code-scanning alerts,
-  including in runtime code, that are still being triaged; see
-  [SSDF.md](SSDF.md) (RV.1).
+  does not require reviews or signed commits. Required status checks gate
+  every merge except an administrator's, since branch protection does not
+  apply to administrators; a release is still refused unless its commit
+  passed CI ([scripts/release-source-check.mjs](../../scripts/release-source-check.mjs)).
+- **Dismissed CodeQL alerts.** Some code-scanning alerts are dismissed rather
+  than fixed: in runtime code, where the flagged value comes only from the
+  operator (the hub they joined, their own credentials file or environment) or
+  the certificate check is replaced by pinning on purpose; elsewhere, in tests
+  and maintainer-only release scripts. Each carries a one-sentence reason in
+  the repository's code-scanning history.
 - **Presenting mode is display-only.** Real names still reach the browser
   ([DATA-FLOWS.md](DATA-FLOWS.md#presenting-mode)). Use `--demo` for screens
   that must not contain them.

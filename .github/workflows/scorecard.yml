@@ -1,9 +1,11 @@
 name: OpenSSF Scorecard
 # Scores this repository's supply-chain practices (https://scorecard.dev) on
 # the default branch, weekly and when branch protection changes. Results are
-# published to the public Scorecard API (the README badge) and uploaded as
-# SARIF to code scanning. The job keeps to what the Scorecard publishing
-# service accepts: read-only by default, pinned actions, no top-level env.
+# published to the public Scorecard API (scorecard.dev) and kept as a
+# workflow artifact for a week; they are not uploaded to code scanning, so
+# Scorecard's checks are read from the published score, not as code-scanning
+# alerts. The job keeps to what the Scorecard publishing service accepts:
+# read-only by default, pinned actions, no top-level env.
 on:
   push:
     branches: [main]
@@ -18,8 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      # Upload the SARIF to code scanning.
-      security-events: write
       # Sign the published results with the workflow's OIDC identity.
       id-token: write
       contents: read
@@ -38,6 +38,3 @@ jobs:
           name: scorecard-sarif
           path: results.sarif
           retention-days: 7
-      - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
-        with:
-          sarif_file: results.sarif

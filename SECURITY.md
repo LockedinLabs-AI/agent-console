@@ -99,9 +99,13 @@ crosses the wire.
 
 **Two listeners.** The console (its pages, its data, making join links,
 removing machines) listens on 127.0.0.1 only, on its own port. Every console
-API call needs the sign-in cookie, a loopback connection with a loopback Host
-header (which also defeats DNS rebinding) and no proxy headers (`Forwarded`,
-`X-Forwarded-For`, `Via` and the like are refused). Other machines talk to a
+request needs a loopback connection with a loopback Host header (which also
+defeats DNS rebinding) and no proxy headers (`Forwarded`, `X-Forwarded-For`,
+`Via` and the like are refused), and every API call that reads or changes data
+also needs the sign-in cookie. The few calls that answer before the cookie
+check return no data: the product name and version, the key challenge a
+second start answers, a request to print a new sign-in link in the console's
+own window, and sign out. Other machines talk to a
 second port, which serves only the join page, the join exchange and
 token-checked reporting. Nothing of the console is on it, whatever `--listen`
 says.

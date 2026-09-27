@@ -8,6 +8,23 @@ import { spawnSync } from 'node:child_process';
 import { classifyTool } from '../lib/policy/classify.mjs';
 import { policyDiff, policyApply, policyRemove } from '../lib/policy/cli.js';
 
+test('organization routing must be explicit in both compiled agents and serialized policy', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-console-policy-shape-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const org = path.join(root, 'synthetic-org.json');
+  fs.writeFileSync(path.join(root, 'agent-policy.json'), '{"version":1}');
+  fs.writeFileSync(org, '{"version":1,"routing":{"roles":{"search":{"__proto__":{"with_verifying_test":"opus","synthetic_unknown":true}}}}}');
+  assert.throws(() => policyDiff(root, org), /Reserved policy property/u);
+  fs.writeFileSync(org, '{"version":1,"routing":{"roles":{"search":{"with_verifying_test":"opus"}}}}');
+  const result = policyDiff(root, org);
+  const agent = [...result.files].find(([name]) => path.basename(name) === 'agent-console-search-verified.md');
+  const saved = [...result.files].find(([name]) => path.basename(name) === 'agent-console-policy.json');
+  assert.match(agent[1], /model: opus/u);
+  assert.deepEqual(JSON.parse(saved[1]), result.policy);
+  assert.equal(JSON.parse(saved[1]).routing.roles.search.with_verifying_test, 'opus');
+  assert.equal(fs.existsSync(path.join(root, '.claude')), false, 'review does not apply native files');
+});
+
 test('classifier catches outside deletes, +refspec pushes, and credential reads without echoing input', () => {
   const root = '/repo/project';
   const facts = (command) => classifyTool({ tool_name: 'Bash', cwd: root, tool_input: { command } }, root, '/private/home');

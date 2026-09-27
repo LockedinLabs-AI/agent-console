@@ -8,7 +8,10 @@ multiline strings, and inline comments are rejected. The schema is
 [`policy.schema.json`](policy.schema.json); `version: 1` is required. An
 organization policy supplied explicitly by the operator overrides repository
 fields recursively; arrays replace the repository array. Unknown fields fail
-validation rather than being silently ignored. No policy is active merely
+validation rather than being silently ignored. Mapping keys `__proto__`,
+`constructor` and `prototype` are reserved and rejected before any merge.
+Compiled controls and saved policy use the same explicit properties.
+No policy is active merely
 because a console dashboard runs.
 
 ```yaml

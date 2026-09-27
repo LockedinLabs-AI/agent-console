@@ -96,6 +96,15 @@ its SHA-256 fingerprint in every join link. Joining and reporting go over TLS,
 and the reporter accepts that certificate only: a different machine answering
 at that address gets nothing.
 
+**Local files.** Static assets reject symlinks beneath the canonical package
+directory and are read from the validated open file, with an 8 MiB limit.
+Owner and telemetry-generation records use bounded descriptor reads, validate
+regular-file identity and reject replacements observed during opening. A record
+that disappears after inspection is an error, not an initial credential state.
+Keep the installed package and state directories writable only by trusted users.
+These checks and the cooperative single-writer lock do not isolate the console
+from a hostile process with direct write access to those directories.
+
 **The join page.** A join link opens a page on the console's reporting port,
 served over plain HTTP so a browser opens it without a certificate warning. The
 code is in the link's fragment, which a browser never sends. The page hands out

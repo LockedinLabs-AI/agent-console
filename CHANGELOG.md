@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Confine static assets to the package directory, validate opened file identities,
+  and bound state-record reads even during replacement or growth. Reject reserved
+  policy properties before merging and use unbiased random typed invitation codes.
 - Point source, installation, support and new release verification at the
   company repository, preserving the original v0.3.0 attestation identity.
 - Anchor the demonstration team's day to the moment the demo starts, so a

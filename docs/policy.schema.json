@@ -11,14 +11,14 @@
     "effort": {
       "type": "object", "additionalProperties": false,
       "properties": {
-        "default_by_task": { "type": "object", "propertyNames": { "$ref": "#/$defs/name" }, "additionalProperties": { "enum": ["low", "medium", "high", "xhigh", "max"] } },
+        "default_by_task": { "type": "object", "propertyNames": { "$ref": "#/$defs/name", "not": { "enum": ["constructor", "prototype"] } }, "additionalProperties": { "enum": ["low", "medium", "high", "xhigh", "max"] } },
         "max_allowlist": { "type": "array", "items": { "$ref": "#/$defs/name" }, "uniqueItems": true }
       }
     },
     "routing": {
       "type": "object", "additionalProperties": false,
       "properties": {
-        "roles": { "type": "object", "propertyNames": { "$ref": "#/$defs/name" }, "additionalProperties": {
+        "roles": { "type": "object", "propertyNames": { "$ref": "#/$defs/name", "not": { "enum": ["constructor", "prototype"] } }, "additionalProperties": {
           "type": "object", "required": ["model"], "additionalProperties": false,
           "properties": { "model": { "$ref": "#/$defs/model" }, "with_verifying_test": { "$ref": "#/$defs/model" } }
         } }

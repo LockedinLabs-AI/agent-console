@@ -90,3 +90,31 @@ test('generation state refuses a symlink substituted after inspection', { skip: 
   assert.throws(() => interopGeneration(dir, 'read'), /access is refused/u);
   checked();
 });
+
+for (const changed of [false, true]) {
+  test(`state identity stays exact above the Number range: ${changed ? 'replacement refused' : 'unchanged boundary accepted'}`, (t) => {
+    const { file, dir } = fixture(t);
+    const original = 9007199254740992n, replacement = original + 1n;
+    assert.equal(Number(original), Number(replacement));
+    fs.writeFileSync(file, 'o'.repeat(4096));
+    const next = path.join(dir, 'next');
+    fs.writeFileSync(next, 'n'.repeat(4096));
+    const lstat = fs.lstatSync, fstat = fs.fstatSync;
+    let swapped = false;
+    // Model exact 64-bit IDs while using real owned files and native Stats.
+    const withIdentity = (stat, id, options) => Object.assign(stat, { ino: options?.bigint ? id : Number(id) });
+    t.mock.method(fs, 'lstatSync', function (filename, options) {
+      const stat = lstat.call(this, filename, options), id = swapped ? replacement : original;
+      if (filename === file && changed && !swapped) {
+        fs.unlinkSync(file); fs.renameSync(next, file); swapped = true;
+      }
+      return withIdentity(stat, id, options);
+    });
+    t.mock.method(fs, 'fstatSync', function (fd, options) {
+      return withIdentity(fstat.call(this, fd, options), swapped ? replacement : original, options);
+    });
+    if (changed) assert.throws(() => readStateFileSync(file, 4096), /bounded regular file/u);
+    else assert.equal(readStateFileSync(file, 4096), 'o'.repeat(4096));
+    assert.equal(swapped, changed);
+  });
+}

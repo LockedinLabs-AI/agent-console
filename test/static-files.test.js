@@ -100,3 +100,44 @@ test('static-file bytes come from the opened descriptor, not a replacement pathn
   assert.equal(answer.body, 'synthetic-public-script');
   assert.equal(replaced, true);
 });
+
+for (const changed of [false, true]) {
+  test(`static identity stays exact above the Number range: ${changed ? 'replacement refused' : 'unchanged accepted'}`, async (t) => {
+    const { root, outside } = fixture(t);
+    const file = fs.realpathSync(path.join(root, 'sw.js'));
+    const original = 9007199254740992n, replacement = original + 1n;
+    assert.equal(Number(original), Number(replacement));
+    fs.writeFileSync(path.join(outside, 'synthetic.woff2'), 'x'.repeat(fs.statSync(file).size));
+    const lstat = fs.promises.lstat, open = fs.promises.open;
+    let swapped = false;
+    const withIdentity = (stat, id, options) => Object.assign(stat, { ino: options?.bigint ? id : Number(id) });
+    t.mock.method(fs.promises, 'lstat', async function (filename, options) {
+      return withIdentity(await lstat.call(this, filename, options), swapped ? replacement : original, options);
+    });
+    t.mock.method(fs.promises, 'open', async function (filename, ...args) {
+      if (filename === file && changed && !swapped) {
+        fs.unlinkSync(file); fs.renameSync(path.join(outside, 'synthetic.woff2'), file); swapped = true;
+      }
+      const handle = await open.call(this, filename, ...args), stat = handle.stat;
+      handle.stat = async function (options) {
+        return withIdentity(await stat.call(this, options), swapped ? replacement : original, options);
+      };
+      return handle;
+    });
+    const answer = await serve(root, 'sw.js');
+    assert.equal(answer.status, changed ? 404 : 200);
+    assert.equal(answer.body, changed ? 'not found\n' : 'synthetic-public-script');
+    assert.equal(swapped, changed);
+  });
+}
+
+test('the static byte limit accepts its boundary and refuses the next byte', async (t) => {
+  const { root } = fixture(t);
+  const file = path.join(root, 'sw.js'), limit = 8 * 1024 * 1024;
+  fs.truncateSync(file, limit);
+  const allowed = await serve(root, 'sw.js');
+  assert.equal(allowed.status, 200);
+  assert.equal(allowed.body.length, limit);
+  fs.truncateSync(file, limit + 1);
+  assert.equal((await serve(root, 'sw.js')).status, 404);
+});

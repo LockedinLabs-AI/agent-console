@@ -74,9 +74,14 @@ function npmCli() {
     path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js"),
     path.join(path.dirname(process.execPath), "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
   ];
-  const found = candidates.find((c) => c && /npm-cli\.js$/u.test(c) && fs.existsSync(c));
-  if (!found) fail("npm was not found beside this Node.js");
-  return found;
+  for (const candidate of candidates.filter(Boolean)) {
+    try {
+      // Resolved first, so a name that only ends in npm-cli.js cannot point anywhere else.
+      const real = fs.realpathSync(candidate);
+      if (path.basename(real) === "npm-cli.js" && fs.statSync(real).isFile()) return real;
+    } catch { /* not installed there */ }
+  }
+  fail("npm was not found beside this Node.js");
 }
 
 function nodeLicence() {

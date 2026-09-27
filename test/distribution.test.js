@@ -215,7 +215,7 @@ test("the Homebrew formula is rendered from the release's SHA256SUMS, and a miss
     const digests = ARCHIVES.map((_, i) => String(i + 1).repeat(64));
     const sums = path.join(dir, "SHA256SUMS");
     fs.writeFileSync(sums, ARCHIVES.map((name, i) => `${digests[i]}  ${name}`).join("\n") + "\n");
-    const out = path.join(dir, "agent-console.rb");
+    const out = path.join(dir, "Formula", "agent-console.rb");
     const ok = spawnSync(process.execPath, [path.join(ROOT, "scripts", "render-homebrew-formula.mjs"), "v9.9.9", sums, out], { encoding: "utf8" });
     assert.equal(ok.status, 0, ok.stderr);
     const formula = fs.readFileSync(out, "utf8");
@@ -227,9 +227,10 @@ test("the Homebrew formula is rendered from the release's SHA256SUMS, and a miss
     assert.equal(formulaMatches(formula, "9.9.9", parseSums(fs.readFileSync(sums, "utf8"))), true);
 
     fs.writeFileSync(sums, ARCHIVES.slice(1).map((name, i) => `${digests[i + 1]}  ${name}`).join("\n") + "\n");
-    const missing = spawnSync(process.execPath, [path.join(ROOT, "scripts", "render-homebrew-formula.mjs"), "v9.9.9", sums, path.join(dir, "no.rb")], { encoding: "utf8" });
+    const missing = spawnSync(process.execPath, [path.join(ROOT, "scripts", "render-homebrew-formula.mjs"), "v9.9.9", sums, path.join(dir, "missing", "Formula", "agent-console.rb")], { encoding: "utf8" });
     assert.notEqual(missing.status, 0);
-    assert.equal(fs.existsSync(path.join(dir, "no.rb")), false);
+    assert.match(missing.stderr, /Missing SHA-256/u);
+    assert.equal(fs.existsSync(path.join(dir, "missing")), false);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

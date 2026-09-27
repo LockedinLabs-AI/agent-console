@@ -72,6 +72,13 @@ function observeClose(child) {
   return childClosures.get(child);
 }
 
+/** The Windows folder named by SystemRoot when it is a plain drive path (C:\\Windows), otherwise C:\\Windows. */
+export function windowsRoot(value) {
+  const root = String(value || "");
+  return /^[A-Za-z]:\\[A-Za-z0-9 _.()-]+(?:\\[A-Za-z0-9 _.()-]+)*$/u.test(root) && !root.split("\\").some((part) => /^\.+$/u.test(part.trim()))
+    ? root : "C:\\Windows";
+}
+
 /** Kill only this check's process group/tree, including npm's console child. */
 export async function terminateTree(child, {
   platform = process.platform, kill = process.kill.bind(process), spawnSyncImpl = spawnSync,
@@ -81,7 +88,7 @@ export async function terminateTree(child, {
   const closed = observeClose(child);
   const waitClosed = () => bounded(() => closed, 10_000, "cleanup_failed");
   if (platform === "win32") {
-    const command = path.win32.join(env.SystemRoot || "C:\\Windows", "System32", "taskkill.exe");
+    const command = path.win32.join(windowsRoot(env.SystemRoot), "System32", "taskkill.exe");
     const result = spawnSyncImpl(command, ["/PID", String(child.pid), "/T", "/F"], {
       stdio: "ignore", windowsHide: true, timeout: 10_000, shell: false,
     });

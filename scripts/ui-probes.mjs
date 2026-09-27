@@ -85,6 +85,19 @@ for (let i = 0; i < argv.length; i += 1) {
 const [base, log] = rest.filter((a) => !a.startsWith("--") && !rest.includes("--out") || rest.indexOf(a) < rest.indexOf("--out"));
 if (!base || !log) { process.stderr.write("usage: node scripts/ui-probes.mjs <console url> <server log> [--out <dir>] [--also <url> <log>]…\n"); process.exit(2); }
 hubs.unshift({ base, log, name: "demo" });
+/* The probes sign in and send requests to the consoles they are given: only ever a console on this machine, over plain http. */
+function loopbackOrigin(value) {
+  let url;
+  try { url = new URL(String(value)); } catch { throw new Error(`not a URL: ${value}`); }
+  if (url.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) || url.username || url.password) {
+    throw new Error(`the probes only reach a console on this machine (http://127.0.0.1:<port>), not ${url.origin}`);
+  }
+  return url.origin;
+}
+for (const hub of hubs) {
+  try { hub.base = loopbackOrigin(hub.base); }
+  catch (error) { process.stderr.write(`ui-probes: ${error.message}\n`); process.exit(2); }
+}
 const out = rest.includes("--out") ? rest[rest.indexOf("--out") + 1] : null;
 if (out) fs.mkdirSync(out, { recursive: true });
 

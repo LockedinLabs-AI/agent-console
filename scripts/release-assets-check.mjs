@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { insideRoot } from "./release-paths.mjs";
 import { signingByPlatform } from "./release-signing-notes.mjs";
 
 const TARGETS = ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64", "win32-x64"];
@@ -48,7 +49,12 @@ export function checkReleaseAssets({ dist, labels, version }) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const [, , dist, labels, version] = process.argv;
-    const files = checkReleaseAssets({ dist, labels, version });
+    // Both folders are the workflow's own, inside its checkout; nothing outside it is read.
+    const files = checkReleaseAssets({
+      dist: insideRoot(dist, { what: "The release folder" }),
+      labels: insideRoot(labels, { what: "The labels folder" }),
+      version,
+    });
     process.stdout.write(`Complete release asset set: ${files.length} files, both macOS builds signed and notarized.\n`);
   } catch (error) {
     process.stderr.write(`${error.message}\n`);

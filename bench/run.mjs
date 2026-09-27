@@ -28,8 +28,10 @@ const BIN = path.join(ROOT, "bin", "agent-console.mjs");
 const INTENT = { "x-agent-console": "1" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function args(argv) {
-  const o = { _: [] };
+/** Command-line options, on an object with no prototype: an option named __proto__ is just an option. */
+export function args(argv) {
+  const o = Object.create(null);
+  o._ = [];
   for (let i = 0; i < argv.length; i++) {
     if (argv[i].startsWith("--")) { o[argv[i].slice(2)] = argv[i + 1]; i++; } else o._.push(argv[i]);
   }
@@ -232,7 +234,7 @@ async function team(o) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const o = args(process.argv.slice(2));
-  const run = { cold, team }[o._[0]];
-  if (!run) { process.stderr.write("usage: node bench/run.mjs cold --home <dir> | team --homes <dir>\n"); process.exit(2); }
-  run(o).then((r) => process.stdout.write(JSON.stringify(r, null, 2) + "\n"), (e) => { process.stderr.write(String(e.stack || e) + "\n"); process.exit(1); });
+  const runs = { cold, team };
+  if (!Object.hasOwn(runs, o._[0])) { process.stderr.write("usage: node bench/run.mjs cold --home <dir> | team --homes <dir>\n"); process.exit(2); }
+  runs[o._[0]](o).then((r) => process.stdout.write(JSON.stringify(r, null, 2) + "\n"), (e) => { process.stderr.write(String(e.stack || e) + "\n"); process.exit(1); });
 }

@@ -41,13 +41,14 @@ function fail(message) {
 }
 
 function args(argv) {
-  const out = {};
+  const given = new Map();
   for (let i = 0; i < argv.length; i += 2) {
     const name = argv[i];
     if (!["--dist", "--runtime", "--version", "--out"].includes(name) || argv[i + 1] === undefined) fail(`usage: --dist D --runtime R --version V --out O (got ${name})`);
-    out[name.slice(2)] = argv[i + 1];
+    given.set(name, argv[i + 1]);
   }
-  for (const needed of ["dist", "runtime", "version", "out"]) if (!out[needed]) fail(`--${needed} is required`);
+  for (const needed of ["--dist", "--runtime", "--version", "--out"]) if (!given.get(needed)) fail(`${needed} is required`);
+  const out = { dist: given.get("--dist"), runtime: given.get("--runtime"), version: given.get("--version"), out: given.get("--out") };
   if (!VERSION.test(out.version)) fail("--version must be a release version such as 0.4.0");
   return out;
 }

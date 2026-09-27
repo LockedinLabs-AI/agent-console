@@ -15,7 +15,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { signingNotes } from "../scripts/release-signing-notes.mjs";
-import { attestationRepository, formulaMatches, macSignedFromLabels, nativeDownloads, parseSums, renderSite, shortDate, windowsInstallCommand } from "../scripts/site-facts.mjs";
+import { attestationArgs, attestationRepository, formulaMatches, macSignedFromLabels, nativeDownloads, parseSums, renderSite, shortDate, windowsInstallCommand } from "../scripts/site-facts.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 // Windows checks the tree out with CRLF; the checks below read lines.
@@ -312,10 +312,12 @@ const nativeScript = (html) => JSON.parse(/<script id="native-downloads" type="a
 
 test("the company move preserves the old release signer without trusting it for new releases", () => {
   assert.equal(attestationRepository("v0.3.0"), "SamSnead85/agent-console");
+  assert.deepEqual(attestationArgs("v0.3.0"), ["--owner", "SamSnead85", "--signer-repo", "SamSnead85/agent-console"]);
+  assert.deepEqual(attestationArgs("v0.4.0"), ["-R", "LockedinLabs-AI/agent-console"]);
   assert.equal(attestationRepository("v0.4.0"), "LockedinLabs-AI/agent-console");
   assert.equal(attestationRepository("v9.9.9"), "LockedinLabs-AI/agent-console");
   const legacy = copied(renderSite({ ...FACTS, tag: "v0.3.0" }).html);
-  assert.ok(legacy.includes("gh attestation verify lockedinlabs-agent-console-0.3.0.tgz -R SamSnead85/agent-console"));
+  assert.ok(legacy.includes("gh attestation verify lockedinlabs-agent-console-0.3.0.tgz --owner SamSnead85 --signer-repo SamSnead85/agent-console"));
   assert.ok(legacy.includes("npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz --open"));
   const current = copied(renderSite({ ...FACTS, tag: "v0.4.0" }).html);
   assert.ok(current.includes("gh attestation verify lockedinlabs-agent-console-0.4.0.tgz -R LockedinLabs-AI/agent-console"));

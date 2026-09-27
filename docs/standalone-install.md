@@ -133,7 +133,7 @@ variables say.
 The release carries `SHA256SUMS` and signed build attestations. Compare your
 download's SHA-256 with the line for its exact filename in `SHA256SUMS`, then
 verify the attestation with `gh attestation verify FILE -R LockedinLabs-AI/agent-console`.
-For a v0.3.0 download, use `-R SamSnead85/agent-console`, its original signing identity.
+For a v0.3.0 download, use `--owner SamSnead85 --signer-repo SamSnead85/agent-console`, its original signing identity.
 
 The macOS executables are signed with an Apple Developer ID and notarized by
 Apple from 0.4.0, so they open without a Gatekeeper warning. The Windows

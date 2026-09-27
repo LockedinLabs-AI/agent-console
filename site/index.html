@@ -318,7 +318,7 @@
               </div>
               <div class="way">
                 <div class="k"><b>2 · The attestation</b><span>proves this exact file was built by this repository's release workflow, from the tag, on GitHub's runners. Needs the <code>gh</code> CLI.</span></div>
-                <div class="cmd"><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>gh attestation verify lockedinlabs-agent-console-0.3.0.tgz -R SamSnead85/agent-console</code><button class="tb copy" type="button" data-copy="gh attestation verify lockedinlabs-agent-console-0.3.0.tgz -R SamSnead85/agent-console"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
+                <div class="cmd"><svg class="pr" aria-hidden="true"><use href="#i-term"/></svg><code>gh attestation verify lockedinlabs-agent-console-0.3.0.tgz --owner SamSnead85 --signer-repo SamSnead85/agent-console</code><button class="tb copy" type="button" data-copy="gh attestation verify lockedinlabs-agent-console-0.3.0.tgz --owner SamSnead85 --signer-repo SamSnead85/agent-console"><svg aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
                 <div class="result">
                   <div class="rh"><span class="st" data-tone="good">Verification succeeded</span><span class="mono">what the v0.3.0 attestation says, read on 25 Sep 2026 with <code>--format json</code></span></div>
                   <dl class="kv">

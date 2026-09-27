@@ -208,7 +208,7 @@ The machine appears on your console within seconds, and the console shows who
 joined and when. A join link works **once**, for at most an hour. On the
 screen the link and its code stay masked; **Copy** puts them on the clipboard.
 
-![Add a machine: the join link, masked, and the one command](docs/console-demo-join-dark.png)
+![Add a machine: choose its owner and name, then create a single-use join link](docs/console-demo-join-dark.png)
 
 ![The Team view in demo mode, light](docs/console-demo-team-light.png)
 
@@ -727,7 +727,7 @@ v0.3.0 package you downloaded:
 ```sh
 shasum -a 256 lockedinlabs-agent-console-0.3.0.tgz              # macOS, Linux
 Get-FileHash lockedinlabs-agent-console-0.3.0.tgz               # Windows PowerShell
-gh attestation verify lockedinlabs-agent-console-0.3.0.tgz -R SamSnead85/agent-console
+gh attestation verify lockedinlabs-agent-console-0.3.0.tgz --owner SamSnead85 --signer-repo SamSnead85/agent-console
 ```
 
 The v0.3.0 attestation was signed under the original repository name. That

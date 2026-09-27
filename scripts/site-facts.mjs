@@ -19,6 +19,11 @@ export const NPM_NAME = '@lockedinlabs/agent-console';
 // Moving the repository does not re-sign an existing release. Keep the exact
 // v0.3.0 signer; never accept the former owner as a fallback for a new release.
 export const attestationRepository = (tag) => tag === 'v0.3.0' ? 'SamSnead85/agent-console' : REPO;
+// GitHub retains pre-transfer attestations under the original owner's index.
+// Scope that lookup to the exact signing repository as well as the owner.
+export const attestationArgs = (tag) => tag === 'v0.3.0'
+  ? ['--owner', 'SamSnead85', '--signer-repo', attestationRepository(tag)]
+  : ['-R', REPO];
 export const NATIVE_NAMES = [
   'agent-console-darwin-arm64', 'agent-console-darwin-x64',
   'agent-console-linux-arm64', 'agent-console-linux-x64', 'agent-console-win32-x64.exe',
@@ -166,7 +171,7 @@ export function renderSite({ html, script, tag, publishedAt, digest, cert, logge
   const version = tag.slice(1);
   // The template carries v0.3.0's facts, so read as it stands it points at a real release.
   html = replace(html, '0.3.0', version);
-  html = replace(html, '-R SamSnead85/agent-console', `-R ${attestationRepository(tag)}`);
+  html = replace(html, attestationArgs('v0.3.0').join(' '), attestationArgs(tag).join(' '));
   html = replace(html, 'c6377c1c6c2c349ce45b91381c762b127ed305892d7567a53f5eb0bf84fef4f3', digest);
   html = replace(html, 'c6377c1c…fef4f3', `${digest.slice(0, 8)}…${digest.slice(-6)}`);
   html = replace(html, 'Released 25 September 2026', `Released ${longDate(publishedAt)}`);
@@ -256,7 +261,7 @@ async function gather() {
     const bytes = fs.readFileSync(path.join(temp, tgz));
     if (createHash('sha256').update(bytes).digest('hex') !== digest) throw new Error('Release tarball does not match SHA256SUMS');
     sha1 = createHash('sha1').update(bytes).digest('hex');
-    const verified = JSON.parse(gh('attestation', 'verify', path.join(temp, tgz), '--repo', attestationRepository(tag), '--format', 'json'));
+    const verified = JSON.parse(gh('attestation', 'verify', path.join(temp, tgz), ...attestationArgs(tag), '--format', 'json'));
     verification = verified.find((entry) => entry.verificationResult?.statement?.subject?.some((subject) => subject.name === tgz && subject.digest?.sha256 === digest));
     if (!verification) throw new Error('No verified attestation for the exact tarball hash');
   } finally {

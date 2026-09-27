@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 
-const read = (file) => fs.readFileSync(new URL("../public/" + file, import.meta.url), "utf8");
+const read = (file) => fs.readFileSync(new URL("../public/" + file, import.meta.url), "utf8").replace(/\r\n/gu, "\n");
 const HTML = read("index.html");
 const JOIN = read("join.html");
 const HOUSE = read("house.css");
@@ -59,7 +59,9 @@ test("the console is a semantic page with named regions", () => {
 test("a signed-in context action opens its lane inspector and scrolls to Context", () => {
   const start = JS.indexOf("  function showContext(");
   assert.ok(start >= 0);
-  const source = JS.slice(start, JS.indexOf("\n  }\n", start) + 4);
+  const end = JS.indexOf("\n  }\n", start);
+  assert.ok(end > start, "showContext's closing boundary was not found");
+  const source = JS.slice(start, end + 4);
   const calls = [], opener = { synthetic: "lane button" };
   vm.runInNewContext(source + '\nshowContext({ key: "synthetic-lane" }, opener);', {
     signOutStarted: false, opener, reducedMotion: { matches: true }, paused: false,

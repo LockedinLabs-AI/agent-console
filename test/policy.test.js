@@ -58,3 +58,21 @@ test('validated organization overrides have the same semantics after serializati
   inherited.model = 'haiku';
   assert.throws(() => parsePolicy({ version: 1, routing: { roles: { search: inherited } } }), /plain mappings/u);
 });
+
+test('only schema-shaped property names reach the merge', () => {
+  for (const key of ['Search', 'search role', '_search', 'x'.repeat(41)]) {
+    assert.throws(() => parsePolicy('{"version":1}', JSON.stringify({ version: 1,
+      routing: { roles: { [key]: { model: 'haiku' } } } })), /Invalid policy property/u, key);
+  }
+});
+
+test('a caller object is checked as returned, not only as first read', () => {
+  let reads = 0;
+  const shifting = { version: 1, get routing() {
+    reads += 1;
+    return reads === 1 ? { roles: {} } : JSON.parse('{"roles":{"__proto__":{"model":"haiku"}}}');
+  } };
+  assert.throws(() => parsePolicyDocument(shifting), /Reserved policy property/u);
+  assert.equal(reads, 2);
+  assert.equal(Object.prototype.model, undefined);
+});

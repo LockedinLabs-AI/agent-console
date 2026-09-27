@@ -98,9 +98,11 @@ at that address gets nothing.
 
 **Local files.** Static assets reject symlinks beneath the canonical package
 directory and are read from the validated open file, with an 8 MiB limit.
-Owner and telemetry-generation records use bounded descriptor reads, validate
-regular-file identity and reject replacements observed during opening. A record
-that disappears after inspection is an error, not an initial credential state.
+Owner and telemetry-generation records use bounded descriptor reads. Each file
+is identified by the descriptor it is read from: after opening, the path must
+still name exactly that regular file (exact 64-bit device and inode), or the
+read is refused. A record that disappears after opening, or a dangling link, is
+an error, not an initial credential state.
 Keep the installed package and state directories writable only by trusted users.
 These checks and the cooperative single-writer lock do not isolate the console
 from a hostile process with direct write access to those directories.

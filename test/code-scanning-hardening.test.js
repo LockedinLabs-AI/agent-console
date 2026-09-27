@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import crypto from "node:crypto";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -33,7 +34,7 @@ test("an unbounded poll interval from the environment is capped, so the console 
   assert.equal(readConfig([], { AGENT_CONSOLE_POLL_MS: "15000" }).pollMs, 15000);
   assert.equal(readConfig([], { AGENT_CONSOLE_POLL_MS: "5" }).pollMs, 1000);
   assert.equal(pollDelay(2 ** 40), POLL_MAX_MS);
-  assert.equal(pollDelay(Infinity), POLL_MIN_MS);
+  assert.equal(pollDelay(Infinity), POLL_MAX_MS);
   assert.equal(pollDelay(Number.NaN), POLL_MIN_MS);
   assert.equal(pollDelay("5000"), POLL_MIN_MS);
   assert.equal(pollDelay(-1), POLL_MIN_MS);
@@ -161,6 +162,21 @@ test("the policy install manifest is checked and read through one descriptor", (
   }
   fs.appendFileSync(manifest, " ".repeat(70_000));
   assert.equal(policyStatus(root, { stateDir }).state, "invalid");
+});
+
+test("a FIFO in the policy install manifest's place is refused as invalid, never waited on", { skip: process.platform === "win32" }, (t) => {
+  const root = scratch(t, "policy-fifo");
+  fs.writeFileSync(path.join(root, "agent-policy.yaml"), "version: 1\n");
+  const stateDir = path.join(root, "private");
+  policyApply(root, { stateDir });
+  const manifest = path.join(stateDir, crypto.createHash("sha256").update(path.resolve(root)).digest("hex"), "install", "manifest.json");
+  fs.rmSync(manifest);
+  execFileSync("mkfifo", [manifest]);
+  // Run in a child: a blocking open would hang this process for good.
+  const script = "import { policyStatus } from " + JSON.stringify(new URL("../lib/policy/cli.js", import.meta.url).href) + ";"
+    + "process.stdout.write(policyStatus(" + JSON.stringify(root) + ", { stateDir: " + JSON.stringify(stateDir) + " }).state);";
+  const out = execFileSync(process.execPath, ["--input-type=module", "-e", script], { timeout: 4000, encoding: "utf8" });
+  assert.equal(out, "invalid");
 });
 
 test("tooltips of fitted lines are read from parsed markup, never by stripping tags with a pattern", () => {

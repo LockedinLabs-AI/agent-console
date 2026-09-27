@@ -11,6 +11,7 @@ export const REQUIRED_WORKFLOWS = {
   ".github/workflows/perf.yml": ["Performance budget"],
 };
 const SHA = /^[0-9a-f]{40}$/u;
+const API = "https://api.github.com";
 const positiveId = (value) => Number.isSafeInteger(value) && value > 0;
 
 export function releaseSource({ tag, cwd = process.cwd() }) {
@@ -31,16 +32,19 @@ export function releaseSource({ tag, cwd = process.cwd() }) {
 }
 
 export async function authorizeChecks({ repository, sha, token, fetchImpl = globalThis.fetch }) {
-  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(repository || "") || !SHA.test(sha || "") || !token) {
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(repository || "") || repository.split("/").some((part) => /^\.+$/u.test(part))
+    || !SHA.test(sha || "") || !token) {
     throw new Error("Release authorization requires a repository, exact commit and read-only GitHub API access.");
   }
-  const base = `https://api.github.com/repos/${repository}`;
   async function pages(endpoint, key) {
     const items = [];
     for (let page = 1; page <= 10; page += 1) {
       let response;
       try {
-        response = await fetchImpl(`${base}${endpoint}&per_page=100&page=${page}`, {
+        // Every request goes to the GitHub API and nowhere else, whatever the path holds.
+        const url = new URL(`https://api.github.com/repos/${repository}${endpoint}&per_page=100&page=${page}`);
+        if (url.origin !== API || !url.pathname.startsWith(`/repos/${repository}/`)) throw new Error();
+        response = await fetchImpl(url.href, {
           headers: { authorization: `Bearer ${token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
           signal: AbortSignal.timeout(15_000), redirect: "error",
         });

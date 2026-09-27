@@ -244,7 +244,7 @@ function ghMaybe(endpoint) {
 }
 
 async function npmServes(version, sha1) {
-  const response = await fetch(`https://registry.npmjs.org/${NPM_NAME.replace('/', '%2f')}`, { signal: AbortSignal.timeout(20_000), redirect: 'error' });
+  const response = await fetch(`https://registry.npmjs.org/${NPM_NAME.replaceAll('/', '%2f')}`, { signal: AbortSignal.timeout(20_000), redirect: 'error' });
   if (response.status === 404) return false;
   if (!response.ok) throw new Error(`npm registry answered ${response.status}`);
   const doc = await response.json();

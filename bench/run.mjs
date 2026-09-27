@@ -28,10 +28,20 @@ const BIN = path.join(ROOT, "bin", "agent-console.mjs");
 const INTENT = { "x-agent-console": "1" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function args(argv) {
-  const o = { _: [] };
+/**
+ * Command-line options. Only the benchmark's own options are accepted, each
+ * stored under a fixed name; anything else is refused.
+ */
+export function args(argv) {
+  const o = { _: [], home: undefined, homes: undefined, "retention-days": undefined };
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i].startsWith("--")) { o[argv[i].slice(2)] = argv[i + 1]; i++; } else o._.push(argv[i]);
+    const arg = argv[i];
+    if (!arg.startsWith("--")) { o._.push(arg); continue; }
+    const value = argv[++i];
+    if (arg === "--home") o.home = value;
+    else if (arg === "--homes") o.homes = value;
+    else if (arg === "--retention-days") o["retention-days"] = value;
+    else throw new Error("unknown option " + arg);
   }
   return o;
 }
@@ -231,8 +241,12 @@ async function team(o) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const o = args(process.argv.slice(2));
-  const run = { cold, team }[o._[0]];
-  if (!run) { process.stderr.write("usage: node bench/run.mjs cold --home <dir> | team --homes <dir>\n"); process.exit(2); }
-  run(o).then((r) => process.stdout.write(JSON.stringify(r, null, 2) + "\n"), (e) => { process.stderr.write(String(e.stack || e) + "\n"); process.exit(1); });
+  const usage = () => { process.stderr.write("usage: node bench/run.mjs cold --home <dir> | team --homes <dir>\n"); process.exit(2); };
+  let o;
+  try { o = args(process.argv.slice(2)); } catch { usage(); }
+  let result;
+  if (o._[0] === "cold") result = cold(o);
+  else if (o._[0] === "team") result = team(o);
+  else usage();
+  result.then((r) => process.stdout.write(JSON.stringify(r, null, 2) + "\n"), (e) => { process.stderr.write(String(e.stack || e) + "\n"); process.exit(1); });
 }

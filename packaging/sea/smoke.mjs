@@ -18,11 +18,15 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { insideRoot, namedRegularFile } from "../../scripts/release-paths.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const { version } = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
-const exe = path.resolve(process.argv[2] || "");
-assert.ok(fs.existsSync(exe), `no executable at ${exe}`);
+assert.match(version, /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u, "package.json has a version");
+// Only a built executable, inside the working directory, is started.
+const exe = insideRoot(namedRegularFile(process.argv[2] || "", /^agent-console-[a-z0-9]+-[a-z0-9]+(?:\.exe)?$/u, { what: "The executable" }),
+  { what: "The executable" });
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "agent-console-sea-smoke-"));
 const cache = path.join(scratch, "cache");
@@ -38,7 +42,7 @@ try {
   const unpacked = fs.readdirSync(cache).filter((d) => !d.startsWith("."));
   assert.equal(unpacked.length, 1, "unpacks into exactly one folder");
   const dir = path.join(cache, unpacked[0]);
-  assert.match(unpacked[0], new RegExp(`^${version.replace(/\./gu, "\\.")}-[0-9a-f]{16}$`, "u"));
+  assert.match(unpacked[0], new RegExp(`^${escapeRegExp(version)}-[0-9a-f]{16}$`, "u"));
   for (const f of ["server.js", "bin/agent-console.mjs", "public/index.html", "LICENSE", "LICENSE.node"]) {
     assert.ok(fs.existsSync(path.join(dir, f)), `unpacked copy has ${f}`);
   }

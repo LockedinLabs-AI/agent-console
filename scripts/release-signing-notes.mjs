@@ -12,6 +12,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { insideRoot, namedRegularFile } from "./release-paths.mjs";
 
 const PLATFORMS = [
   { key: "darwin-arm64", name: "macOS, Apple silicon" },
@@ -20,6 +21,24 @@ const PLATFORMS = [
   { key: "linux-arm64", name: "Linux, arm64" },
   { key: "win32-x64", name: "Windows, x64" },
 ];
+
+// The only files read as labels: what packaging/sea/build.mjs writes.
+export const LABEL_FILE = /^agent-console-[a-z0-9]+-[a-z0-9]+(?:\.exe|\.tar\.gz)?\.label$/u;
+
+/** The label files in `dir` (inside the working directory), each a regular file named as build.mjs names them. */
+export function readLabels(dir, { root = process.cwd() } = {}) {
+  let real;
+  try {
+    real = insideRoot(dir, { root, what: "The labels folder" });
+  } catch (error) {
+    if (/does not exist/u.test(error.message)) return [];
+    throw error;
+  }
+  return fs.readdirSync(real).filter((f) => f.endsWith(".label")).sort().map((f) => {
+    if (!LABEL_FILE.test(f)) throw new Error(`Unexpected label file: ${f}`);
+    return fs.readFileSync(namedRegularFile(path.join(real, f), LABEL_FILE, { what: "A label" }), "utf8");
+  });
+}
 
 /** What each platform's executable carries, from its label. */
 export function signingByPlatform(labels) {
@@ -63,8 +82,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.stderr.write("Usage: node scripts/release-signing-notes.mjs <labels directory>\n");
     process.exit(2);
   }
-  const labels = fs.existsSync(dir)
-    ? fs.readdirSync(dir).filter((f) => f.endsWith(".label")).map((f) => fs.readFileSync(path.join(dir, f), "utf8"))
-    : [];
-  process.stdout.write(signingNotes(labels));
+  try {
+    process.stdout.write(signingNotes(readLabels(dir)));
+  } catch (error) {
+    process.stderr.write(`release-signing-notes: ${error.message}\n`);
+    process.exit(1);
+  }
 }

@@ -19,6 +19,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { namedRegularFile } from "../../scripts/release-paths.mjs";
 
 const TICKETS = "https://api.apple-cloudkit.com/database/1/com.apple.gk.ticket-delivery/production/public/records/lookup";
 const ATTEMPTS = 40;
@@ -55,8 +56,12 @@ async function appleHasTicket(cdhash) {
   }
 }
 
+// What is assessed: a macOS executable as build.mjs names it, or as install.sh installs it.
+export const MAC_EXECUTABLE = /^agent-console(?:-darwin-(?:arm64|x64))?$/u;
+
 /** Resolves with how it was accepted; rejects if it never was. */
-export async function waitUntilNotarized(file, { log = () => {} } = {}) {
+export async function waitUntilNotarized(given, { log = () => {} } = {}) {
+  const file = namedRegularFile(given, MAC_EXECUTABLE, { what: "The executable" });
   const cdhash = cdhashOf(file);
   if (!gatekeeperEnabled()) {
     log(`Gatekeeper assessments are turned off on this machine; asking Apple's ticket service for CDHash ${cdhash}`);

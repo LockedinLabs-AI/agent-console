@@ -11,10 +11,9 @@ name: Release asset
 on:
   release:
     types: [published]
+# Read-only by default; the jobs that need more say so themselves.
 permissions:
   contents: read
-  checks: read
-  actions: read
 jobs:
   authorize:
     name: Verify source and required checks
@@ -121,19 +120,61 @@ jobs:
           pattern: agent-console-*
           merge-multiple: true
       - name: Pack
+        id: pack
         env:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           version="${TAG#v}"
           test "$(node -p "require('./package.json').version")" = "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
           mkdir -p dist
           npm pack --pack-destination dist
           node scripts/release-assets-check.mjs dist labels "$version"
+          # One CycloneDX SBOM for the package and one per executable, kept
+          # beside dist/ so the asset check above sees exactly the shipped set.
+          node .github/scripts/release-sbom.mjs --dist dist --runtime sbom-runtime --version "$version" --out sbom
+          test "$(ls sbom | wc -l)" -eq 6
           (cd dist && sha256sum -- * > ../SHA256SUMS)
+          (cd sbom && sha256sum -- *.cdx.json >> ../SHA256SUMS)
           cat SHA256SUMS
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: dist/*
+          subject-path: |
+            dist/*
+            sbom/*.cdx.json
+      # Each SBOM is attested against the files it describes, so
+      # `gh attestation verify <file> --predicate-type https://cyclonedx.org/bom`
+      # finds it. The executable's SBOM also covers its .tar.gz.
+      - name: Attest the package SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/lockedinlabs-agent-console-*.tgz
+          sbom-path: sbom/lockedinlabs-agent-console-${{ steps.pack.outputs.version }}.cdx.json
+      - name: Attest the darwin-arm64 SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/agent-console-darwin-arm64*
+          sbom-path: sbom/agent-console-darwin-arm64.cdx.json
+      - name: Attest the darwin-x64 SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/agent-console-darwin-x64*
+          sbom-path: sbom/agent-console-darwin-x64.cdx.json
+      - name: Attest the linux-arm64 SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/agent-console-linux-arm64*
+          sbom-path: sbom/agent-console-linux-arm64.cdx.json
+      - name: Attest the linux-x64 SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/agent-console-linux-x64*
+          sbom-path: sbom/agent-console-linux-x64.cdx.json
+      - name: Attest the win32-x64 SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/agent-console-win32-x64.exe
+          sbom-path: sbom/agent-console-win32-x64.cdx.json
       # No --clobber: a release file that already exists is never replaced
       # silently. If a file must really change, delete it on the release page
       # first, on purpose, and run this job again.
@@ -149,7 +190,7 @@ jobs:
             label="labels/$(basename "$f").label"
             if [ -f "$label" ]; then files+=("$f#$(cat "$label")"); else files+=("$f"); fi
           done
-          gh release upload "$TAG" "${files[@]}" SHA256SUMS --repo "$GITHUB_REPOSITORY"
+          gh release upload "$TAG" "${files[@]}" sbom/*.cdx.json SHA256SUMS --repo "$GITHUB_REPOSITORY"
       # Say, per platform, what is signed, from the labels the build wrote
       # after signing (so the notes cannot claim more than the files carry).
       - name: State in the release notes what is signed

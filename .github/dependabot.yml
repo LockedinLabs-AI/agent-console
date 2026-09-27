@@ -1,0 +1,34 @@
+# Weekly, grouped update pull requests. The package itself has no dependencies;
+# these keep the pinned build tooling, the pinned workflow actions and the
+# digest-pinned hub image base current. Security updates arrive as they are
+# published, independent of this schedule.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /packaging/sea
+    schedule:
+      interval: weekly
+    groups:
+      build-tools:
+        patterns: ["*"]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      docker:
+        patterns: ["*"]

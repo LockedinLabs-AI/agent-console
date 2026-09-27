@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - packaging/sea/**
+      - .github/scripts/release-sbom.mjs
       - bin/**
       - lib/**
       - server.js
@@ -147,6 +148,17 @@ jobs:
       - name: Start it, with no Node.js on PATH
         shell: bash
         run: node packaging/sea/smoke.mjs "sea/dist/${{ matrix.exe }}"
+      # The Node.js inside the executable is this runner's `node` (build.mjs
+      # copies process.execPath): its bundled components, for the release SBOM
+      # (.github/scripts/release-sbom.mjs).
+      - name: Record the runtime for the SBOM
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          EXE: ${{ matrix.exe }}
+        run: |
+          mkdir -p sea/sbom-runtime
+          node -e 'process.stdout.write(JSON.stringify({ target: process.env.TARGET, versions: process.versions, release: process.release.name }) + "\n")' > "sea/sbom-runtime/$EXE.json"
       - name: Remove the keychain
         if: always() && steps.apple.outcome == 'success'
         shell: bash
@@ -159,3 +171,37 @@ jobs:
           path: sea/
           if-no-files-found: error
           retention-days: 3
+
+  # The release's SBOM step, run on what this workflow just built: on a pull
+  # request it proves the SBOMs generate and check out before a tag depends on
+  # it. Nothing is attested or published here; release.yml does that.
+  sbom:
+    name: SBOM dry run
+    needs: build
+    if: ${{ inputs.release != true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Never a release (release.yml runs the real step), so the ref is the one
+    # this run was started for; no input chooses what is checked out.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: agent-console-*
+          merge-multiple: true
+      - name: Generate and check the SBOMs
+        run: |
+          npm pack --pack-destination dist
+          node .github/scripts/release-sbom.mjs --dist dist --runtime sbom-runtime --version "$(node -p "require('./package.json').version")" --out sbom
+          test "$(ls sbom | wc -l)" -eq 6
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-dry-run
+          path: sbom/
+          if-no-files-found: error
+          retention-days: 7

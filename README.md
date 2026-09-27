@@ -17,8 +17,8 @@
 </p>
 
 <p align="center">
-  <b>Local and team observability for Claude Code and Codex.</b><br>
-  Every session's tokens, cache reads and writes, models and list-price cost,
+  <b>Agent Console by <a href="https://lockedinlabs.ai">LockedIn Labs</a> — open-source, local-first observability for AI coding agents.</b><br>
+  Every Claude Code and Codex session's tokens, cache reads and writes, models and list-price cost,
   on this computer and on every computer you connect, in one local console.
 </p>
 
@@ -33,6 +33,15 @@
 [Get started](#install) · [Documentation](docs/README.md) ·
 [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) ·
 [Contribute](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+
+| | |
+|---|---|
+| **Local-first** | Reads the agents' own transcripts on your machines. No telemetry, no update check, no crash reporting — see [data flows](docs/security/DATA-FLOWS.md). |
+| **Every machine, one view** | Join laptops, build boxes and servers to a self-hosted team hub; each machine keeps its own lanes and nothing is counted twice. |
+| **Gateway and telemetry aware** | Optional ingest of Claude Code OpenTelemetry and Kong or LiteLLM token metrics, a Prometheus `/metrics` endpoint and a [Grafana dashboard](docs/grafana-agent-console.json). |
+| **Honest numbers** | Estimates say they are estimates; unknown readings are shown as unknown, never as zero. |
+| **Safe to present** | Presenting mode (P) replaces every project, machine and person with a stand-in name. |
+| **Verifiable supply chain** | Apple-signed and notarized macOS builds, `SHA256SUMS`, signed build attestations and, from 0.4.1, a CycloneDX SBOM on every release; [threat model](docs/security/THREAT-MODEL.md), [NIST SSDF mapping](docs/security/SSDF.md) and an [enterprise security FAQ](docs/security/ENTERPRISE-FAQ.md). |
 
 **Installing with Claude Code or Codex?** Give it this repository's URL and ask
 it to follow [INSTALL.md](INSTALL.md). The same guide works if you prefer to

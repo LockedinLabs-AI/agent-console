@@ -24,8 +24,7 @@ export function insideRoot(candidate, { root = process.cwd(), what = "path" } = 
     if (error.code === "ENOENT") throw new Error(`${what} does not exist: ${candidate}`);
     throw error;
   }
-  const relative = path.relative(realRoot, real);
-  if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+  if (!real.startsWith(realRoot.endsWith(path.sep) ? realRoot : realRoot + path.sep)) {
     throw new Error(`${what} must be inside ${realRoot}: ${candidate}`);
   }
   return real;

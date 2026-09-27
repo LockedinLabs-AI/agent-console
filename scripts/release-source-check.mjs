@@ -36,15 +36,14 @@ export async function authorizeChecks({ repository, sha, token, fetchImpl = glob
     || !SHA.test(sha || "") || !token) {
     throw new Error("Release authorization requires a repository, exact commit and read-only GitHub API access.");
   }
-  const base = `/repos/${repository}`;
   async function pages(endpoint, key) {
     const items = [];
     for (let page = 1; page <= 10; page += 1) {
       let response;
       try {
         // Every request goes to the GitHub API and nowhere else, whatever the path holds.
-        const url = new URL(`${base}${endpoint}&per_page=100&page=${page}`, API);
-        if (url.origin !== API || !url.pathname.startsWith(`${base}/`)) throw new Error();
+        const url = new URL(`https://api.github.com/repos/${repository}${endpoint}&per_page=100&page=${page}`);
+        if (url.origin !== API || !url.pathname.startsWith(`/repos/${repository}/`)) throw new Error();
         response = await fetchImpl(url.href, {
           headers: { authorization: `Bearer ${token}`, accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
           signal: AbortSignal.timeout(15_000), redirect: "error",

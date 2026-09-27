@@ -16,13 +16,20 @@ if (path.basename(outputFile) !== 'agent-console.rb' || path.basename(path.dirna
   console.error('The output must be <tap checkout>/Formula/agent-console.rb');
   process.exit(2);
 }
-if (fs.existsSync(outputFile) && !fs.lstatSync(outputFile).isFile()) {
-  console.error('Formula/agent-console.rb exists and is not a regular file');
-  process.exit(2);
+const { O_RDONLY, O_WRONLY, O_CREAT, O_TRUNC, O_NOFOLLOW = 0 } = fs.constants;
+/** The whole of a regular file, opened without following a link and checked on the open descriptor. */
+function readRegular(file) {
+  const fd = fs.openSync(file, O_RDONLY | O_NOFOLLOW);
+  try {
+    if (!fs.fstatSync(fd).isFile()) throw new Error(`${path.basename(file)} is not a regular file`);
+    return fs.readFileSync(fd, 'utf8');
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 const template = fs.readFileSync(new URL('../packaging/homebrew-tap/Formula/agent-console.rb.in', import.meta.url), 'utf8');
 const sums = new Map();
-for (const line of fs.readFileSync(sumsFile, 'utf8').split(/\r?\n/)) {
+for (const line of readRegular(sumsFile).split(/\r?\n/)) {
   if (!line) continue;
   const match = /^([0-9a-fA-F]{64})\s+\*?([^/\s]+)$/.exec(line);
   if (!match || sums.has(match[2])) throw new Error('Invalid or repeated SHA256SUMS line');
@@ -41,4 +48,17 @@ for (const [token, file] of [
 }
 if (/@[A-Z0-9_]+@/.test(rendered)) throw new Error('Unrendered formula token');
 fs.mkdirSync(path.dirname(outputFile), { recursive: true });
-fs.writeFileSync(outputFile, rendered);
+// Opened without following a link, so the write cannot land anywhere but the formula file itself.
+let fd;
+try {
+  fd = fs.openSync(outputFile, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0o644);
+} catch (error) {
+  console.error(`Cannot write Formula/agent-console.rb (${error.code}); it must be a regular file, not a link`);
+  process.exit(2);
+}
+try {
+  if (!fs.fstatSync(fd).isFile()) throw new Error('Formula/agent-console.rb is not a regular file');
+  fs.writeFileSync(fd, rendered);
+} finally {
+  fs.closeSync(fd);
+}

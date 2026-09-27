@@ -121,6 +121,15 @@ test("the Homebrew formula is rendered only from SHA256SUMS into Formula/agent-c
   const renamed = path.join(dir, "sums.txt");
   fs.copyFileSync(sums, renamed);
   assert.notEqual(render(renamed, good).status, 0, "only a file named SHA256SUMS is read");
+  if (links) {
+    const target = path.join(dir, "elsewhere.txt");
+    fs.writeFileSync(target, "synthetic\n");
+    const linkedTap = path.join(dir, "linked", "Formula");
+    fs.mkdirSync(linkedTap, { recursive: true });
+    fs.symlinkSync(target, path.join(linkedTap, "agent-console.rb"));
+    assert.equal(render(sums, path.join(linkedTap, "agent-console.rb")).status, 2, "a linked formula file is not written through");
+    assert.equal(fs.readFileSync(target, "utf8"), "synthetic\n");
+  }
 });
 
 test("the browser probes refuse a console that is not on this machine before loading anything", () => {

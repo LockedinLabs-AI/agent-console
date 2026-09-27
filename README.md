@@ -39,10 +39,9 @@ it to follow [INSTALL.md](INSTALL.md). The same guide works if you prefer to
 install it yourself: choose the current source, an npm archive, or a standalone
 download, then verify the version and open the console.
 
-This page describes the **v0.4.0 source on main**. The latest published
-download is [v0.3.0](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.3.0),
-which predates these changes. **v0.4.0 release packages are not published yet.**
-Run from source to use the current console:
+This page describes **v0.4.0**, published as the
+[v0.4.0 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.0)
+and as the source on `main`. Run from source to use the current console:
 
 ```sh
 git clone https://github.com/LockedinLabs-AI/agent-console.git
@@ -86,22 +85,22 @@ Choose a version as well as an installation method:
 | Channel | Current availability |
 | --- | --- |
 | Source on main | v0.4.0 source. Use Node.js 22+ and the commands above, or Download ZIP below. |
-| GitHub release downloads | [v0.3.0](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.3.0) has a Node.js package and standalone files for macOS, Linux and Windows. These contain the earlier console, not the v0.4.0 changes described here. |
+| GitHub release downloads | [v0.4.0](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.0) has a Node.js package and standalone files for macOS, Linux and Windows. |
 | npm registry | `@lockedinlabs/agent-console` is not published. Use the source checkout or a published GitHub release archive. |
 | Homebrew | The documented tap has not been verified as available. Use source or the listed GitHub release. |
 | Published container image | A v0.4.0 image has not been verified. Do not assume the source version is an available image tag. |
 
 **Prefer `npm install`?** npm can install a published GitHub archive even while
-the registry name is unavailable. For the currently published **v0.3.0**:
+the registry name is unavailable. For the currently published **v0.4.0**:
 
 ```sh
-npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.3.0/lockedinlabs-agent-console-0.3.0.tgz
+npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz
 agent-console --open
 ```
 
 In Windows PowerShell use `npm.cmd` and `agent-console.cmd`.
-For the new v0.4.0 console use the source commands above. If npm reports a
-permission error, use the source route; administrator access is unnecessary.
+If npm reports a permission error, use the source route; administrator access
+is unnecessary.
 
 <details>
 <summary>v0.4.0 package commands — only after its release is published</summary>
@@ -146,7 +145,7 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
    [nodejs.org](https://nodejs.org). To check, open a terminal (*Terminal* on a
    Mac, *PowerShell* on Windows) and type `node --version` — it should say
    `v22` or higher.
-   Without Node.js, the published v0.3.0 standalone downloads run the earlier
+   Without Node.js, the published v0.4.0 standalone downloads run this
    console; see [Install](#install).
 2. **Start it.** Paste this into the terminal and press Return:
 
@@ -168,10 +167,9 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
    computer. With months of it that can take a minute; the terminal counts the
    files as it goes, and so does the console.
 
-**No Node.js?** The [v0.3.0 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.3.0)
-carries standalone executables with Node.js inside. They run v0.3.0 and do
-not include the v0.4.0 changes on main. Use
-[that version's installation instructions](https://github.com/LockedinLabs-AI/agent-console/blob/v0.3.0/docs/standalone-install.md)
+**No Node.js?** The [v0.4.0 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.0)
+carries standalone executables with Node.js inside. Use
+[the installation instructions](docs/standalone-install.md)
 and [check the downloaded file](#checking-a-download).
 
 **Or download it.** On the [GitHub page](https://github.com/LockedinLabs-AI/agent-console),
@@ -748,17 +746,19 @@ item, per system.
 From 0.2.1 on, each release's package is built by CI from the release's tag.
 The release page lists its SHA-256 in `SHA256SUMS`, and GitHub keeps a signed
 build provenance attestation for it. For example, to check the published
-v0.3.0 package you downloaded:
+v0.4.0 package you downloaded:
 
 ```sh
-shasum -a 256 lockedinlabs-agent-console-0.3.0.tgz              # macOS, Linux
-Get-FileHash lockedinlabs-agent-console-0.3.0.tgz               # Windows PowerShell
-gh attestation verify lockedinlabs-agent-console-0.3.0.tgz --owner SamSnead85 --signer-repo SamSnead85/agent-console
+shasum -a 256 lockedinlabs-agent-console-0.4.0.tgz              # macOS, Linux
+Get-FileHash lockedinlabs-agent-console-0.4.0.tgz               # Windows PowerShell
+gh attestation verify lockedinlabs-agent-console-0.4.0.tgz -R LockedinLabs-AI/agent-console
 ```
 
-The v0.3.0 attestation was signed under the original repository name. That
-historical identity stays the same after the move; releases built from the
-company repository use `-R LockedinLabs-AI/agent-console`.
+**Links from before the move.** Releases v0.1.0 through v0.3.0 were attested
+under the project's original repository name, and that historical identity
+stays the same after the move: check those files with
+`gh attestation verify <file> --owner SamSnead85 --signer-repo SamSnead85/agent-console`
+instead.
 
 The standalone executables ([docs/executables.md](docs/executables.md)) are
 nine more files on the same page, each with its line in `SHA256SUMS` and the
@@ -768,10 +768,11 @@ same attestation: `agent-console-darwin-arm64`, `agent-console-darwin-x64`,
 Check one the same way, by its own file name.
 
 A checksum or GitHub build attestation does not establish Apple signing or
-notarization. No v0.4.0 macOS asset is published yet, so this README makes no
-signing claim for that version. Check the exact release's notes and the
-downloaded file's signature before relying on a signing claim. The Windows
-executable is not code-signed.
+notarization on its own. From v0.4.0, the macOS executables are signed with
+an Apple Developer ID and notarized by Apple
+([details](docs/executables.md#signed-or-not-plainly)). Check the exact
+release's notes and the downloaded file's signature before relying on a
+signing claim. The Windows executable is not code-signed.
 
 ## The check in every command
 

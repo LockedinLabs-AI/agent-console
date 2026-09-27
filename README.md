@@ -39,8 +39,8 @@ it to follow [INSTALL.md](INSTALL.md). The same guide works if you prefer to
 install it yourself: choose the current source, an npm archive, or a standalone
 download, then verify the version and open the console.
 
-This page describes **v0.4.0**, published as the
-[v0.4.0 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.0)
+This page describes **v0.4.1**, published as the
+[v0.4.1 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.1)
 and as the source on `main`. Run from source to use the current console:
 
 ```sh
@@ -84,17 +84,17 @@ Choose a version as well as an installation method:
 
 | Channel | Current availability |
 | --- | --- |
-| Source on main | v0.4.0 source. Use Node.js 22+ and the commands above, or Download ZIP below. |
-| GitHub release downloads | [v0.4.0](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.0) has a Node.js package and standalone files for macOS, Linux and Windows. |
+| Source on main | v0.4.1 source. Use Node.js 22+ and the commands above, or Download ZIP below. |
+| GitHub release downloads | [v0.4.1](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.1) has a Node.js package and standalone files for macOS, Linux and Windows. |
 | npm registry | `@lockedinlabs/agent-console` is not published. Use the source checkout or a published GitHub release archive. |
 | Homebrew | The documented tap has not been verified as available. Use source or the listed GitHub release. |
-| Published container image | A v0.4.0 image has not been verified. Do not assume the source version is an available image tag. |
+| Published container image | A v0.4.1 image has not been verified. Do not assume the source version is an available image tag. |
 
 **Prefer `npm install`?** npm can install a published GitHub archive even while
-the registry name is unavailable. For the currently published **v0.4.0**:
+the registry name is unavailable. For the currently published **v0.4.1**:
 
 ```sh
-npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz
+npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.1/lockedinlabs-agent-console-0.4.1.tgz
 agent-console --open
 ```
 
@@ -103,21 +103,21 @@ If npm reports a permission error, use the source route; administrator access
 is unnecessary.
 
 <details>
-<summary>v0.4.0 package commands — only after its release is published</summary>
+<summary>v0.4.1 package commands — only after its release is published</summary>
 
-These commands require `lockedinlabs-agent-console-0.4.0.tgz` to be listed
+These commands require `lockedinlabs-agent-console-0.4.1.tgz` to be listed
 on the [release page](https://github.com/LockedinLabs-AI/agent-console/releases).
 Until that file is published, use the source instructions above.
 
 ```sh
-npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
+npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.1/lockedinlabs-agent-console-0.4.1.tgz --open
 ```
 
 In Windows PowerShell, use `npx.cmd` because the default policy can refuse
 `npx`'s script form:
 
 ```powershell
-npx.cmd --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
+npx.cmd --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.1/lockedinlabs-agent-console-0.4.1.tgz --open
 ```
 
 </details>
@@ -145,7 +145,7 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
    [nodejs.org](https://nodejs.org). To check, open a terminal (*Terminal* on a
    Mac, *PowerShell* on Windows) and type `node --version` — it should say
    `v22` or higher.
-   Without Node.js, the published v0.4.0 standalone downloads run this
+   Without Node.js, the published v0.4.1 standalone downloads run this
    console; see [Install](#install).
 2. **Start it.** Paste this into the terminal and press Return:
 
@@ -167,7 +167,7 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
    computer. With months of it that can take a minute; the terminal counts the
    files as it goes, and so does the console.
 
-**No Node.js?** The [v0.4.0 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.0)
+**No Node.js?** The [v0.4.1 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.1)
 carries standalone executables with Node.js inside. Use
 [the installation instructions](docs/standalone-install.md)
 and [check the downloaded file](#checking-a-download).
@@ -221,7 +221,7 @@ each reports to the same console and they all add up.
    [How the machines connect](#how-the-machines-connect)).
 2. In the console, press **Add a machine**. Say whose machine it is and what to
    call it, press **Create join link**, then **Copy link**.
-3. Until v0.4.0 packages are published, use a current source checkout on the
+3. Until v0.4.1 packages are published, use a current source checkout on the
    other computer and run `node bin/agent-console.mjs join '<join link>'`,
    replacing `<join link>` with the copied link. The join travels encrypted,
    checked against your console's certificate. The generated **Copy command**
@@ -346,7 +346,7 @@ import { ANALYSIS_VERSION, contextHealth } from '@lockedinlabs/agent-console/ana
 const health = contextHealth(samples, prices);
 ```
 
-The package is not on the npm registry, and the v0.4.0 archive is not
+The package is not on the npm registry, and the v0.4.1 archive is not
 published yet. To use the current analysis API, install a local source
 checkout into your project with `npm install /path/to/agent-console`,
 replacing the path with your checkout's location.
@@ -502,7 +502,7 @@ Nothing leaves that directory.
 ### The reporter
 
 **Add a machine** and the join page generate a command for the versioned
-GitHub release. Until v0.4.0 packages are published, copy the join link and
+GitHub release. Until v0.4.1 packages are published, copy the join link and
 run these commands from a current source checkout on the reporting computer:
 
 ```sh
@@ -746,12 +746,12 @@ item, per system.
 From 0.2.1 on, each release's package is built by CI from the release's tag.
 The release page lists its SHA-256 in `SHA256SUMS`, and GitHub keeps a signed
 build provenance attestation for it. For example, to check the published
-v0.4.0 package you downloaded:
+v0.4.1 package you downloaded:
 
 ```sh
-shasum -a 256 lockedinlabs-agent-console-0.4.0.tgz              # macOS, Linux
-Get-FileHash lockedinlabs-agent-console-0.4.0.tgz               # Windows PowerShell
-gh attestation verify lockedinlabs-agent-console-0.4.0.tgz -R LockedinLabs-AI/agent-console
+shasum -a 256 lockedinlabs-agent-console-0.4.1.tgz              # macOS, Linux
+Get-FileHash lockedinlabs-agent-console-0.4.1.tgz               # Windows PowerShell
+gh attestation verify lockedinlabs-agent-console-0.4.1.tgz -R LockedinLabs-AI/agent-console
 ```
 
 **Links from before the move.** Releases v0.1.0 through v0.3.0 were attested
@@ -768,7 +768,7 @@ same attestation: `agent-console-darwin-arm64`, `agent-console-darwin-x64`,
 Check one the same way, by its own file name.
 
 A checksum or GitHub build attestation does not establish Apple signing or
-notarization on its own. From v0.4.0, the macOS executables are signed with
+notarization on its own. From v0.4.1, the macOS executables are signed with
 an Apple Developer ID and notarized by Apple
 ([details](docs/executables.md#signed-or-not-plainly)). Check the exact
 release's notes and the downloaded file's signature before relying on a
@@ -776,7 +776,7 @@ signing claim. The Windows executable is not code-signed.
 
 ## The check in every command
 
-This section describes the v0.4.0 source. For a packaged version, use that
+This section describes the v0.4.1 source. For a packaged version, use that
 release's README and notes: the verification check can change between versions.
 
 Every command the console or the join page prints starts with

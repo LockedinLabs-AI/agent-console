@@ -128,7 +128,7 @@ workflow; the installers refuse a file whose SHA-256 differs. macOS
 executables are Developer ID signed and notarized. The commands:
 [SECURITY.md](../../SECURITY.md#verifying-a-download).
 
-**Is there an SBOM?** Yes, from 0.4.0: a CycloneDX 1.5 SBOM for the npm package
+**Is there an SBOM?** Yes, from 0.4.1: a CycloneDX 1.5 SBOM for the npm package
 and one for each standalone executable (the package, Node.js and the libraries
 Node.js bundles), attached to the release, listed in `SHA256SUMS` and attested
 ([.github/scripts/release-sbom.mjs](../../.github/scripts/release-sbom.mjs)).

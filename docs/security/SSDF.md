@@ -9,7 +9,7 @@ project does, where the evidence is, and a status:
 - **Not yet**: not done.
 
 This is the maintainer's own assessment, not an audit. It describes the
-repository as of release 0.4.0.
+repository as of release 0.4.1.
 
 ## PO: Prepare the organisation
 
@@ -74,5 +74,5 @@ and its SBOM attestation:
 gh attestation verify <file> -R LockedinLabs-AI/agent-console --predicate-type https://cyclonedx.org/bom
 ```
 
-SBOM attestations are made from 0.4.0 on; earlier releases have provenance
+SBOM attestations are made from 0.4.1 on; earlier releases have provenance
 and checksums only.

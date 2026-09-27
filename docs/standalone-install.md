@@ -2,7 +2,7 @@
 
 The release executables do not require Node.js. They are prepared for macOS
 (Apple silicon and Intel; signed with an Apple Developer ID and notarized from
-0.4.0), Linux (arm64 and x64, glibc 2.28 or newer), and Windows (x64, which
+0.4.1), Linux (arm64 and x64, glibc 2.28 or newer), and Windows (x64, which
 Windows 11 on Arm also runs; **not code-signed**). Use the assets attached to
 a release; source ZIP files are not executables. Only a release built with
 `binaries.yml` carries them (0.3.0 and later); for an earlier release the
@@ -136,7 +136,7 @@ verify the attestation with `gh attestation verify FILE -R LockedinLabs-AI/agent
 For a v0.3.0 download, use `--owner SamSnead85 --signer-repo SamSnead85/agent-console`, its original signing identity.
 
 The macOS executables are signed with an Apple Developer ID and notarized by
-Apple from 0.4.0, so they open without a Gatekeeper warning. The Windows
+Apple from 0.4.1, so they open without a Gatekeeper warning. The Windows
 executable is not code-signed; `install.ps1` is the way to install it, because
 it checks the file against `SHA256SUMS` first. Signing, per platform, is
 stated in each release's notes and in

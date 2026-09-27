@@ -59,11 +59,11 @@
   "devDependencies": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SamSnead85/agent-console.git"
+    "url": "git+https://github.com/LockedinLabs-AI/agent-console.git"
   },
-  "homepage": "https://github.com/SamSnead85/agent-console#readme",
+  "homepage": "https://github.com/LockedinLabs-AI/agent-console#readme",
   "bugs": {
-    "url": "https://github.com/SamSnead85/agent-console/issues"
+    "url": "https://github.com/LockedinLabs-AI/agent-console/issues"
   },
   "author": "LockedIn Labs (https://lockedinlabs.ai)"
 }

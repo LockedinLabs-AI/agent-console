@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const PACKAGE = "@lockedinlabs/agent-console";
-const REPOSITORY = "https://github.com/SamSnead85/agent-console";
+const REPOSITORY = "https://github.com/LockedinLabs-AI/agent-console";
 const VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
 const fail = (code) => Object.assign(new Error(code), { code });
 

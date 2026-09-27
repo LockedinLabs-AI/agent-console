@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/SamSnead85/agent-console/blob/main/docs/policy.schema.json",
+  "$id": "https://github.com/LockedinLabs-AI/agent-console/blob/main/docs/policy.schema.json",
   "title": "Agent Console policy version 1",
   "type": "object",
   "required": ["version"],

@@ -52,7 +52,7 @@ export function signingNotes(labels) {
     "### Signing, per platform",
     "",
     ...PLATFORMS.map((platform) => line(platform, found.get(platform.key))),
-    "- **npm package** (`lockedinlabs-agent-console-<version>.tgz`): covered by `SHA256SUMS` and a signed build provenance attestation (`gh attestation verify <file> -R SamSnead85/agent-console`); on npm it carries npm provenance.",
+    "- **npm package** (`lockedinlabs-agent-console-<version>.tgz`): covered by `SHA256SUMS` and a signed build provenance attestation (`gh attestation verify <file> -R LockedinLabs-AI/agent-console`); on npm it carries npm provenance.",
     "",
   ].join("\n");
 }

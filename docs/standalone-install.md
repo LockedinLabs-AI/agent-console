@@ -19,13 +19,13 @@ never meets its rate limit. To remove what they install, see
 The short form downloads the installer and runs it from a local file:
 
 ```sh
-curl -fsSLO https://raw.githubusercontent.com/SamSnead85/agent-console/main/install.sh && sh ./install.sh
+curl -fsSLO https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/main/install.sh && sh ./install.sh
 ```
 
 To inspect it first, download the file, read it, then run it:
 
 ```sh
-curl -fsSLO https://raw.githubusercontent.com/SamSnead85/agent-console/main/install.sh
+curl -fsSLO https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/main/install.sh
 less install.sh
 sh ./install.sh
 ```
@@ -61,7 +61,7 @@ place, or use Node.js and the npm package instead.
 Download, inspect, and run the script:
 
 ```powershell
-Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/SamSnead85/agent-console/main/install.ps1 -OutFile install.ps1
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/main/install.ps1 -OutFile install.ps1
 Get-Content .\install.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
@@ -71,7 +71,7 @@ error (a failed download runs nothing), checks the file arrived, runs it, and
 removes it:
 
 ```powershell
-& { $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072; $f = Join-Path ([IO.Path]::GetTempPath()) ('agent-console-install-' + [Guid]::NewGuid().ToString('N') + '.ps1'); try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/SamSnead85/agent-console/main/install.ps1' -OutFile $f; if (-not (Test-Path -LiteralPath $f) -or (Get-Item -LiteralPath $f).Length -eq 0) { throw 'The installer did not download. Nothing was run.' }; powershell -NoProfile -ExecutionPolicy Bypass -File $f; if ($LASTEXITCODE -ne 0) { throw 'The installer stopped without installing.' } } finally { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue } }
+& { $ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072; $f = Join-Path ([IO.Path]::GetTempPath()) ('agent-console-install-' + [Guid]::NewGuid().ToString('N') + '.ps1'); try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/LockedinLabs-AI/agent-console/main/install.ps1' -OutFile $f; if (-not (Test-Path -LiteralPath $f) -or (Get-Item -LiteralPath $f).Length -eq 0) { throw 'The installer did not download. Nothing was run.' }; powershell -NoProfile -ExecutionPolicy Bypass -File $f; if ($LASTEXITCODE -ne 0) { throw 'The installer stopped without installing.' } } finally { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue } }
 ```
 
 The download page's copy of this command also sets `AGENT_CONSOLE_VERSION` to
@@ -132,7 +132,8 @@ variables say.
 
 The release carries `SHA256SUMS` and signed build attestations. Compare your
 download's SHA-256 with the line for its exact filename in `SHA256SUMS`, then
-verify the attestation with `gh attestation verify FILE -R SamSnead85/agent-console`.
+verify the attestation with `gh attestation verify FILE -R LockedinLabs-AI/agent-console`.
+For a v0.3.0 download, use `--owner SamSnead85 --signer-repo SamSnead85/agent-console`, its original signing identity.
 
 The macOS executables are signed with an Apple Developer ID and notarized by
 Apple from 0.4.0, so they open without a Gatekeeper warning. The Windows

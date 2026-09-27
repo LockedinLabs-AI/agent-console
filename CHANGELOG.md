@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Point source, installation, support and new release verification at the
+  company repository, preserving the original v0.3.0 attestation identity.
 - Anchor the demonstration team's day to the moment the demo starts, so a
   console started on a weekend or at night shows the same working afternoon
   and its burn never lands on the 999k boundary; tie each synthetic alert's

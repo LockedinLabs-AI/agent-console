@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Report it privately through GitHub Security Advisories:
-[**Security → Report a vulnerability**](https://github.com/SamSnead85/agent-console/security/advisories/new).
+[**Security → Report a vulnerability**](https://github.com/LockedinLabs-AI/agent-console/security/advisories/new).
 Only the maintainers can read the report, and the advisory is where the fix and
 the disclosure are coordinated. Please do not open a public issue for a
 vulnerability.
@@ -110,7 +110,7 @@ command itself: it is built on the console's own computer, and its owner sends
 it over whatever channel they already trust to carry the link. On a network you
 do not trust, send the command rather than the link. Whoever joins should run
 the command they were sent, and check that it starts with `node -e`, names
-`https://github.com/SamSnead85/agent-console/releases/download/`, and ends
+`https://github.com/LockedinLabs-AI/agent-console/releases/download/`, and ends
 with the link in single quotes, with nothing after it. Those parts alone do not
 pin what runs: the check between the first two single quotes must be the
 published one. Its SHA-256 is `77aea0b4b487f2e39065b5739377f16678d6977b0fbd6d1ab0ef901052e581bc`, listed in the README

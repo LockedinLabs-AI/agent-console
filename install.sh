@@ -8,7 +8,7 @@
 # curl honours HTTPS_PROXY, and CURL_CA_BUNDLE for a network that inspects TLS.
 set -eu
 
-repo=SamSnead85/agent-console
+repo=LockedinLabs-AI/agent-console
 proxy_help='Behind a proxy? Set HTTPS_PROXY=http://<proxy>:<port>. A network that inspects TLS: set CURL_CA_BUNDLE to your company root certificate (.pem).'
 fetch() {
   if ! curl -fsSL "$1" -o "$2"; then

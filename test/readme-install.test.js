@@ -7,7 +7,7 @@ import { PassThrough } from "node:stream";
 import { checkInstall, parseArguments, releaseIdentity, terminateTree } from "../scripts/readme-install.mjs";
 
 const version = "0.2.2";
-const url = `https://github.com/SamSnead85/agent-console/releases/download/v${version}/lockedinlabs-agent-console-${version}.tgz`;
+const url = `https://github.com/LockedinLabs-AI/agent-console/releases/download/v${version}/lockedinlabs-agent-console-${version}.tgz`;
 const options = { readme: `npx --yes ${url} --open\n`, manifest: { name: "@lockedinlabs/agent-console", version }, expectedVersion: `v${version}` };
 const meta = { name: "Agent Console", version, demo: true, port: 19000, url: "http://127.0.0.1:19000", signIn: "SENSITIVE_CHILD_OUTPUT" };
 const hello = { product: "Agent Console", version, demo: true };
@@ -54,7 +54,7 @@ test("identity mismatches fail before any network or installation action", async
   for (const change of [
     { expectedVersion: "v0.3.0" },
     { manifest: { ...options.manifest, name: "another-package" } },
-    { readme: options.readme.replace("SamSnead85", "other-owner") },
+    { readme: options.readme.replace("LockedinLabs-AI", "other-owner") },
     { readme: options.readme.replace("/v0.2.2/", "/v0.2.1/") },
     { readme: options.readme.replace("agent-console-0.2.2.tgz", "agent-console-0.2.1.tgz") },
     { readme: options.readme + options.readme.replaceAll("0.2.2", "0.2.1") },

@@ -53,7 +53,7 @@
         <p class="fine">The code in it (shown masked) works once and expires within the hour. The command downloads Agent Console <span class="verv">…</span> from its GitHub release over HTTPS and runs nothing until the file's SHA-256 matches the release's <code>SHA256SUMS</code>; that check is the part folded as '…'. <button type="button" class="linkbtn" id="checkBtn" aria-pressed="false" aria-controls="cmd">Show the check</button></p>
         <details class="why">
           <summary>What to look for before you paste it</summary>
-          <p class="fine">Check that it starts with <code>node -e</code>, names <code>https://github.com/SamSnead85/agent-console/releases/download/</code>, and ends with your link in single quotes, with nothing after it, and that the check is the published one: its SHA-256 is listed in the project's README (“The check in every command”) and on the release page, with a short command that prints the SHA-256 of the check in a command you paste into it. The eight dots stand for your code; Copy gives it in full. This page reaches you over plain HTTP, so if whoever sent the link also sent the command, run theirs. The SHA-256 it prints is also on <a id="releasePage" href="https://github.com/SamSnead85/agent-console/releases" target="_blank" rel="noopener">its release page</a>. It then joins over TLS, accepting only the certificate named in your link.</p>
+          <p class="fine">Check that it starts with <code>node -e</code>, names <code>https://github.com/LockedinLabs-AI/agent-console/releases/download/</code>, and ends with your link in single quotes, with nothing after it, and that the check is the published one: its SHA-256 is listed in the project's README (“The check in every command”) and on the release page, with a short command that prints the SHA-256 of the check in a command you paste into it. The eight dots stand for your code; Copy gives it in full. This page reaches you over plain HTTP, so if whoever sent the link also sent the command, run theirs. The SHA-256 it prints is also on <a id="releasePage" href="https://github.com/LockedinLabs-AI/agent-console/releases" target="_blank" rel="noopener">its release page</a>. It then joins over TLS, accepting only the certificate named in your link.</p>
         </details>
       </li>
       <li class="col">
@@ -68,7 +68,7 @@
   </main>
   <p class="fine" id="status" role="status" aria-live="polite"></p>
   <textarea id="clip" aria-hidden="true" tabindex="-1" readonly></textarea>
-  <footer class="foot"><span>Agent Console <b id="ver"></b></span><span class="grow"></span><a href="https://github.com/SamSnead85/agent-console" target="_blank" rel="noopener">Source · MIT</a><a href="https://lockedinlabs.ai" target="_blank" rel="noopener" title="lockedinlabs.ai">© LockedIn Labs</a></footer>
+  <footer class="foot"><span>Agent Console <b id="ver"></b></span><span class="grow"></span><a href="https://github.com/LockedinLabs-AI/agent-console" target="_blank" rel="noopener">Source · MIT</a><a href="https://lockedinlabs.ai" target="_blank" rel="noopener" title="lockedinlabs.ai">© LockedIn Labs</a></footer>
 </div>
 <script src="/join.js" defer></script>
 </body>

@@ -28,7 +28,7 @@
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  const REPO = "https://github.com/SamSnead85/agent-console";
+  const REPO = "https://github.com/LockedinLabs-AI/agent-console";
   const FRAGMENT = /^([A-Za-z0-9_-]{22})\.([A-Za-z0-9_-]{43})$/;
   const SAFE_LINK = /^https?:\/\/(?:[a-z0-9._-]+|\[[0-9a-f:.]+\])(?::[0-9]{1,5})?\/join#[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}$/;
   const VERSION = /^[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}$/;

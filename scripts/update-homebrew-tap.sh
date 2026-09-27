@@ -4,7 +4,7 @@
 #
 #   scripts/update-homebrew-tap.sh vX.Y.Z <tap checkout> [--push]
 #
-# <tap checkout> is a clone of github.com/SamSnead85/homebrew-tap. The script
+# <tap checkout> is a clone of github.com/LockedinLabs-AI/homebrew-tap. The script
 # downloads the release's SHA256SUMS and archives, refuses any archive that
 # does not match SHA256SUMS or has no signed build attestation from this
 # repository, renders Formula/agent-console.rb from the template
@@ -12,7 +12,7 @@
 # pushes. Needs gh (signed in), git and Node.js 22+.
 set -eu
 
-repo=SamSnead85/agent-console
+repo=LockedinLabs-AI/agent-console
 tag=${1:-}
 tap=${2:-}
 push=${3:-}

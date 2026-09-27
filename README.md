@@ -10,10 +10,10 @@
 <h1 align="center">Agent Console</h1>
 
 <p align="center">
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/SamSnead85/agent-console"></a>
-  <a href="https://github.com/SamSnead85/agent-console/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/SamSnead85/agent-console"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/LockedinLabs-AI/agent-console"></a>
+  <a href="https://github.com/LockedinLabs-AI/agent-console/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/LockedinLabs-AI/agent-console"></a>
   <a href="https://nodejs.org"><img alt="Node.js 22 or newer" src="https://img.shields.io/badge/node-%3E%3D22-339933"></a>
-  <a href="https://github.com/SamSnead85/agent-console/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/SamSnead85/agent-console/ci.yml?branch=main&label=CI"></a>
+  <a href="https://github.com/LockedinLabs-AI/agent-console/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/LockedinLabs-AI/agent-console/ci.yml?branch=main&label=CI"></a>
 </p>
 
 <p align="center">
@@ -32,12 +32,12 @@
 [Contribute](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 This page describes the **v0.4.0 source on main**. The latest published
-download is [v0.3.0](https://github.com/SamSnead85/agent-console/releases/tag/v0.3.0),
+download is [v0.3.0](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.3.0),
 which predates these changes. **v0.4.0 release packages are not published yet.**
 Run from source to use the current console:
 
 ```sh
-git clone https://github.com/SamSnead85/agent-console.git
+git clone https://github.com/LockedinLabs-AI/agent-console.git
 cd agent-console
 node bin/agent-console.mjs --open
 ```
@@ -72,7 +72,7 @@ Choose a version as well as an installation method:
 | Channel | Current availability |
 | --- | --- |
 | Source on main | v0.4.0 source. Use Node.js 22+ and the commands above, or Download ZIP below. |
-| GitHub release downloads | [v0.3.0](https://github.com/SamSnead85/agent-console/releases/tag/v0.3.0) has a Node.js package and standalone files for macOS, Linux and Windows. These contain the earlier console, not the v0.4.0 changes described here. |
+| GitHub release downloads | [v0.3.0](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.3.0) has a Node.js package and standalone files for macOS, Linux and Windows. These contain the earlier console, not the v0.4.0 changes described here. |
 | npm registry | `@lockedinlabs/agent-console` is not published. Use the source checkout or a published GitHub release archive. |
 | Homebrew | The documented tap has not been verified as available. Use source or the listed GitHub release. |
 | Published container image | A v0.4.0 image has not been verified. Do not assume the source version is an available image tag. |
@@ -81,18 +81,18 @@ Choose a version as well as an installation method:
 <summary>v0.4.0 package commands — only after its release is published</summary>
 
 These commands require `lockedinlabs-agent-console-0.4.0.tgz` to be listed
-on the [release page](https://github.com/SamSnead85/agent-console/releases).
+on the [release page](https://github.com/LockedinLabs-AI/agent-console/releases).
 Until that file is published, use the source instructions above.
 
 ```sh
-npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
+npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
 ```
 
 In Windows PowerShell, use `npx.cmd` because the default policy can refuse
 `npx`'s script form:
 
 ```powershell
-npx.cmd --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
+npx.cmd --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
 ```
 
 </details>
@@ -125,7 +125,7 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
 2. **Start it.** Paste this into the terminal and press Return:
 
    ```sh
-   git clone https://github.com/SamSnead85/agent-console.git
+   git clone https://github.com/LockedinLabs-AI/agent-console.git
    cd agent-console
    node bin/agent-console.mjs --open
    ```
@@ -142,13 +142,13 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
    computer. With months of it that can take a minute; the terminal counts the
    files as it goes, and so does the console.
 
-**No Node.js?** The [v0.3.0 release](https://github.com/SamSnead85/agent-console/releases/tag/v0.3.0)
+**No Node.js?** The [v0.3.0 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.3.0)
 carries standalone executables with Node.js inside. They run v0.3.0 and do
 not include the v0.4.0 changes on main. Use
-[that version's installation instructions](https://github.com/SamSnead85/agent-console/blob/v0.3.0/docs/standalone-install.md)
+[that version's installation instructions](https://github.com/LockedinLabs-AI/agent-console/blob/v0.3.0/docs/standalone-install.md)
 and [check the downloaded file](#checking-a-download).
 
-**Or download it.** On the [GitHub page](https://github.com/SamSnead85/agent-console),
+**Or download it.** On the [GitHub page](https://github.com/LockedinLabs-AI/agent-console),
 press the green **Code** button, then **Download ZIP**, and unzip it. You get a
 folder called `agent-console-main`. In a terminal, go into that folder and
 start the console:
@@ -161,10 +161,10 @@ node bin/agent-console.mjs --open
 On Windows (PowerShell) the first line is `cd $HOME\Downloads\agent-console-main`.
 If `node` then says it cannot find `bin/agent-console.mjs`, Windows unzipped
 the folder inside another one of the same name: run `cd agent-console-main`
-once more. (If you use git: `git clone https://github.com/SamSnead85/agent-console.git`,
+once more. (If you use git: `git clone https://github.com/LockedinLabs-AI/agent-console.git`,
 then `cd agent-console`.)
 
-**The .tgz on the release page.** The [releases page](https://github.com/SamSnead85/agent-console/releases/latest)
+**The .tgz on the release page.** The [releases page](https://github.com/LockedinLabs-AI/agent-console/releases/latest)
 lists a file named `lockedinlabs-agent-console-<version>.tgz`. It is the
 packaged console for that release; it does not track main. *Source code (zip)*
 on the same page is that
@@ -208,7 +208,7 @@ The machine appears on your console within seconds, and the console shows who
 joined and when. A join link works **once**, for at most an hour. On the
 screen the link and its code stay masked; **Copy** puts them on the clipboard.
 
-![Add a machine: the join link, masked, and the one command](docs/console-demo-join-dark.png)
+![Add a machine: choose its owner and name, then create a single-use join link](docs/console-demo-join-dark.png)
 
 ![The Team view in demo mode, light](docs/console-demo-team-light.png)
 
@@ -727,8 +727,12 @@ v0.3.0 package you downloaded:
 ```sh
 shasum -a 256 lockedinlabs-agent-console-0.3.0.tgz              # macOS, Linux
 Get-FileHash lockedinlabs-agent-console-0.3.0.tgz               # Windows PowerShell
-gh attestation verify lockedinlabs-agent-console-0.3.0.tgz -R SamSnead85/agent-console
+gh attestation verify lockedinlabs-agent-console-0.3.0.tgz --owner SamSnead85 --signer-repo SamSnead85/agent-console
 ```
+
+The v0.3.0 attestation was signed under the original repository name. That
+historical identity stays the same after the move; releases built from the
+company repository use `-R LockedinLabs-AI/agent-console`.
 
 The standalone executables ([docs/executables.md](docs/executables.md)) are
 nine more files on the same page, each with its line in `SHA256SUMS` and the
@@ -810,6 +814,6 @@ appear only to identify their models.
 
 Agent Console is built and maintained by [LockedIn Labs](https://lockedinlabs.ai).
 For reproducible bugs and feature proposals, use
-[GitHub Issues](https://github.com/SamSnead85/agent-console/issues). The
+[GitHub Issues](https://github.com/LockedinLabs-AI/agent-console/issues). The
 [documentation index](docs/README.md) links each major engineering claim to
 its contract, implementation or verification method.

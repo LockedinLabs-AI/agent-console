@@ -1,5 +1,9 @@
 # Run a team hub in Docker
 
+Use this route only after the matching release's container publication passes.
+The company image below is the publication target; its availability is not
+established by the source code or by downloading the Node.js package.
+
 The GHCR image is a Linux hub for machines that report to one console. It
 starts as the unprivileged `node` user, stores state in a user-owned volume,
 and does not read local Claude Code or Codex history (`--no-local`). The image
@@ -14,7 +18,7 @@ port 6788:
 docker volume create agent-console-state
 docker run --name agent-console-hub --network host \
   -v agent-console-state:/home/dev/.agent-console/hub \
-  ghcr.io/samsnead85/agent-console:v0.4.0
+  ghcr.io/lockedinlabs-ai/agent-console:v0.4.0
 ```
 
 Open `http://127.0.0.1:6787` on that host and use the printed sign-in link.
@@ -32,5 +36,5 @@ native executable for a local hub there.
 
 To remove it, `docker rm -f agent-console-hub`; `docker volume rm
 agent-console-state` then deletes the hub's data, and `docker image rm
-ghcr.io/samsnead85/agent-console:v0.4.0` the image
+ghcr.io/lockedinlabs-ai/agent-console:v0.4.0` the image
 ([uninstall.md](uninstall.md)).

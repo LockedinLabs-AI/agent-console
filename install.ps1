@@ -20,8 +20,8 @@ try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::S
 # A proxy that needs you signed in gets your Windows sign-in, as a browser would.
 try { if ([Net.WebRequest]::DefaultWebProxy) { [Net.WebRequest]::DefaultWebProxy.Credentials = [Net.CredentialCache]::DefaultNetworkCredentials } } catch { }
 
-$repo = 'SamSnead85/agent-console'
-$proxyHelp = 'Behind a proxy or TLS inspection? See https://github.com/SamSnead85/agent-console/blob/main/docs/standalone-install.md#behind-a-proxy'
+$repo = 'LockedinLabs-AI/agent-console'
+$proxyHelp = 'Behind a proxy or TLS inspection? See https://github.com/LockedinLabs-AI/agent-console/blob/main/docs/standalone-install.md#behind-a-proxy'
 
 function Get-File([string] $Uri, [string] $Path) {
   try {

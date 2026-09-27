@@ -72,6 +72,17 @@ so another local web server you visit can see it; that is why it is random per
 browser, ends with **Sign out** and expires. Only someone who can read the key
 file, or who has a sign-in link, can sign in.
 
+Sign-out succeeds only after the verifier is removed from the saved session
+file. If storage fails, the running console denies that session and returns
+an error with a retry action. Restore write access or free disk space and
+retry before restarting: an unsaved revocation cannot survive a restart.
+
+The browser clears its cached readings and private rendered content as soon as
+sign-out starts, even if durable revocation needs a retry. Late responses cannot
+repopulate those caches, and signed-in navigation remains disabled until a new
+sign-in reloads the page. This does not erase copies already saved by the user
+or clear the operating system's clipboard.
+
 **A second start.** Starting the console again while it runs asks the running
 one for a sign-in link, and never sends the key to do it. The running console
 issues a single-use nonce; the second start answers with an HMAC of it under

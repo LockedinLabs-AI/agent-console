@@ -292,6 +292,12 @@
   const inspect = { open: false, kind: null, id: null, confirm: null };   // what the inspector beside the canvas shows, and whether Remove is armed
   let projCache = null;         // the last /api/projects answer, for the Projects band and its inspector
   let pollTimer = null;
+  let signOutStarted = false;
+  // Sign-out is terminal for this document; a new sign-in reloads the page.
+  // Keep only the original public markup so every private surface can be
+  // reset, including closed dialogs and attributes, without listing fields.
+  const signedInTemplates = [...document.querySelectorAll(".view, .conhead, dialog, #tabs, #reach, #footProv")]
+    .map((node) => [node, node.cloneNode(true)]);
   let offline = false;
   let scanMs = null;            // how long the last /api/console answer took
   const target = { total: 0, spend: 0, msgs: 0, burn: 0 };
@@ -308,20 +314,25 @@
 
   // ── polling ──────────────────────────────────────────────────────────
   async function poll() {
+    if (signOutStarted) return;
     clearTimeout(pollTimer);
     try {
       const asked = performance.now();
       const response = await fetch("/api/console", { headers: HEADERS, cache: "no-store" });
+      if (signOutStarted) return;
       if (response.status === 401) { signedOut(); return; }
       if (!response.ok) throw new Error(String(response.status));
+      const data = await response.json();
+      if (signOutStarted) return;
+      D = data;
       document.body.classList.remove("signed-out");
       $("signedOut").hidden = true;
-      D = await response.json();
       receivedAt = performance.now();
       scanMs = Math.round(receivedAt - asked);   // how long the hub took to answer, for the strip
       offline = false;
       onData();
     } catch {
+      if (signOutStarted) return;
       if (!offline) toast("The console lost its connection to the hub. Retrying…");
       offline = true;
       document.body.classList.add("offline");
@@ -338,6 +349,7 @@
       : "Only this machine can reach this console. Start it with --listen 0.0.0.0 to add other computers.";
   }
   function onData() {
+    if (signOutStarted || !D) return;
     document.body.classList.remove("offline");
     document.body.dataset.demo = String(Boolean(D.hub.demo));
     $("ver").textContent = "v" + D.hub.version + (D.hub.demo ? " · demo" : "");
@@ -1039,6 +1051,7 @@
   }
   /* The agent tree opens under its lane; the URL carries it and Esc closes it. */
   function openTree(row, key, open) {
+    if (signOutStarted) return;
     row._tree.hidden = !open;
     row.querySelector(".ag button").setAttribute("aria-expanded", String(open));
     setHash(open ? `lane/${key}/agents` : view === "console" ? "" : view);
@@ -1061,6 +1074,7 @@
   }
 
   function fillLane(row, l, now) {
+    if (signOutStarted) return;
     const demo = D.hub.demo;
     row.className = "lane " + l.state + (demo ? " sim" : "");
     // The state column says the state; DEMO is a stamp on the strip, the row's
@@ -1175,6 +1189,7 @@
   }
 
   function showContext(lane, from = null) {
+    if (signOutStarted) return;
     openInspect("lane", lane.key, from);
     setHash(`lane/${lane.key}/context`);
     const head = $("inspectContext");
@@ -1450,6 +1465,7 @@
   window.addEventListener("resize", () => { const l = $("attnList"); if (l && l.children.length) wholeRows(l); });
   /* Moving to a lane moves DOM focus to its row (document.activeElement is the row), so J/K, the palette and an alert row all land where the keyboard can act. */
   function focusLane(key, open = false) {
+    if (signOutStarted) return;
     const row = laneRows.get(key) || fillRows.get(key) || coldRows.get(key);
     if (!row) return false;
     if (coldRows.has(key)) $("foldCold").open = true;
@@ -1602,6 +1618,7 @@
   const coldRows = new Map();
   let foldFetched = { key: null, at: 0, data: null, error: null };
   async function loadFold() {
+    if (signOutStarted || !D) return;
     const now = serverNow();
     // the cold lanes the pane above drew, dimmed, to fill its room are not folded twice
     const cold = showUnavailable ? [] : D.lanes.filter((l) => !laneVisible(l, now) && !fillRows.has(l.key));
@@ -1635,11 +1652,15 @@
     foldFetched = { key, at: performance.now(), data: null, error: null };
     try {
       const r = await fetch("/api/projects?period=" + key, { headers: HEADERS });
+      if (signOutStarted) return;
+      if (r.status === 401) { signedOut(); return; }
       const p = await r.json();
+      if (signOutStarted) return;
       if (!r.ok) throw new Error(p.reason || String(r.status));
       if (foldFetched.key !== key) return;
       foldFetched.data = p;
     } catch (error) {
+      if (signOutStarted) return;
       foldFetched.error = error.message;
     }
     paintFold();
@@ -1987,6 +2008,7 @@
   }
 
   function frame(t) {
+    if (signOutStarted) return;
     const dt = Math.min(0.1, (t - last) / 1000);
     last = t;
     const k = 1 - Math.exp(-dt * 3.2);
@@ -2004,6 +2026,7 @@
     if (!paused && !reducedMotion.matches) requestAnimationFrame(frame);
   }
   function startLoop() {
+    if (signOutStarted) return;
     last = performance.now();
     if (!reducedMotion.matches) requestAnimationFrame(frame);
   }
@@ -2016,6 +2039,7 @@
   });
   /* Changing the period anywhere changes it everywhere. */
   function setPeriod(next) {
+    if (signOutStarted) return;
     if (!PERIOD_TEXT[next]) return;
     period = next;
     hideToast();
@@ -2079,6 +2103,7 @@
   $("fold").addEventListener("click", (ev) => { if (ev.target.closest("summary")) foldTouched = true; });
   /* Presenting: P, or the palette. Every name becomes a stable stand-in, internal figures step back, the strip says PRESENTING. */
   function setPresent(on) {
+    if (signOutStarted) return;
     present = Boolean(on);
     document.body.toggleAttribute("data-present", present);
     $("presentStamp").hidden = !present;
@@ -2123,6 +2148,7 @@
 
   // views
   function show(next) {
+    if (signOutStarted) return;
     view = next;
     hideToast();
     for (const t of $("tabs").querySelectorAll(".tab")) {
@@ -2214,6 +2240,7 @@
     el.focus({ preventScroll: true });
   }).observe(document.body, { childList: true, subtree: true });
   function openSheet(dialog, hash, from = null) {
+    if (signOutStarted) return;
     if (!dialog.open) {
       // whoever opened the sheet gets focus back when it closes: the row, the chip, the palette's button
       opener = openerRef(from && from.focus ? from : (document.activeElement && document.activeElement !== document.body ? document.activeElement : null));
@@ -2224,6 +2251,7 @@
     }
     setHash(hash);
     dialog.addEventListener("close", () => {
+      if (signOutStarted) return;
       setHash(view === "console" ? "" : view);
       const back = openerNode(opener); opener = null;
       if (back && !document.querySelector("dialog[open]")) { if (back.classList.contains("lane")) { laneFocus = back.dataset.key; roving(back.parentElement); } back.focus({ preventScroll: true }); }
@@ -2478,6 +2506,7 @@
      inspector — never a modal over the canvas. */
   let armed = null;
   document.addEventListener("click", async (ev) => {
+    if (signOutStarted) return;
     const cancel = ev.target.closest("[data-cancel]");
     if (cancel) {
       if (armed !== cancel) {
@@ -2488,6 +2517,7 @@
       }
       armed = null;
       await fetch(`/api/invitations/${cancel.dataset.cancel}/cancel`, { method: "POST", headers: HEADERS });
+      if (signOutStarted) return;
       toast("That join link no longer works.");
       poll();
       return;
@@ -2502,6 +2532,7 @@
     const go = ev.target.closest("[data-revoke-go]");
     if (go) {
       const r = await fetch(`/api/devices/${go.dataset.revokeGo}/revoke`, { method: "POST", headers: HEADERS });
+      if (signOutStarted) return;
       inspect.confirm = null;
       toast(r.ok ? `${go.dataset.label} was removed.` : "It could not be removed.");
       poll();
@@ -2635,6 +2666,7 @@
       ${gitCells}</tr>`;
   }
   async function loadProjects(fromCache = false) {
+    if (signOutStarted) return;
     const body = $("projTable").tBodies[0];
     if (!projCache) body.innerHTML = `<tr><td colspan="14">Reading this machine…</td></tr>`;
     try {
@@ -2643,7 +2675,10 @@
       // Opening Projects or changing period calls this without fromCache and refreshes it.
       if (!fromCache || !p) {
         const r = await fetch("/api/projects?period=" + period, { headers: HEADERS });
+        if (signOutStarted) return;
+        if (r.status === 401) { signedOut(); return; }
         p = await r.json();
+        if (signOutStarted) return;
         if (!r.ok) throw new Error(p.reason || String(r.status));
         projCache = p;
       }
@@ -2734,6 +2769,7 @@
       fitRegions();
       if (inspect.open && inspect.kind === "project") paintInspect();
     } catch (error) {
+      if (signOutStarted) return;
       body.innerHTML = `<tr><td colspan="14">This machine's projects could not be read: ${esc(error.message)}</td></tr>`;
     }
   }
@@ -2750,6 +2786,33 @@
   /* Every console request needs the sign-in cookie. Without it the page says
      how to get one instead of showing an empty console. */
   function signedOut() {
+    signOutStarted = true;
+    clearTimeout(pollTimer);
+    for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
+    D = null; projCache = null;
+    foldFetched = { key: null, at: 0, data: null, error: null };
+    clearSecret(); pending = null;
+    Object.assign(inspect, { open: false, kind: null, id: null, confirm: null });
+    opener = null; lastDoor = null; laneFocus = null; armed = null;
+    palq.value = ""; palres.replaceChildren(); palRows = []; palSel = 0;
+    for (const rows of [laneRows, fillRows, coldRows, projLaneRows]) {
+      for (const row of rows.values()) clearTimeout(row._timer);
+      rows.clear();
+    }
+    laneSep = null; foldHeld = null;
+    waves.clear(); urlTokens.clear(); urlBack.clear(); moreOpen.clear(); foldAuto.clear();
+    for (const aliasesOfKind of Object.values(aliases)) aliasesOfKind.clear();
+    chart = { key: null, vals: [], goal: [], max: 1, goalMax: 1, cls: null, clsGoal: null };
+    for (const key of Object.keys(target)) target[key] = shown[key] = 0;
+    fitObserver?.disconnect(); fitted.clear();
+    hideToast(); $("toast").textContent = "";
+    for (const [node, template] of signedInTemplates) {
+      for (const attr of [...node.attributes]) node.removeAttribute(attr.name);
+      for (const attr of template.attributes) node.setAttribute(attr.name, attr.value);
+      node.replaceChildren(...template.cloneNode(true).childNodes);
+      node.inert = true;
+    }
+    setHash("");
     document.body.classList.add("signed-out");
     $("signedOut").hidden = false;
   }
@@ -2768,17 +2831,38 @@
     say.hidden = false;
   });
   // Ends this browser's session on the console, not just the page.
-  $("signOutBtn").addEventListener("click", async () => {
+  async function signOut() {
+    signOutStarted = true;
+    clearTimeout(pollTimer);
+    signedOut();
+    $("signInTitle").textContent = "Signing out…";
+    $("signInHelp").hidden = true;
+    $("printSignIn").hidden = true;
+    $("printSay").hidden = true;
+    $("signOutError").hidden = true;
+    $("retrySignOut").hidden = true;
     try {
       const response = await fetch("/api/signout", { method: "POST", headers: HEADERS, cache: "no-store" });
-      if (!response.ok) throw new Error(String(response.status));
-      clearTimeout(pollTimer);
-      closeAdd();
-      signedOut();
+      const body = await response.json();
+      if (!response.ok || body.ok !== true) {
+        $("signOutError").textContent = body.reason || "The console could not confirm sign-out. Retry before closing this page.";
+      } else {
+        $("signInTitle").textContent = "Sign in to this console";
+        $("signInHelp").hidden = false;
+        $("printSignIn").hidden = false;
+        $("printSignIn").focus();
+        return;
+      }
     } catch {
-      toast("Signing out did not reach the console. Try again.");
+      $("signOutError").textContent = "The console did not answer. Sign-out has not been confirmed. Retry before closing this page.";
     }
-  });
+    $("signInTitle").textContent = "Sign-out is not confirmed";
+    $("signOutError").hidden = false;
+    $("retrySignOut").hidden = false;
+    $("retrySignOut").focus();
+  }
+  $("signOutBtn").addEventListener("click", signOut);
+  $("retrySignOut").addEventListener("click", signOut);
 
   // ── add a machine ───────────────────────────────────────────────────
   const addDialog = $("addDialog");
@@ -2803,6 +2887,7 @@
     return shown;
   }
   function openAdd() {
+    if (signOutStarted) return;
     step("form");
     $("addForm").reset();
     // the people already on the console, to pick from — none while presenting: a name list is a name list, and a stand-in would be sent as the person
@@ -2837,13 +2922,17 @@
   $("anotherBtn").addEventListener("click", () => { clearSecret(); pending = null; openAdd(); });
   $("addForm").addEventListener("submit", async (ev) => {
     ev.preventDefault();
+    if (signOutStarted) return;
     $("createBtn").disabled = true;
     try {
       const r = await fetch("/api/invitations", {
         method: "POST", headers: { ...HEADERS, "content-type": "application/json" },
         body: JSON.stringify({ person: $("fPerson").value, machine: $("fMachine").value, minutes: Number($("fMinutes").value) }),
       });
+      if (signOutStarted) return;
+      if (r.status === 401) { signedOut(); return; }
       const j = await r.json();
+      if (signOutStarted) return;
       if (!r.ok) throw new Error(j.reason || "The link could not be made.");
       pending = { id: j.invitation.id, link: j.link, command: j.command, typed: j.typed };
       $("linkField").value = j.link;
@@ -2870,9 +2959,10 @@
       $("copyCmd").focus();
       poll();
     } catch (error) {
+      if (signOutStarted) return;
       toast(error.message);
     } finally {
-      $("createBtn").disabled = false;
+      if (!signOutStarted) $("createBtn").disabled = false;
     }
   });
   async function copy(text, done) {
@@ -2898,6 +2988,7 @@
   // ── small things ─────────────────────────────────────────────────────
   let toastTimer = null;
   function toast(message, html = false) {
+    if (signOutStarted) return;
     const t = $("toast");
     if (html) t.innerHTML = message; else t.textContent = message;
     t.classList.add("show");
@@ -2916,6 +3007,7 @@
      up. Esc closes it; the URL carries it while it is open. */
   const inspectDialog = $("inspectDialog");
   function openInspect(kind, id, from = null) {
+    if (signOutStarted) return;
     inspect.open = true; inspect.kind = kind; inspect.id = id;
     paintInspect();
     openSheet(inspectDialog, `${view}/${kind}/${idInUrl(kind, id)}`, from);
@@ -3072,6 +3164,7 @@
   let palSel = 0, palRows = [];
   const PERIODS = ["1h", "24h", "7d", "30d"];
   function palItems() {
+    if (signOutStarted) return [];
     const groups = [];
     const now = serverNow();
     groups.push(["Views", [
@@ -3124,10 +3217,12 @@
     else palq.setAttribute("aria-activedescendant", palRows.length ? "" : "palr-none");
   }
   function palOpen(open) {
+    if (signOutStarted && open) return;
     if (open && !pal.open) { opener = openerRef(document.activeElement && document.activeElement !== document.body ? document.activeElement : $("palBtn")); pal.showModal(); palq.value = ""; palSel = 0; palRender(); palq.focus(); palq.setAttribute("aria-expanded", "true"); }
     else if (!open && pal.open) { pal.close(); palq.setAttribute("aria-expanded", "false"); }
   }
   function palRun(it) {
+    if (signOutStarted) return;
     if (!it) return;
     if (it.no) { toast(it.no); return; }
     palOpen(false);
@@ -3154,6 +3249,7 @@
     focusLane(keys[next]);
   }
   document.addEventListener("keydown", (ev) => {
+    if (signOutStarted) return;
     if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "k") { ev.preventDefault(); palOpen(!pal.open); return; }
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
     if (ev.target.closest && ev.target.closest("input, textarea, select, [contenteditable]")) return;
@@ -3188,6 +3284,7 @@
   /* The URL carries the view and whatever is open beside it, both ways: read at
      boot once the first reading is in, and again whenever it changes by hand. */
   function route() {
+    if (signOutStarted) { setHash(""); return; }
     // /team and /projects open on that view: the path is read once and folded into the hash, so the address stays one form
     const pathView = /^\/(team|projects)\/?$/u.exec(location.pathname);
     if (pathView && !location.hash) { try { history.replaceState(null, "", "/#" + pathView[1]); } catch { /* fine */ } }

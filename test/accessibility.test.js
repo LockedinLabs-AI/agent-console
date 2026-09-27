@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import vm from "node:vm";
 
-const read = (file) => fs.readFileSync(new URL("../public/" + file, import.meta.url), "utf8");
+const read = (file) => fs.readFileSync(new URL("../public/" + file, import.meta.url), "utf8").replace(/\r\n/gu, "\n");
 const HTML = read("index.html");
 const JOIN = read("join.html");
 const HOUSE = read("house.css");
@@ -44,7 +45,6 @@ test("the console is a semantic page with named regions", () => {
   }
   // one door, one content: a lane's context lives in its inspector, and the context button opens the inspector at that section
   assert.doesNotMatch(HTML, /id="contextDialog"/u, "a second sheet repeats the inspector's context block");
-  assert.match(JS, /function showContext\(lane, from = null\) \{\s*openInspect\("lane", lane\.key, from\);/u);
   assert.match(HTML + JS, /id="inspectContext"/u);
   // the address opens one thing beside the canvas: whatever it does not name closes first
   assert.match(JS, /for \(const d of document\.querySelectorAll\("dialog\[open\]"\)\) d\.close\(\);/u);
@@ -54,6 +54,21 @@ test("the console is a semantic page with named regions", () => {
   for (const table of ["peopleTable", "machineTable", "projTable"]) {
     assert.match(HTML, new RegExp(`id="${table}"[\\s\\S]*?<caption class="visually-hidden">`, "u"), table + " has no caption");
   }
+});
+
+test("a signed-in context action opens its lane inspector and scrolls to Context", () => {
+  const start = JS.indexOf("  function showContext(");
+  assert.ok(start >= 0);
+  const end = JS.indexOf("\n  }\n", start);
+  assert.ok(end > start, "showContext's closing boundary was not found");
+  const source = JS.slice(start, end + 4);
+  const calls = [], opener = { synthetic: "lane button" };
+  vm.runInNewContext(source + '\nshowContext({ key: "synthetic-lane" }, opener);', {
+    signOutStarted: false, opener, reducedMotion: { matches: true }, paused: false,
+    openInspect: (...args) => calls.push(args), setHash: (hash) => calls.push(hash),
+    $: (id) => ({ scrollIntoView: (options) => calls.push([id, options.behavior, options.block]) }),
+  });
+  assert.deepEqual(calls, [["lane", "synthetic-lane", opener], "lane/synthetic-lane/context", ["inspectContext", "auto", "start"]]);
 });
 
 test("a join link is a credential: masked, never revealable, cleared when the sheet closes", () => {

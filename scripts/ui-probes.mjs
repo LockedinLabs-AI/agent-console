@@ -72,6 +72,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { createRequire } from "node:module";
 import { executableCommand, invocation, releaseAsset } from "../lib/invocation.js";
+import { probeSignOut } from "./ui-signout-probes.mjs";
 
 const argv = process.argv.slice(2);
 const hubs = [];
@@ -1042,6 +1043,10 @@ await section("J5-05 presenter controls on a phone", async () => {
     }
     await context.close();
   }
+});
+
+await section("sign-out privacy and delayed responses", async () => {
+  await probeSignOut({ browser, hub: hubs[0], signInUrl, settled, shot, ok });
 });
 
 await browser.close();

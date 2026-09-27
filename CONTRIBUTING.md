@@ -20,8 +20,10 @@ take it, so two people don't do the same work.
 
 ## Setup
 
-You need Node.js 22 or newer and Git. Nothing else gets installed, because the
-project has no dependencies.
+You need Node.js 22 or newer and Git. The console and its tests have no npm
+dependencies. Standalone executable builds use separately locked development
+tools; see [executables](docs/executables.md) and
+[third-party notices](THIRD_PARTY_NOTICES.md).
 
 ```sh
 git clone https://github.com/SamSnead85/agent-console.git
@@ -32,16 +34,21 @@ node bin/agent-console.mjs --open          # your own machine's sessions
 
 ## Tests
 
-There is no install step (zero dependencies): run `npm test` directly after cloning.
+There is no install step for these checks; run them directly after cloning.
 
 ```sh
+npm run lint                      # JavaScript syntax and JSON validity
 npm test                          # the whole suite
-node --test test/hub-e2e.test.js  # one file
+node --test test/hub-e2e.test.js    # one file
 npm run smoke:pack                # pack, install into a scratch prefix, start in demo mode
 ```
 
-Both must pass before a pull request is merged. CI runs them on macOS, Linux and
-Windows with Node 22 and 24. A bug fix comes with a test that fails without it.
+The syntax check, full suite and package smoke must pass before a pull request
+is merged. CI runs the latter two on macOS, Linux and Windows with Node 22 and
+24, and the syntax check on Linux with Node 24. This is plain JavaScript:
+`lint` checks parsing, not static types or style. Public payloads are checked
+against versioned schemas and conformance fixtures. A bug fix comes with a
+test that fails without it.
 
 CI also checks what a pull request publishes, since this repository is public:
 no secrets, no personal paths, private email addresses or machine names, and
@@ -93,3 +100,15 @@ or background activity needs a stated reason.
 Describe what changes for the person using the console and how you verified it,
 and add a line under the next version in [CHANGELOG.md](CHANGELOG.md). Contributions
 are accepted under the project's [MIT licence](LICENSE).
+
+Review the changed code, not only its test result. Keep the pure analysis core
+independent of storage, network, identity and browser adapters. Explain a
+non-obvious invariant, trust boundary or recovery decision in a nearby comment;
+avoid comments that merely repeat the code. Tests should exercise observable
+behavior, including relevant denial, retry and failure cases. New public fields
+need a documented contract and synthetic examples in the same change. Keep
+unrelated refactors separate so reviewers can assess the behavior being shipped.
+
+The [documentation index](docs/README.md) maps these boundaries to their source
+and checks. A passing local suite is evidence for a change; a published release
+also needs the [release and installation gates](docs/ARCHITECTURE.md#ci-and-release-path).

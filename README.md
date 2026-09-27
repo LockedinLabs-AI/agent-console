@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <b>Fleet accounting for Claude Code and Codex.</b><br>
+  <b>Local and team observability for Claude Code and Codex.</b><br>
   Every session's tokens, cache reads and writes, models and list-price cost,
   on this computer and on every computer you connect, in one local console.
 </p>
@@ -27,13 +27,24 @@
 *Captured from `--demo`. Every figure in it is generated and stamped DEMO.
 [The same screen in the light theme.](docs/console-demo-light.png)*
 
+[Get started](#install) · [Documentation](docs/README.md) ·
+[Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) ·
+[Contribute](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+
+This page describes the **v0.4.0 source on main**. The latest published
+download is [v0.3.0](https://github.com/SamSnead85/agent-console/releases/tag/v0.3.0),
+which predates these changes. **v0.4.0 release packages are not published yet.**
+Run from source to use the current console:
+
 ```sh
-npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
+git clone https://github.com/SamSnead85/agent-console.git
+cd agent-console
+node bin/agent-console.mjs --open
 ```
 
-You need Node.js 22 or newer. There is no account to create, nothing else to
-install and no build step. The command fetches the packaged console from this
-project's GitHub release, reads the Claude Code and Codex history already on
+You need Git and Node.js 22 or newer, or use [Download ZIP](#start-here)
+instead of Git. There is no account to create, no package install and no build
+step. The command runs this checkout, reads the Claude Code and Codex history already on
 this computer, and opens the console in your browser, signed in, normally at
 `http://127.0.0.1:6787`. To look around first without reading anything of
 yours, add `--demo` before `--open`.
@@ -56,56 +67,40 @@ sends each project folder's *name*, never its path; `--share-alerts` and
 
 ## Install
 
-Every way in runs the same console. Pick one:
+Choose a version as well as an installation method:
 
-1. **No install, from the release** (Node.js 22+):
+| Channel | Current availability |
+| --- | --- |
+| Source on main | v0.4.0 source. Use Node.js 22+ and the commands above, or Download ZIP below. |
+| GitHub release downloads | [v0.3.0](https://github.com/SamSnead85/agent-console/releases/tag/v0.3.0) has a Node.js package and standalone files for macOS, Linux and Windows. These contain the earlier console, not the v0.4.0 changes described here. |
+| npm registry | `@lockedinlabs/agent-console` is not published. Use the source checkout or a published GitHub release archive. |
+| Homebrew | The documented tap has not been verified as available. Use source or the listed GitHub release. |
+| Published container image | A v0.4.0 image has not been verified. Do not assume the source version is an available image tag. |
 
-   ```sh
-   npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
-   ```
+<details>
+<summary>v0.4.0 package commands — only after its release is published</summary>
 
-   In Windows PowerShell, type `npx.cmd` where it says `npx`:
-   PowerShell's default policy refuses `npx`'s script form with *running
-   scripts is disabled on this system*. In Command Prompt, `npx` works as
-   written.
+These commands require `lockedinlabs-agent-console-0.4.0.tgz` to be listed
+on the [release page](https://github.com/SamSnead85/agent-console/releases).
+Until that file is published, use the source instructions above.
 
-   ```powershell
-   npx.cmd --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
-   ```
-2. **npm** (Node.js 22+): `npm install -g @lockedinlabs/agent-console`, then
-   `agent-console --open`. In Windows PowerShell: `npm.cmd install -g
-   @lockedinlabs/agent-console`, then `agent-console.cmd --open`.
-3. **Homebrew** (macOS, Linux): `brew install SamSnead85/tap/agent-console`, then `agent-console --open`.
-4. **Standalone executable**, no Node.js needed. macOS (signed with an Apple
-   Developer ID and notarized by Apple) and Linux:
-   `curl -fsSLO https://raw.githubusercontent.com/SamSnead85/agent-console/main/install.sh && sh ./install.sh`.
-   It installs to `~/.local/bin` and, if that folder is not on your `PATH`,
-   prints the one line that adds it for your shell.
-   Windows (x64; not code-signed), in PowerShell:
+```sh
+npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
+```
 
-   ```powershell
-   Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/SamSnead85/agent-console/main/install.ps1 -OutFile install.ps1
-   powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
-   ```
+In Windows PowerShell, use `npx.cmd` because the default policy can refuse
+`npx`'s script form:
 
-   It installs for your user only and adds its folder to your `PATH`, so
-   `agent-console --open` works in a new window. Both installers check the
-   executable against the release's `SHA256SUMS` before installing it
-   ([details](docs/standalone-install.md)).
-5. **Docker**, a team hub on Linux:
-   `docker run --network host -v agent-console-state:/home/dev/.agent-console/hub ghcr.io/samsnead85/agent-console:v0.4.0`
-   ([details](docs/docker-hub.md)).
-6. **From source** (Node.js 22+): `git clone https://github.com/SamSnead85/agent-console.git`,
-   then `cd agent-console && node bin/agent-console.mjs --open`.
+```powershell
+npx.cmd --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
+```
 
-Every release file is listed in the release's `SHA256SUMS` and covered by a
-signed build attestation ([Checking a download](#checking-a-download)).
+</details>
 
-**On Windows** the executable is not code-signed: there is no Authenticode
-certificate. Install it with `install.ps1`, which checks it first, or use
-Node.js (ways 1 and 2). A copy of the `.exe` downloaded in a browser meets
-SmartScreen's warning, and Smart App Control refuses it
-([details](docs/executables.md#signed-or-not-plainly)).
+Published files can be checked against the release's `SHA256SUMS` and build
+attestation ([Checking a download](#checking-a-download)). Consult that
+version's release notes for its signing status. The Windows executable is
+not code-signed; Node.js can run the source without installing that executable.
 
 **Behind a proxy or TLS inspection.** `npx`, `npm` and `curl` use
 `HTTPS_PROXY`; Node.js's own downloads, such as the check at the start of a
@@ -125,22 +120,20 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
    [nodejs.org](https://nodejs.org). To check, open a terminal (*Terminal* on a
    Mac, *PowerShell* on Windows) and type `node --version` — it should say
    `v22` or higher.
-   No Node.js? [Install the standalone executable](docs/standalone-install.md) instead.
+   Without Node.js, the published v0.3.0 standalone downloads run the earlier
+   console; see [Install](#install).
 2. **Start it.** Paste this into the terminal and press Return:
 
    ```sh
-   npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
+   git clone https://github.com/SamSnead85/agent-console.git
+   cd agent-console
+   node bin/agent-console.mjs --open
    ```
 
-   In Windows PowerShell, type `npx.cmd` in place of `npx` (PowerShell's
-   default policy refuses `npx`'s script form, `npx.ps1`):
+   The same commands work in Windows PowerShell. They require Git; the
+   Download ZIP instructions below work without it.
 
-   ```powershell
-   npx.cmd --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz --open
-   ```
-
-   That fetches Agent Console from this project's GitHub release (nothing to
-   download by hand) and opens it in your browser, signed in, normally at
+   That starts the source checkout and opens it in your browser, signed in, normally at
    `http://127.0.0.1:6787`. If that port is taken, the terminal prints the
    address it used instead. Leave the terminal window open; closing it (or
    pressing Ctrl+C) stops the console. The same command starts it again.
@@ -149,21 +142,11 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
    computer. With months of it that can take a minute; the terminal counts the
    files as it goes, and so does the console.
 
-**No Node.js?** Each release also carries one executable per platform with
-Node.js inside, and an installer that checks it before installing
-([docs/standalone-install.md](docs/standalone-install.md)). On a Mac or Linux:
-
-```sh
-curl -fsSLO https://raw.githubusercontent.com/SamSnead85/agent-console/main/install.sh && sh ./install.sh
-```
-
-On Windows, [Install](#install) and
-[docs/standalone-install.md](docs/standalone-install.md#windows-powershell)
-have the PowerShell lines (`install.ps1`); the Windows executable is not
-code-signed. Both installers compare the executable's SHA-256 with the
-release's `SHA256SUMS` line for it and install nothing if it differs; then
-`agent-console --open` starts the console. The files, and how to check one
-yourself, are under [Checking a download](#checking-a-download).
+**No Node.js?** The [v0.3.0 release](https://github.com/SamSnead85/agent-console/releases/tag/v0.3.0)
+carries standalone executables with Node.js inside. They run v0.3.0 and do
+not include the v0.4.0 changes on main. Use
+[that version's installation instructions](https://github.com/SamSnead85/agent-console/blob/v0.3.0/docs/standalone-install.md)
+and [check the downloaded file](#checking-a-download).
 
 **Or download it.** On the [GitHub page](https://github.com/SamSnead85/agent-console),
 press the green **Code** button, then **Download ZIP**, and unzip it. You get a
@@ -183,13 +166,14 @@ then `cd agent-console`.)
 
 **The .tgz on the release page.** The [releases page](https://github.com/SamSnead85/agent-console/releases/latest)
 lists a file named `lockedinlabs-agent-console-<version>.tgz`. It is the
-packaged console that the one-line command above fetches for you. You don't
-need to download or open it. *Source code (zip)* on the same page is that
+packaged console for that release; it does not track main. *Source code (zip)*
+on the same page is that
 release's code, used the same way as Download ZIP (its folder is named
 `agent-console-<version>`).
 
 The rest of this page writes commands as `node bin/agent-console.mjs`. If you
-used the one-line command, put `npx --yes <that release link>` in its place.
+use a published package, put `npx --yes <that release link>` in its place,
+and consult that version's README for supported features.
 
 Nothing to install beyond Node, no account, no build step, no dependencies.
 
@@ -212,12 +196,13 @@ each reports to the same console and they all add up.
    itself stays on this computer only (see
    [How the machines connect](#how-the-machines-connect)).
 2. In the console, press **Add a machine**. Say whose machine it is and what to
-   call it, press **Create join link**, then **Copy command** and send it to them.
-   (**Copy link** is there too: the link opens a page with the same command.)
-3. On the other computer, they paste that command into a terminal. It needs
-   Node.js 22 or newer and nothing else. The command installs Agent Console from
-   its GitHub release, never from your computer, and the join itself travels
-   encrypted, checked against your console's certificate.
+   call it, press **Create join link**, then **Copy link**.
+3. Until v0.4.0 packages are published, use a current source checkout on the
+   other computer and run `node bin/agent-console.mjs join '<join link>'`,
+   replacing `<join link>` with the copied link. The join travels encrypted,
+   checked against your console's certificate. The generated **Copy command**
+   requires the corresponding GitHub release package; it does not transfer
+   the source checkout from your computer.
 
 The machine appears on your console within seconds, and the console shows who
 joined and when. A join link works **once**, for at most an hour. On the
@@ -337,7 +322,10 @@ import { ANALYSIS_VERSION, contextHealth } from '@lockedinlabs/agent-console/ana
 const health = contextHealth(samples, prices);
 ```
 
-The package is not on the npm registry yet; install it from the release tarball with `npm install https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz`.
+The package is not on the npm registry, and the v0.4.0 archive is not
+published yet. To use the current analysis API, install a local source
+checkout into your project with `npm install /path/to/agent-console`,
+replacing the path with your checkout's location.
 
 `ANALYSIS_VERSION` is 1. `contextHealth` accepts only plain usage data:
 `samples` contains timestamps, token counts and model IDs; `prices` contains
@@ -423,19 +411,20 @@ suite that checks them to the token, are in [docs/accounting.md](docs/accounting
 
 ## Project policy
 
-Add `agent-policy.yaml` at your repository root, then, from that root:
+Add `agent-policy.yaml` at your repository root. From that root, run the
+source checkout's command, replacing `/path/to/agent-console` with its
+location:
 
 ```sh
-npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz policy diff
-npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz policy apply
-npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz policy remove
+node "/path/to/agent-console/bin/agent-console.mjs" policy diff
+node "/path/to/agent-console/bin/agent-console.mjs" policy apply
+node "/path/to/agent-console/bin/agent-console.mjs" policy remove
 ```
 
 `policy diff` shows the proposed Claude Code agents, settings and hooks;
 `policy apply` installs those project files with private backups; `policy
-remove` restores what was there before and deletes what apply created. From a
-download, use `node bin/agent-console.mjs policy …`; `policy --help` prints the
-usage. All three refuse a symlinked `.claude` path and never write your
+remove` restores what was there before and deletes what apply created.
+`policy --help` prints the usage. All three refuse a symlinked `.claude` path and never write your
 user-level Claude settings. The installed hook decides within five seconds,
 and asks or denies when it cannot classify a command in time. Nothing is
 installed by starting the dashboard. The optional policy covers model roles,
@@ -488,13 +477,14 @@ Nothing leaves that directory.
 
 ### The reporter
 
-**Add a machine** gives the exact command, and so does the join page. Written
-out, with the release link:
+**Add a machine** and the join page generate a command for the versioned
+GitHub release. Until v0.4.0 packages are published, copy the join link and
+run these commands from a current source checkout on the reporting computer:
 
 ```sh
-npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz join '<join link>'
-npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz report
-npx --yes https://github.com/SamSnead85/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz leave
+node bin/agent-console.mjs join '<join link>'
+node bin/agent-console.mjs report
+node bin/agent-console.mjs leave
 ```
 
 `join` enrols this computer, then keeps reporting. `report` keeps reporting after
@@ -503,9 +493,9 @@ and keeps the enrolment. `leave` stops any reporter, tells the console this
 computer has left, and deletes everything the enrolment left on this computer.
 Joining the same console again keeps this computer's entry and history, rather
 than adding a second machine with the same name; after `leave`, that holds when
-the new link names the same person and machine. From a download, use `node bin/agent-console.mjs` in place
-of `npx --yes <release link>`. Always use the full command: the short name on
-its own would fetch a different, unrelated package from the public registry.
+the new link names the same person and machine. Do not shorten a release
+command to `npx agent-console`: that name refers to a different, unrelated
+package in the public registry.
 
 The command **Add a machine** gives, and the join page's, starts with
 `node -e '<check>'`: a short check that downloads the release file and its
@@ -731,12 +721,13 @@ item, per system.
 
 From 0.2.1 on, each release's package is built by CI from the release's tag.
 The release page lists its SHA-256 in `SHA256SUMS`, and GitHub keeps a signed
-build provenance attestation for it. To check a file you downloaded:
+build provenance attestation for it. For example, to check the published
+v0.3.0 package you downloaded:
 
 ```sh
-shasum -a 256 lockedinlabs-agent-console-0.4.0.tgz              # macOS, Linux
-Get-FileHash lockedinlabs-agent-console-0.4.0.tgz               # Windows PowerShell
-gh attestation verify lockedinlabs-agent-console-0.4.0.tgz -R SamSnead85/agent-console
+shasum -a 256 lockedinlabs-agent-console-0.3.0.tgz              # macOS, Linux
+Get-FileHash lockedinlabs-agent-console-0.3.0.tgz               # Windows PowerShell
+gh attestation verify lockedinlabs-agent-console-0.3.0.tgz -R SamSnead85/agent-console
 ```
 
 The standalone executables ([docs/executables.md](docs/executables.md)) are
@@ -746,14 +737,16 @@ same attestation: `agent-console-darwin-arm64`, `agent-console-darwin-x64`,
 `agent-console-win32-x64.exe`, and a `.tar.gz` of each of the first four.
 Check one the same way, by its own file name.
 
-The macOS executables also carry an Apple Developer ID signature and Apple's
-notarization. `codesign -dv agent-console-darwin-arm64` shows
-`TeamIdentifier=643FW3ZH6M`, and
-`spctl --assess --type install -vv agent-console-darwin-arm64` says
-`source=Notarized Developer ID`. The Windows executable is not code-signed
-([why, and what to check instead](docs/executables.md#signed-or-not-plainly)).
+A checksum or GitHub build attestation does not establish Apple signing or
+notarization. No v0.4.0 macOS asset is published yet, so this README makes no
+signing claim for that version. Check the exact release's notes and the
+downloaded file's signature before relying on a signing claim. The Windows
+executable is not code-signed.
 
 ## The check in every command
+
+This section describes the v0.4.0 source. For a packaged version, use that
+release's README and notes: the verification check can change between versions.
 
 Every command the console or the join page prints starts with
 `node -e '<check>'`: a short program that downloads the release file and the
@@ -785,12 +778,15 @@ const[u,...a]=process.argv.slice(1),p=require(`path`),n=p.basename(u),g=x=>fetch
 See the [architecture and trust boundaries](docs/ARCHITECTURE.md) for data flow, component ownership and the CI/release path.
 
 ```sh
+npm run lint           # JavaScript syntax and JSON validity
 npm test               # the whole suite, including the multi-machine end-to-end tests
 npm run smoke:pack     # pack, install into a scratch prefix, start it in demo mode
 ```
 
-No dependencies to install. CI runs both on macOS, Linux and Windows, Node 22
-and 24. See [CONTRIBUTING.md](CONTRIBUTING.md) (including the privacy rule
+These checks need no dependencies installed. CI runs the tests and package
+smoke on macOS, Linux and Windows, Node 22 and 24, and the syntax check on
+Linux with Node 24. Native builds use separately locked tooling; see
+[third-party notices](THIRD_PARTY_NOTICES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) (including the privacy rule
 every change keeps) and [CHANGELOG.md](CHANGELOG.md). Report security problems
 privately, as [SECURITY.md](SECURITY.md) describes. Everyone taking part agrees
 to the [Code of Conduct](CODE_OF_CONDUCT.md).
@@ -813,3 +809,7 @@ appear only to identify their models.
 ## About LockedIn Labs
 
 Agent Console is built and maintained by [LockedIn Labs](https://lockedinlabs.ai).
+For reproducible bugs and feature proposals, use
+[GitHub Issues](https://github.com/SamSnead85/agent-console/issues). The
+[documentation index](docs/README.md) links each major engineering claim to
+its contract, implementation or verification method.

@@ -1,9 +1,9 @@
 # Third-party notices
 
 Agent Console is © LockedIn Labs and released under the [MIT licence](LICENSE).
-It has no runtime or development dependencies and contains no third-party code.
-The package does ship a few third-party assets; each is listed here with its
-licence and where it lives.
+The npm package has no runtime or development dependencies. Its third-party
+assets, the standalone executable's bundled runtime, and its separate build
+tooling are listed below with their licences and locations.
 
 ## Fonts
 

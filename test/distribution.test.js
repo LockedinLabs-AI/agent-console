@@ -515,18 +515,22 @@ test("the tap is updated only from archives that match SHA256SUMS and carry this
   assert.equal(usage.status, 2);
 });
 
-test("the README's Install section lists every way in, in order, pinned to this version", () => {
+test("unreleased source has a runnable quick start and conditional, version-pinned package instructions", () => {
   const readme = read("README.md");
   const { version } = JSON.parse(read("package.json"));
   const install = readme.slice(readme.indexOf("\n## Install\n"), readme.indexOf("\n## Start here\n"));
-  const order = ["**No install, from the release**", "**npm**", "**Homebrew**", "**Standalone executable**", "**Docker**", "**From source**"].map((t) => install.indexOf(t));
-  assert.ok(order.every((i, n) => i > 0 && (n === 0 || i > order[n - 1])), "npx, npm, Homebrew, executables, Docker, source");
-  assert.ok(install.includes("npm install -g @lockedinlabs/agent-console"));
-  assert.ok(install.includes("brew install SamSnead85/tap/agent-console"));
-  assert.match(install, /signed with an Apple\s+Developer ID and notarized/u);
-  assert.match(install, /Windows \(x64; not code-signed\)[\s\S]*install\.ps1/u);
-  for (const [, tag] of readme.matchAll(/ghcr\.io\/samsnead85\/agent-console:v([0-9][^\s`]*)/gu)) assert.equal(tag, version, "the Docker tag is this version");
-  assert.match(install, /ghcr\.io\/samsnead85\/agent-console:v/u);
+  const firstCommand = /```sh\n([\s\S]*?)\n```/u.exec(readme)?.[1];
+  assert.equal(firstCommand, "git clone https://github.com/SamSnead85/agent-console.git\ncd agent-console\nnode bin/agent-console.mjs --open");
+  assert.ok(fs.existsSync(path.join(ROOT, "bin/agent-console.mjs")), "the source entry point exists");
+  const conditional = /<details>\s*<summary>([^<]+)<\/summary>([\s\S]*?)<\/details>/u.exec(install);
+  assert.ok(conditional, "unpublished package instructions are explicitly conditional");
+  assert.ok(conditional[1].includes(version));
+  assert.match(conditional[1], /only after its release is published/u);
+  assert.match(conditional[2], /npx --yes https:\/\/github\.com\//u);
+  assert.match(install, /npm registry[^\n]*not published/u);
+  assert.match(install, /Homebrew[^\n]*not been verified/u);
+  assert.match(install, /Published container image[^\n]*not been verified/u);
+  assert.doesNotMatch(install, /npm(?:\.cmd)? install -g|brew install |docker run/u, "unavailable channels are not offered as working installs");
 });
 
 test("the README gives Windows PowerShell lines its default policy runs, and says the executable is unsigned", () => {
@@ -536,10 +540,9 @@ test("the README gives Windows PowerShell lines its default policy runs, and say
   const install = readme.slice(readme.indexOf("\n## Install\n"), readme.indexOf("\n## Start here\n"));
   const start = readme.slice(readme.indexOf("\n## Start here\n"), readme.indexOf("\n### Add another computer\n"));
   // npx.ps1 and npm.ps1 are what plain npx and npm resolve to in PowerShell; the Restricted policy refuses them.
-  for (const part of [install, start]) assert.ok(part.includes(`npx.cmd --yes ${url} --open`), "npx.cmd line");
-  assert.ok(install.includes("npm.cmd install -g"));
-  assert.ok(install.includes("powershell -NoProfile -ExecutionPolicy Bypass -File .\\install.ps1"));
-  assert.match(install, /\*\*On Windows\*\* the executable is not code-signed/u);
+  assert.ok(install.includes(`npx.cmd --yes ${url} --open`), "PowerShell package line uses npx.cmd");
+  assert.match(start, /node bin\/agent-console\.mjs --open/u, "source quick start uses the native Node executable");
+  assert.match(install, /Windows executable is\s+not code-signed/u);
   assert.match(install, /NODE_USE_ENV_PROXY=1[\s\S]*NODE_EXTRA_CA_CERTS/u, "the join check behind a proxy");
   assert.match(readme, /\n## Uninstall\n[\s\S]*\(docs\/uninstall\.md\)/u);
 });

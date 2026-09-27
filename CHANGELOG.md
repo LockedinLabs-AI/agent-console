@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Clear cached readings, join details and closed dialogs on sign-out. Ignore late
+  responses and prevent keyboard shortcuts or URL changes from reopening them.
+- Add a documentation index linking architecture, public contracts and verification
+  evidence; run the existing JavaScript syntax and JSON checks in CI.
+- Report failed sign-out storage, keep the session denied in the running
+  console, and allow a durable retry without ending other browsers' sessions.
+- Require successful executable builds and a complete asset set before release
+  uploads, including signed and notarized macOS files. Check build dependencies
+  in CI and distinguish source availability from published download channels.
 - Keep phones from scrolling sideways on Projects, keep a sheet's header and Close
   button in view when it opens at Context, fill the room under the lanes on wide
   screens, show the presenter controls on phones, and keep every folder and
@@ -31,7 +40,7 @@
   panes and closed dialogs. Check the complete document after polling and
   repeated mode changes at desktop and phone widths.
 
-## 0.4.0 — 2026-09-25
+## 0.4.0 — planned, not yet published
 
 ### Console and team visibility
 

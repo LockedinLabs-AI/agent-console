@@ -36,7 +36,7 @@ test("Start here names the folder to go into, and says what the release's .tgz i
   assert.match(README, /cd ~\/Downloads\/agent-console-main/u);
   assert.match(README, /cd \$HOME\\Downloads\\agent-console-main/u);
   assert.match(README, /lockedinlabs-agent-console-<version>\.tgz/u);
-  assert.match(README, /You don't\s+need to download or open it/u);
+  assert.match(README, /packaged console for that release; it does not track main/u);
 });
 
 test("the README's install line runs this version: every release link names package.json's version", () => {

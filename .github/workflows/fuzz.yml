@@ -32,4 +32,4 @@ jobs:
         working-directory: fuzz
         env:
           FUZZ_RUNS: "20000"
-        run: node --test parsers.fuzz.mjs
+        run: node --test parsers.fuzz.js

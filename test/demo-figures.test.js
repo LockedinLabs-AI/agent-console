@@ -18,6 +18,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import vm from "node:vm";
 
 import { createRegistry } from "../lib/hub/registry.js";
 import { createStore } from "../lib/hub/store.js";
@@ -32,13 +33,20 @@ const DAY = 86_400_000;
 const PRICES = JSON.parse(fs.readFileSync(new URL("../lib/collector/prices.json", import.meta.url), "utf8"));
 const CLASSES = ["fresh", "output", "cacheWrite", "cacheRead"];
 
-/* The console's own formatter (public/console.js fmt), so a cliff is judged by what the screen would print. */
-const fmt = (n) => {
-  const a = Math.abs(n);
-  return a >= 1e9 ? (n / 1e9).toFixed(2) + "B"
-    : a >= 1e6 ? (n / 1e6).toFixed(a >= 1e8 ? 0 : 1) + "M"
-    : a >= 1e3 ? Math.round(n / 1e3) + "k" : String(Math.round(n));
-};
+// Exercise the actual browser formatter. A copied approximation can drift
+// while leaving the demonstration's assertions green.
+const consoleSource = fs.readFileSync(new URL("../public/console.js", import.meta.url), "utf8").replace(/\r\n/gu, "\n");
+const formatStart = consoleSource.indexOf("  const fmt = (n) => {");
+const formatEnd = consoleSource.indexOf("\n  const money =", formatStart);
+assert.ok(formatStart >= 0 && formatEnd > formatStart, "the browser formatter boundary exists");
+const fmt = vm.runInNewContext(consoleSource.slice(formatStart, formatEnd) + "\nfmt", {}, { timeout: 1000 });
+
+test("the displayed token count promotes rounded thousands and preserves unknown readings", () => {
+  for (const [value, expected] of [[999_499, "999k"], [999_500, "1.0M"], [999_999, "1.0M"],
+    [1_000_000, "1.0M"], [-999_500, "-1.0M"], [0, "0"], [null, "—"], [undefined, "—"], [NaN, "—"], [Infinity, "—"]]) {
+    assert.equal(fmt(value), expected, String(value));
+  }
+});
 /* A figure the formatter would print at a unit boundary — 999k, 1000k, 1.0M, 1.00B — or within a hair of one. */
 const CLIFF_TEXT = /^(999k|1000k|1\.0M|1\.00B|999M|1000M)$/u;
 const onCliff = (n) => CLIFF_TEXT.test(fmt(n)) || [1e6, 1e9].some((unit) => Math.abs(n / unit - 1) < 0.006);

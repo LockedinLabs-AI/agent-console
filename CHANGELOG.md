@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Cap the transcript reading interval set through `AGENT_CONSOLE_POLL_MS` at one
+  hour, as `--poll-ms` already was: a larger value made the console read its
+  transcripts continuously. A saved reading position that is not a positive
+  number now restarts that transcript instead of counting it unreadable.
+- Ask about a join link's port over plain HTTP only when the link names this
+  machine; read the background reporter's log and the policy install manifest
+  through the descriptor they were opened with; never write or delete saved
+  collector state by a key read back from disk; and read tooltip text from
+  parsed markup, so entities show as characters.
 - Confine static assets to the package directory, identify every file read by
   its open descriptor on all platforms, and bound state-record reads even during
   replacement or growth. Reject reserved and malformed policy property names

@@ -115,7 +115,11 @@ const mine = config.demo ? null : async (port) => {
 const consoleChoice = await choosePort({ port: config.port, host: "127.0.0.1", explicit: config.portExplicit, demo: config.demo,
   // A console that moves off a busy port never lands on the port its machines report to.
   avoid: remembered && !config.reportPortExplicit ? [remembered] : [], mine });
-if (consoleChoice.action === "already-running") {
+/**
+ * Another console already answers on the chosen port: say what it is, open it
+ * when it proved it holds this state directory's key, and return the exit code.
+ */
+async function alreadyRunning() {
   const base = "http://127.0.0.1:" + consoleChoice.port;
   // The same user can read the running console's key, and proves it without
   // sending it: whatever answers on the port gets no secret, and the browser
@@ -132,7 +136,7 @@ if (consoleChoice.action === "already-running") {
     if (config.json) process.stdout.write(JSON.stringify({ ok: false, alreadyRunning: true, older: true, running: consoleChoice.running.version, version: VERSION,
       stop: stopCommand({ pid: lockPid, port: consoleChoice.port }), dashboard: { name: PRODUCT_NAME, url: base, port: consoleChoice.port } }) + "\n");
     else process.stderr.write(older + "\n");
-    process.exit(1);
+    return 1;
   }
   if (!key) {
     // No key to prove (a demo keeps none): ask the running console to print a
@@ -150,7 +154,7 @@ if (consoleChoice.action === "already-running") {
         + (printed ? "  It printed a new sign-in link in the window where it runs.\n"
           : "  Use the sign-in link in the window where it runs, or stop it there with Ctrl+C and start again.\n") + "\n");
     }
-    process.exit(0);
+    return 0;
   }
   if (key && !answer.verified) {
     if (config.json) {
@@ -164,7 +168,7 @@ if (consoleChoice.action === "already-running") {
         + "  To stop it:  " + stopCommand({ port: consoleChoice.port }) + "\n"
         + "  Or start this one on another port:  " + COMMAND + " --port " + (consoleChoice.port + 2) + "\n\n");
     }
-    process.exit(1);
+    return 1;
   }
   const url = answer.verified ? answer.url : base;
   if (config.json) {
@@ -176,8 +180,9 @@ if (consoleChoice.action === "already-running") {
   }
   // Only a console that proved itself is opened: a browser sends its 127.0.0.1 cookies to any port.
   if (config.open && answer.verified) openBrowser(url);
-  process.exit(0);
+  return 0;
 }
+if (consoleChoice.action === "already-running") process.exit(await alreadyRunning());
 if (consoleChoice.action === "busy") {
   process.stderr.write("\n  Port " + config.port + " is already in use by another program.\n"
     + "  Start the console on another port:  " + COMMAND + " --port " + (config.port + 2) + "\n\n");

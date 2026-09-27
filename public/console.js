@@ -116,6 +116,9 @@
     const text = title || fmt(all) + " tokens over the period";
     return `<svg class="${cls}${hot ? " hot" : ""}${dim ? " dim" : ""}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" ${aria}><title>${esc(text)}</title><path class="area" d="${line}L${W} ${H}L0 ${H}Z"/><path class="line" d="${line}"/>${hot ? `<path class="now" d="M${W} ${pts[pts.length - 1][1].toFixed(1)}h0"/>` : ""}</svg>`;
   };
+  /* The text a fragment of this page's own markup reads as, for a tooltip: parsed into an inert template
+     (nothing in it runs or loads), so entities read as characters and no tag survives as text. */
+  const textOf = (html) => { const t = document.createElement("template"); t.innerHTML = html; return t.content.textContent || ""; };
   /* A line of ordered parts that never ellipsizes meaning: each part carries a priority; when the line does not fit its box,
      the least important parts drop whole until it does, and the element carries the whole line on hover. */
   const fitted = new Set();
@@ -124,7 +127,7 @@
     if (!el) return;
     const live = parts.filter((x) => x && x.html);
     el.innerHTML = live.map((x, i) => `<span class="fseg" data-pri="${x.pri ?? 9}">${i ? `<span class="sep">·</span>` : ""}${x.html}</span>`).join("");
-    el.title = live.map((x) => x.text ?? x.html.replace(/<[^>]+>/gu, "")).join(" · ").replace(/\s+/gu, " ").trim() + tail;
+    el.title = live.map((x) => x.text ?? textOf(x.html)).join(" · ").replace(/\s+/gu, " ").trim() + tail;
     fitOne(el);
     if (!fitted.has(el)) {
       fitted.add(el);

@@ -4,7 +4,8 @@ Agent Console reads Claude Code and Codex usage on a computer and combines
 metadata from machines you explicitly enroll. It shows sessions, agents,
 tokens, cache activity and estimated list-price costs. Start with the
 [installation guide](../README.md#install), which distinguishes the current
-source from published downloads.
+source from published downloads. For a complete first installation, including
+installation with Claude Code or Codex, use [INSTALL.md](../INSTALL.md).
 
 ## Use the console
 
@@ -56,6 +57,8 @@ provide separate checks. Workflow definitions describe what runs; branch
 protection and a successful run on an exact commit establish what was enforced.
 
 ## Participate
+
+- [Public website](website.md): how the product site verifies downloads and is published.
 
 - [Contributing](../CONTRIBUTING.md): setup, focused tests and review expectations.
 - [Security](../SECURITY.md): private vulnerability reporting; use synthetic reproductions.

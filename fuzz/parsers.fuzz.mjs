@@ -29,7 +29,7 @@ test('shellSegments splits any command without throwing', () => {
 test('classifyTool answers any tool call without throwing', () => {
   const call = fc.record({ tool_name: fc.constantFrom('Bash', 'Read', 'Write', 'Edit', 'shell', ''), tool_input: fc.record({ command: fc.oneof(text, shellish), file_path: text }, { requiredKeys: [] }) });
   fc.assert(fc.property(call, (input) => {
-    assert.equal(typeof classifyTool(input, '/work/repo', '/home/fuzz'), 'object');
+    assert.equal(typeof classifyTool(input, '/work/repo', '/home/dev'), 'object');
   }), { numRuns: RUNS });
 });
 

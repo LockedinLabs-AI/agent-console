@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.1 — 2026-09-27
 
 - Cap the transcript reading interval set through `AGENT_CONSOLE_POLL_MS` at one
   hour, as `--poll-ms` already was: a larger value made the console read its
@@ -63,7 +63,7 @@
   panes and closed dialogs. Check the complete document after polling and
   repeated mode changes at desktop and phone widths.
 
-## 0.4.0 — planned, not yet published
+## 0.4.0 — 2026-09-27
 
 ### Console and team visibility
 

@@ -18,7 +18,7 @@ port 6788:
 docker volume create agent-console-state
 docker run --name agent-console-hub --network host \
   -v agent-console-state:/home/dev/.agent-console/hub \
-  ghcr.io/lockedinlabs-ai/agent-console:v0.4.0
+  ghcr.io/lockedinlabs-ai/agent-console:v0.4.1
 ```
 
 Open `http://127.0.0.1:6787` on that host and use the printed sign-in link.
@@ -30,11 +30,11 @@ hub refuses public-network clients; use a private network and do not add
 `--allow-public` unless you intend to accept them.
 
 The versioned image appears after its release workflow completes. Replace
-`v0.4.0` with the exact release tag you want; do not use a floating `latest`
+`v0.4.1` with the exact release tag you want; do not use a floating `latest`
 tag. On macOS and Windows, Docker's host-network behavior differs; use the
 native executable for a local hub there.
 
 To remove it, `docker rm -f agent-console-hub`; `docker volume rm
 agent-console-state` then deletes the hub's data, and `docker image rm
-ghcr.io/lockedinlabs-ai/agent-console:v0.4.0` the image
+ghcr.io/lockedinlabs-ai/agent-console:v0.4.1` the image
 ([uninstall.md](uninstall.md)).

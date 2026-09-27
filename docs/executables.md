@@ -47,7 +47,7 @@ upper case.
 The release page says beside each file whether it is signed, and the release
 notes say it per platform, from the same record the build wrote after signing.
 
-- **macOS: signed and notarized**, from 0.4.0. Each
+- **macOS: signed and notarized**, from 0.4.1. Each
   macOS executable is signed with an Apple Developer ID under the hardened
   runtime, with a secure timestamp and the identifier
   `ai.lockedinlabs.agent-console`, then notarized by Apple. It opens without a

@@ -55,7 +55,7 @@ findings in the website (`site/`) that do not affect the product.
 ## Verifying a download
 
 Every file on a release is listed in its `SHA256SUMS` and has a signed build
-provenance attestation. From 0.4.0 on, each also has a CycloneDX SBOM on the
+provenance attestation. From 0.4.1 on, each also has a CycloneDX SBOM on the
 release page (`*.cdx.json`), attested against the files it describes.
 
 ```sh

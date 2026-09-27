@@ -16,7 +16,7 @@ Official repository: <https://github.com/LockedinLabs-AI/agent-console>
 | To run without installing Node.js | A standalone executable from that release for your operating system and processor. |
 
 **Current availability:** the source and the published download are both
-[v0.4.0](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.0).
+[v0.4.1](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.1).
 The registry name `@lockedinlabs/agent-console` is not published yet. Check the
 [release page](https://github.com/LockedinLabs-AI/agent-console/releases/latest)
 for the version and exact assets available; a version in `package.json` alone
@@ -51,10 +51,10 @@ marked DEMO. Stop it with Ctrl+C before starting the normal console.
 
 Node.js 22 or newer includes npm. npm can install a GitHub release archive
 directly; this does not require publication to the npm registry. The current
-published archive installs **v0.4.0**:
+published archive installs **v0.4.1**:
 
 ```sh
-npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz
+npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.1/lockedinlabs-agent-console-0.4.1.tgz
 agent-console --version
 agent-console --open
 ```
@@ -62,7 +62,7 @@ agent-console --open
 On Windows PowerShell:
 
 ```powershell
-npm.cmd install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.0/lockedinlabs-agent-console-0.4.0.tgz
+npm.cmd install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.1/lockedinlabs-agent-console-0.4.1.tgz
 agent-console.cmd --version
 agent-console.cmd --open
 ```

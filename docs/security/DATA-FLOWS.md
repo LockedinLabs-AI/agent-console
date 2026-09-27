@@ -1,7 +1,7 @@
 # Data flows
 
 What each part of Agent Console reads, writes and sends, as the code does it
-at version 0.4.0. Every statement cites the file and line that does it. Where
+at version 0.4.1. Every statement cites the file and line that does it. Where
 the code cannot answer a question, the section says so.
 
 The parts:

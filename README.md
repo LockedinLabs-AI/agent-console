@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <b>Fleet accounting for Claude Code and Codex.</b><br>
+  <b>Local and team observability for Claude Code and Codex.</b><br>
   Every session's tokens, cache reads and writes, models and list-price cost,
   on this computer and on every computer you connect, in one local console.
 </p>
@@ -26,6 +26,10 @@
 
 *Captured from `--demo`. Every figure in it is generated and stamped DEMO.
 [The same screen in the light theme.](docs/console-demo-light.png)*
+
+[Get started](#install) · [Documentation](docs/README.md) ·
+[Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) ·
+[Contribute](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 This page describes the **v0.4.0 source on main**. The latest published
 download is [v0.3.0](https://github.com/SamSnead85/agent-console/releases/tag/v0.3.0),
@@ -774,12 +778,15 @@ const[u,...a]=process.argv.slice(1),p=require(`path`),n=p.basename(u),g=x=>fetch
 See the [architecture and trust boundaries](docs/ARCHITECTURE.md) for data flow, component ownership and the CI/release path.
 
 ```sh
+npm run lint           # JavaScript syntax and JSON validity
 npm test               # the whole suite, including the multi-machine end-to-end tests
 npm run smoke:pack     # pack, install into a scratch prefix, start it in demo mode
 ```
 
-No dependencies to install. CI runs both on macOS, Linux and Windows, Node 22
-and 24. See [CONTRIBUTING.md](CONTRIBUTING.md) (including the privacy rule
+These checks need no dependencies installed. CI runs the tests and package
+smoke on macOS, Linux and Windows, Node 22 and 24, and the syntax check on
+Linux with Node 24. Native builds use separately locked tooling; see
+[third-party notices](THIRD_PARTY_NOTICES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) (including the privacy rule
 every change keeps) and [CHANGELOG.md](CHANGELOG.md). Report security problems
 privately, as [SECURITY.md](SECURITY.md) describes. Everyone taking part agrees
 to the [Code of Conduct](CODE_OF_CONDUCT.md).
@@ -802,3 +809,7 @@ appear only to identify their models.
 ## About LockedIn Labs
 
 Agent Console is built and maintained by [LockedIn Labs](https://lockedinlabs.ai).
+For reproducible bugs and feature proposals, use
+[GitHub Issues](https://github.com/SamSnead85/agent-console/issues). The
+[documentation index](docs/README.md) links each major engineering claim to
+its contract, implementation or verification method.

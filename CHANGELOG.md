@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a documentation index linking architecture, public contracts and verification
+  evidence; run the existing JavaScript syntax and JSON checks in CI.
 - Report failed sign-out storage, keep the session denied in the running
   console, and allow a durable retry without ending other browsers' sessions.
 - Require successful executable builds and a complete asset set before release

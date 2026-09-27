@@ -1,6 +1,6 @@
 # Architecture
 
-Agent Console provides local and fleet observability for Claude Code and
+Agent Console provides local and team observability for Claude Code and
 Codex. It reads usage already recorded by those tools, combines reports from
 enrolled machines, and presents sessions, tokens, cache use and estimated cost
 in a browser on the hub's computer. It runs on Node.js with no npm dependencies.
@@ -298,23 +298,30 @@ output; see the [benchmark method and budgets](PERFORMANCE.md).
 ```mermaid
 flowchart TD
   Change[Push or pull request] --> Matrix[Tests and package smoke: 3 OS x 2 Node versions]
+  Change --> Syntax[JavaScript syntax and JSON; build dependency audit]
   Change --> Safety[Secret and public-content scans]
   Change --> Perf[Synthetic performance budget]
   PR[Pull request] --> Principles[Changelog and screenshot checks]
   Matrix --> Merge[Six required test checks for main]
   Publish[Maintainer publishes GitHub release] --> Tagged[Checkout release tag]
   Tagged --> Source[Verify main ancestry and exact-source push checks]
-  Source --> Test[Tests and package smoke]
-  Test --> Pack[Check version; pack archive; calculate SHA-256]
-  Pack --> Attest[Build provenance attestation]
-  Attest --> Upload[Upload archive and SHA256SUMS]
-  Upload --> Install[Strict published installation: 3 OS]
+  Source --> Signing[Require Apple signing credentials]
+  Signing --> Native[Build and smoke-test every native target]
+  Native --> Mac[Sign and notarize both macOS targets]
+  Mac --> Test[All native jobs passed; tests and package smoke]
+  Test --> Pack[Check version; pack archive]
+  Pack --> Complete[Require all ten nonempty assets and signing labels]
+  Complete --> Attest[Checksums and build provenance attestation]
+  Attest --> Upload[Upload complete assets and SHA256SUMS]
+  Upload --> Install[Strict public package and native installation]
   Install --> Result[Verified exact version or failed release acceptance]
   Development[Main README or version change] --> Availability[Explicit pending-release availability check]
 ```
 
 The test matrix covers Linux, macOS and Windows on Node.js 22 and 24. It runs
 the suite, installs and starts a packed demo, and checks for tracked changes.
+Linux with Node 24 also checks JavaScript syntax and JSON validity and audits
+the standalone build lockfile. Syntax checking is not static type analysis.
 Actions are pinned to commit SHAs. Most jobs have read-only repository
 permissions; the release job explicitly adds upload and attestation rights.
 
@@ -325,10 +332,19 @@ Branch protection is repository configuration and must be checked separately.
 
 The release workflow starts **after publication**. Before packaging, it verifies
 that the selected source belongs to `main` and that its latest required main-push
-CI runs succeeded. It then tests, packs, attests and uploads the archive. Only a
-successful upload starts strict installation acceptance on all three platforms.
-The tag, README archive and running package must agree on the version; a missing
-archive, timeout or failed startup fails acceptance.
+CI runs succeeded. Every native build and smoke check must pass, including
+signing and notarization on both macOS targets. The package job then repeats
+source authorization, tests and package smoke, and requires all ten expected
+nonempty assets with their platform and signing labels before creating checksums,
+attesting or uploading. A failed or skipped native job cannot produce a
+package-only release. These are pre-upload gates; an interrupted network upload
+can still leave an incomplete release, which must not be described as accepted.
+
+Successful upload starts strict public installation acceptance for the package
+and executables, including macOS Gatekeeper verification. The tag, README archive
+and running package must agree on the version; a missing archive, timeout or
+failed startup fails acceptance. Optional npm publication consumes the accepted
+archive; the presence of its workflow does not establish registry availability.
 
 Publication and a usable download remain separate states. Development pushes
 can explicitly report a pending release; scheduled, manual and release checks

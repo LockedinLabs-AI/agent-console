@@ -41,7 +41,7 @@
     if (n === null || n === undefined || !Number.isFinite(n)) return "—";
     const a = Math.abs(n);
     return a >= 1e9 ? (n / 1e9).toFixed(2) + "B"
-      : a >= 1e6 ? (n / 1e6).toFixed(a >= 1e8 ? 0 : 1) + "M"
+      : a >= 999_500 ? (n / 1e6).toFixed(a >= 1e8 ? 0 : 1) + "M"
       : a >= 1e3 ? Math.round(n / 1e3) + "k" : String(Math.round(n));
   };
   const money = (n) => (n === null || n === undefined || !Number.isFinite(n)) ? "—"

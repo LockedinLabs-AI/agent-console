@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Anchor the demonstration team's day to the moment the demo starts, so a
+  console started on a weekend or at night shows the same working afternoon
+  and its burn never lands on the 999k boundary; tie each synthetic alert's
+  figure to its own records, and check every demo figure for coherence and
+  formatting cliffs.
 - Clear cached readings, join details and closed dialogs on sign-out. Ignore late
   responses and prevent keyboard shortcuts or URL changes from reopening them.
 - Add a documentation index linking architecture, public contracts and verification

@@ -1,13 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { acquireStateLock } from "../lib/hub/state-lock.js";
+import { acquireStateLock, ownerIsLocal } from "../lib/hub/state-lock.js";
+import { machineId } from "../lib/hub/machine-id.js";
+import { lockedStateNotice } from "../lib/hub/notices.js";
 import { createRegistry } from "../lib/hub/registry.js";
 import { pinnedFetch } from "../lib/collector/pinned.js";
 
@@ -174,8 +176,12 @@ test("different-port and port-zero hub starts cannot resurrect a revoked device"
     const competing = hub(t, dir, extra);
     const refusal = await competing.closed;
     assert.equal(refusal.code, 1);
-    // Named, with the process holding it and the command that stops it (lib/hub/notices.js).
-    assert.match(refusal.errors, /Another Agent Console \(process \d+[^)]*\) is using .*\n.*stop it first: +(kill|taskkill)/u);
+    // Named, with the process holding it and the command that stops it (lib/hub/notices.js),
+    // as one JSON line under --json, so a program that started the console can read it.
+    const failure = JSON.parse(refusal.output.split("\n")[0]);
+    assert.equal(failure.ok, false);
+    assert.equal(failure.kind, "state-locked");
+    assert.match(failure.message, /Another Agent Console \(process \d+[^)]*\) is using .* stop it first: +(kill|taskkill)/u);
   }
   const revoke = await fetch(dashboard.url + "/api/devices/" + enrolled.device.id + "/revoke", {
     method: "POST", headers: { "x-agent-console": "1", cookie }, signal: AbortSignal.timeout(5000),
@@ -204,4 +210,52 @@ test("starting again on the running console's port preserves verified sign-in an
   assert.equal(answer.ok, true);
   assert.equal(fs.readFileSync(path.join(dir, "hub.lock"), "utf8"), before);
   await first.stop();
+});
+
+test("the lock's machine id decides where it was written; the host name only when an id is missing", () => {
+  const a = "a".repeat(32), b = "b".repeat(32);
+  assert.equal(ownerIsLocal({ machine: a, host: "earlier-network-name" }, { here: a, host: "current-network-name" }), true,
+    "this computer under a new network name is still this computer");
+  assert.equal(ownerIsLocal({ machine: a, host: "same-name" }, { here: b, host: "same-name" }), false,
+    "another computer with the same host name is not this one");
+  assert.equal(ownerIsLocal({ host: "same-name" }, { here: b, host: "same-name" }), true, "a lock from an older version has no id");
+  assert.equal(ownerIsLocal({ machine: a, host: "same-name" }, { here: null, host: "same-name" }), true, "no id readable here");
+});
+
+test("a lock this computer left under an earlier network name is recovered; another computer's never is", (t) => {
+  const here = machineId();
+  if (!here) { t.skip("this computer has no readable machine id"); return; }
+  const dir = scratch(t);
+  const lock = path.join(dir, "hub.lock");
+  const gone = spawnSync(process.execPath, ["-e", ""]).pid;
+  // macOS takes a laptop's host name from the network: the same computer, an earlier name, its owner gone.
+  fs.writeFileSync(lock, JSON.stringify({ v: 1, pid: gone, host: os.hostname() + "-earlier-network", machine: here, nonce: "b".repeat(32) }));
+  const taken = acquireStateLock(dir);
+  taken.release();
+  // Another computer sharing the folder, even under this very host name: its process cannot be checked from here.
+  fs.writeFileSync(lock, JSON.stringify({ v: 1, pid: gone, host: os.hostname(), machine: "c".repeat(32), nonce: "c".repeat(32) }));
+  assert.throws(() => acquireStateLock(dir), { code: "ELOCKED" });
+});
+
+test("a lock that cannot be verified names its file, and never suggests stopping a process elsewhere", () => {
+  const foreign = lockedStateNotice({ dir: "/data", platform: "linux",
+    owner: { pid: 4242, host: "another-name", local: false, alive: null, file: "/data/hub.lock" } });
+  assert.doesNotMatch(foreign, /\bkill\b|taskkill/u);
+  assert.match(foreign, /locked by process 4242 on another-name/u);
+  assert.match(foreign, /If no Agent Console on any computer is using this folder, delete \/data\/hub\.lock and start again\./u);
+
+  const local = lockedStateNotice({ dir: "/data", platform: "linux",
+    owner: { pid: 4242, host: "this-name", local: true, alive: true, file: "/data/hub.lock" } });
+  assert.match(local, /Another Agent Console \(process 4242 on this-name\) is using \/data\.\n.*stop it first: +kill 4242/u);
+  assert.match(local, /If no Agent Console is running on this computer, the lock was left behind: delete \/data\/hub\.lock and start again\./u,
+    "a process id can be reused after a crash: the way out is said");
+});
+
+test("closing the console's window (SIGHUP) saves and lets go of its data folder", { skip: process.platform === "win32" && "no SIGHUP to send on Windows" }, async (t) => {
+  const dir = scratch(t);
+  const console = hub(t, dir);
+  await console.ready;
+  const closed = await console.stop("SIGHUP");
+  assert.equal(closed.code, 129, "it exits through its own handler, not killed by the signal");
+  assert.equal(fs.existsSync(path.join(dir, "hub.lock")), false, "the next start finds the folder free");
 });

@@ -14,6 +14,7 @@ import vm from "node:vm";
 
 import { costPerOutcome } from "../lib/analysis/cost-outcome.js";
 import { createGitStatsStore, gitStatsForPeriod } from "../lib/gitstats.js";
+import { withheldForOthers } from "../lib/hub/projects.js";
 
 const JS = fs.readFileSync(new URL("../public/console.js", import.meta.url), "utf8");
 
@@ -42,9 +43,10 @@ const helpers = {
   projectKeyOf: (x) => x.projectHash || x.name,
   hhmm: () => "",
 };
-const rows = vm.runInNewContext(slice("  const na = ", "  async function loadProjects(") + "\n({ projectRow, na, mergeReading: typeof mergeReading === \"function\" ? mergeReading : undefined, projCost, projMoney, projMoneyWhy })", { ...helpers });
+const rows = vm.runInNewContext(slice("  const na = ", "  async function loadProjects(") + "\n({ projectRow, na, mergeReading: typeof mergeReading === \"function\" ? mergeReading : undefined, projCost, projMoney, projMoneyWhy, everyAuthor, EVERY_AUTHOR })", { ...helpers });
 const projectInspectBody = vm.runInNewContext(slice("  const ikv = ", "  function paintInspect(") + "\nprojectInspectBody",
-  { ...helpers, na: rows.na, mergeReading: rows.mergeReading, projCost: rows.projCost, projMoney: rows.projMoney, projMoneyWhy: rows.projMoneyWhy });
+  { ...helpers, na: rows.na, mergeReading: rows.mergeReading, projCost: rows.projCost, projMoney: rows.projMoney, projMoneyWhy: rows.projMoneyWhy,
+    everyAuthor: rows.everyAuthor, EVERY_AUTHOR: rows.EVERY_AUTHOR });
 
 const text = (html) => html.replace(/<[^>]*>/gu, "").replace(/&#39;/gu, "'").replace(/\s+/gu, " ").trim();
 function mergeCells(html) {
@@ -101,6 +103,28 @@ test("the Projects table and inspector tell unavailable merges from no merge and
   assert.equal(text(unpriced.row.count), "2");
   assert.match(text(unpriced.row.per), /^unpriced — /u);
   assert.match(text(unpriced.inspector.value), /^unpriced — /u);
+});
+
+test("with no Git email set, a repository's commits are everyone's: no spend is divided by them", () => {
+  // The payload withholds both ratios (lib/hub/projects.js), and the page says why instead of "no commit" or "unpriced".
+  const x = project(2);
+  x.repo.mine = false;
+  x.costPerOutcome = withheldForOthers(x.repo, x.costPerOutcome);
+  assert.equal(x.costPerOutcome.perCommitUsd, null);
+  assert.equal(x.costPerOutcome.perDefaultMergeUsd, null);
+  const shown = render(x);
+  for (const html of [shown.row.per, shown.inspector.value]) {
+    assert.match(text(html), /^every author — No Git email \(user\.email\) is set in this repository/u);
+    assert.doesNotMatch(text(html), /\$|no merge|unpriced/u);
+  }
+  const perCommit = rows.projectRow(x, { tokens: 1000 }, "24 h").match(/<td[^>]*data-src="projects\.costPerOutcome\.perCommitUsd"[^>]*>([\s\S]*?)<\/td>/u);
+  assert.ok(perCommit, "no $ / commit cell");
+  assert.equal(text(perCommit[1]), "every author");
+  assert.match(perCommit[1], /title="No Git email \(user\.email\) is set in this repository/u, "the reason is on the cell");
+  // This machine's own commits (a Git email is set) keep their ratio.
+  assert.equal(text(render(project(2)).row.per), "$6.00 est.");
+  assert.deepEqual(withheldForOthers({ mine: true }, { perCommitUsd: 4 }), { perCommitUsd: 4 });
+  assert.deepEqual(withheldForOthers(null, { perCommitUsd: 4 }), { perCommitUsd: 4 });
 });
 
 test("a readable repository with one feature-branch commit and no known default branch shows merges unavailable", async () => {

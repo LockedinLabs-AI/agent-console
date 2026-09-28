@@ -15,7 +15,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { readConfig, closest } from "../lib/config.js";
-import { parse, failureReason, findMovedHub, takeReporterLock, runningReporter, backgroundArgs } from "../lib/reporter.js";
+import { parse, failureReason, findMovedHub, takeReporterLock, runningReporter, backgroundArgs, searchSchedule, processStartOf } from "../lib/reporter.js";
 import { createRegistry, labelProblem, cleanLabel } from "../lib/hub/registry.js";
 import { createStore } from "../lib/hub/store.js";
 import { buildConsole, deviceStatus, RECONNECT_GRACE_MS } from "../lib/hub/aggregate.js";
@@ -395,4 +395,69 @@ test("a stale lock whose process id now belongs to another program is cleared, a
   assert.notEqual(report.status, 4, "refused as if another reporter held the lock");
   await new Promise((resolve) => setTimeout(resolve, 200));
   assert.equal(ended, null, "the unrelated program was signalled");
+});
+
+test("a console that moved is looked for at once, then less often, and at once again after reports go through", () => {
+  const search = searchSchedule({ first: 10_000, most: 300_000 });
+  let now = 1_000_000;
+  const looks = [];
+  // Unreachable for twenty minutes: when is it looked for?
+  for (let t = 0; t <= 20 * 60_000; t += 1000) {
+    if (search.due(now + t)) { looks.push(t / 1000); search.searched(now + t, false); }
+  }
+  assert.deepEqual(looks.slice(0, 6), [0, 10, 30, 70, 150, 310], "at once, then 10 s, 20 s, 40 s … apart");
+  const gaps = looks.slice(1).map((t, i) => t - looks[i]);
+  assert.ok(gaps.every((g) => g <= 300), "never more than five minutes apart");
+  assert.equal(gaps.at(-1), 300);
+
+  // Found on a nearby port, reporting there; it moves again: looked for at once, not minutes later.
+  now += 30 * 60_000;
+  search.searched(now, true);
+  assert.equal(search.due(now + 1), true);
+  search.searched(now + 1, false);
+  assert.equal(search.due(now + 5000), false);
+  search.reported();
+  assert.equal(search.due(now + 5001), true, "a report going through starts the schedule over");
+
+  const once = searchSchedule({ once: true });
+  assert.equal(once.due(now), true);
+  once.searched(now, false);
+  assert.equal(once.due(now + 3_600_000), false, "--once looks one time");
+});
+
+test("a lock is the reporter's only if its process started when the lock's writer did", { skip: process.platform === "win32" && "no ps" }, async (t) => {
+  const dir = scratch(t);
+  // A program whose command line mentions agent-console, as `tail -f …/agent-console/…/reporter.log` does.
+  const namesake = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60000)", "agent-console-reporter.log"], { stdio: "ignore" });
+  t.after(() => namesake.kill("SIGKILL"));
+  let ended = null;
+  namesake.once("exit", (code, signal) => { ended = signal || code; });
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  const started = processStartOf(namesake.pid);
+  if (started === null) { t.skip("ps cannot say when a process started here"); return; }
+  const lock = path.join(dir, "reporter.lock");
+
+  // The lock of a reporter that died an hour ago, whose process id the namesake now has.
+  fs.writeFileSync(lock, JSON.stringify({ pid: namesake.pid, processStart: started - 3_600_000 }));
+  assert.equal(runningReporter(dir), null, "a reused id is not the reporter, whatever its command says");
+  const stop = spawnSync(process.execPath, [BIN, "stop", "--state-dir", dir], { encoding: "utf8" });
+  assert.match(stop.stdout, /No reporter is running/u);
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  assert.equal(ended, null, "the namesake was never signalled");
+
+  // The same process, started when the lock says: it is the reporter.
+  fs.writeFileSync(lock, JSON.stringify({ pid: namesake.pid, processStart: started }));
+  assert.equal(runningReporter(dir), namesake.pid);
+  // A lock from before start times were kept: the command line decides, as before.
+  fs.writeFileSync(lock, JSON.stringify({ pid: namesake.pid }));
+  assert.equal(runningReporter(dir), namesake.pid);
+});
+
+test("a reporter's lock records when its process started", (t) => {
+  const dir = scratch(t);
+  const release = takeReporterLock(dir);
+  t.after(release);
+  const recorded = JSON.parse(fs.readFileSync(path.join(dir, "reporter.lock"), "utf8"));
+  const started = Date.now() - process.uptime() * 1000;
+  assert.ok(Math.abs(recorded.processStart - started) < 1000, "within a second of this process's start");
 });

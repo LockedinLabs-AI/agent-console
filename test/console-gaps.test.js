@@ -95,9 +95,9 @@ test("G11: one floor line per pane names only what made the figure a floor — n
   assert.equal(floorLine(null), "");
   assert.equal(floorLine({ status: "priced", unpricedMessages: 0 }), "");
   assert.equal(floorLine({ status: "partial", unpricedMessages: 0, unpricedModels: [] }), "", "a floor with no cause named is no line at all");
-  assert.equal(text(floorLine({ status: "partial", unpricedMessages: 0, unpricedModels: [] }, { dropped: 3 })), "+ a floor · 3 messages not counted");
+  assert.equal(text(floorLine({ status: "partial", unpricedMessages: 0, unpricedModels: [] }, { dropped: 3 })), "+ a floor · 3 transcript lines not counted");
   assert.equal(text(floorLine({ status: "partial", unpricedMessages: 12, unpricedModels: ["x-1"] })), "+ a floor · 12 messages unpriced");
-  assert.equal(text(floorLine({ status: "partial", unpricedMessages: 1, unpricedModels: ["x-1"] }, { dropped: 1 })), "+ a floor · 1 message unpriced · 1 message not counted");
+  assert.equal(text(floorLine({ status: "partial", unpricedMessages: 1, unpricedModels: ["x-1"] }, { dropped: 1 })), "+ a floor · 1 message unpriced · 1 transcript line not counted");
   assert.equal(text(floorLine({ status: "partial", unpricedModels: ["x-1", "y-2"] })), "+ a floor · x-1, y-2 unpriced", "a hub without message counts names the models");
   assert.match(floorLine({ status: "partial", unpricedMessages: 2, unpricedModels: ["x-1"] }), /title="A figure marked \+ is a floor: 2 messages unpriced \(x-1: no verified list price\)/u);
   // the three panes that carry floors each append the one line

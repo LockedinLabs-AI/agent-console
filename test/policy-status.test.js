@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { policyApply, policyRemove, policyStatus } from '../lib/policy/cli.js';
+import { policyApply, policyRemove, policyStatus, nodeOnPath, mainPolicy } from '../lib/policy/cli.js';
 
 function project(t, policy = 'version: 1\n') {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-status-'));
@@ -68,4 +68,30 @@ test('installed hook blocks changes to its own controls and asks before uninspec
   assert.equal(decide('Bash', { command: 'node scripts/task.mjs' }), 'ask');
   assert.equal(decide('Bash', { command: 'python3 --version' }), 'allow');
   assert.equal(decide('Write', { file_path: path.join(root, 'src', 'normal.js'), content: 'synthetic' }), 'allow');
+});
+
+test('status says when node cannot be found, because the hook then fails open', t => {
+  const { root, stateDir } = project(t);
+  const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-node-'));
+  t.after(() => fs.rmSync(bin, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(bin, 'node'), '');
+  assert.equal(nodeOnPath({ env: { PATH: ['/nowhere', bin].join(path.posix.delimiter) }, platform: 'linux' }), true);
+  assert.equal(nodeOnPath({ env: { PATH: '/nowhere' }, platform: 'linux' }), false);
+  assert.equal(nodeOnPath({ env: {}, platform: 'linux' }), false);
+  // Windows: PATHEXT names the extensions a bare `node` resolves to.
+  const seen = new Set(['C:\\Program Files\\nodejs\\node.exe']);
+  assert.equal(nodeOnPath({ env: { Path: 'C:\\Windows;C:\\Program Files\\nodejs', PATHEXT: '.COM;.EXE' }, platform: 'win32', exists: (f) => seen.has(f) }), true);
+  assert.equal(nodeOnPath({ env: { Path: 'C:\\Windows', PATHEXT: '.COM;.EXE' }, platform: 'win32', exists: (f) => seen.has(f) }), false);
+
+  assert.equal(policyStatus(root, { stateDir, env: { PATH: bin } , platform: 'linux' }).hookRunner, 'node-found');
+  const missing = policyStatus(root, { stateDir, env: { PATH: '/nowhere' }, platform: 'linux' });
+  assert.equal(missing.hookRunner, 'node-not-found');
+  assert.ok(!JSON.stringify(missing).includes(bin), 'no path is exposed');
+
+  let text = '';
+  mainPolicy(['status', '--project', root], { out: { write: (chunk) => { text += chunk; } }, env: { PATH: '/nowhere' }, platform: 'linux' });
+  assert.match(text, /node was not found on this PATH, so the hook fails open/u);
+  text = '';
+  mainPolicy(['status', '--project', root], { out: { write: (chunk) => { text += chunk; } }, env: { PATH: bin }, platform: 'linux' });
+  assert.doesNotMatch(text, /not found on this PATH/u);
 });

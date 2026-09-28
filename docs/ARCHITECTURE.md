@@ -107,9 +107,14 @@ See the [analysis API contract](ANALYSIS.md).
 
 One hub owns a canonical state directory, independent of listening ports or
 directory aliases. The lock uses atomic hard links on a local filesystem and
-only recovers an owner that is demonstrably no longer running. Ambiguous
-ownership is refused. Stop older hub processes before upgrading: older
-binaries do not participate in this locking protocol.
+only recovers an owner that is demonstrably no longer running. The owner
+record names its computer by a hash of the operating system's machine id, as
+well as its host name, because macOS takes a laptop's host name from the
+network it is on; a lock this computer left under an earlier name is still its
+own. Ambiguous ownership is refused, and the refusal names the lock file to
+delete once no console uses the folder. The hub releases the lock on Ctrl+C,
+SIGTERM and SIGHUP (closing its terminal window). Stop older hub processes
+before upgrading: older binaries do not participate in this locking protocol.
 
 Usage batches reach the in-memory index only after append and file flush
 succeed. A failed append is rolled back; if rollback also fails, ingestion

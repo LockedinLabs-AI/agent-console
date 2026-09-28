@@ -1,5 +1,54 @@
 # Changelog
 
+## Unreleased
+
+- A console that stopped abruptly (closed terminal window, crash, power loss)
+  starts again on its own data after the computer changes networks. macOS
+  takes a laptop's host name from the network, and the data folder's lock
+  compared host names, so it could refuse for good, suggest stopping a process
+  that no longer existed, or suggest a new data folder. The lock now also
+  records a hash of the operating system's machine id, and trusts it over the
+  host name. Closing the console's window (SIGHUP) saves and releases the
+  folder, as Ctrl+C does. A lock that cannot be verified names its file, and
+  says to delete it once no console uses the folder; it never suggests stopping
+  a process on another computer.
+- Machines are no longer stranded by a reporting port they cannot find. Each
+  machine's reporting port is recorded when it joins and on every report, and
+  a start names the machines that report elsewhere by their real port. A
+  one-off `--report-port` too far for enrolled machines to find is used for that
+  run only, so the next plain start goes back to where they report.
+- A reporter whose console moved to a nearby port finds it within seconds
+  (at once, then 10 s, 20 s, 40 s … up to every five minutes), and looks at once
+  again after its next move; it had waited up to five minutes each time.
+- `join` with a link from another console leaves the one before, as `leave`
+  does: that console is told and shows the machine as having left instead of
+  silent for ever, and the reporter says so.
+- `stop` and `leave` signal a process only if it started when the reporter that
+  wrote the lock did: a process whose command merely mentions agent-console
+  (such as `tail -f` of the reporter's log) and was given a dead reporter's
+  process id is never signalled. Closing a reporter's window (SIGHUP) stops it
+  and releases its lock.
+- Commands the console suggests when a port is busy keep every other option
+  (`--state-dir`, the transcript folders and so on) instead of starting a
+  different console on the default data folder. Under `--json`, a busy port,
+  a locked data folder and other start-up failures are JSON lines.
+- Projects no longer divides this machine's spend by other people's commits:
+  with no Git email set in a repository, spend per commit and per merge are
+  withheld ("every author") instead of computed from everyone's commits, in the
+  Projects table, the Shipped table and the spend-per-commit card.
+- Add a machine says when it leaves out a person's or machine's name it cannot
+  use, instead of dropping it silently.
+- `policy apply` and `policy status` say when `node` is not on the PATH, since
+  the hook then fails open; `policy status --json` carries `hookRunner`.
+- The re-join command a removed reporter prints keeps its `--state-dir`,
+  `--home` and transcript folders. A reporter started with `--background` no
+  longer writes "Leave this window open" to its log. A lane whose machine left
+  says LEFT, as the Machines panel does. An estimate under a cent reads
+  "<$0.01", not "$0.00". Lines the collector could not count are called
+  transcript lines, not messages, which is what is counted. Projects says
+  "1 session", not "1 sessions". The Console screenshots are retaken from
+  `--demo`.
+
 ## 0.4.1 — 2026-09-27
 
 - Cap the transcript reading interval set through `AGENT_CONSOLE_POLL_MS` at one

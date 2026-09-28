@@ -44,7 +44,11 @@
       : a >= 999_500 ? (n / 1e6).toFixed(a >= 1e8 ? 0 : 1) + "M"
       : a >= 1e3 ? Math.round(n / 1e3) + "k" : String(Math.round(n));
   };
+  // A machine that left (it ran `leave`) is told apart from one the console removed.
+  const machineLeft = (id) => Boolean(id && typeof D === "object" && D && Array.isArray(D.devices) && D.devices.find((d) => d.id === id)?.leftAt);
   const money = (n) => (n === null || n === undefined || !Number.isFinite(n)) ? "—"
+    // a positive estimate under half a cent would round to $0.00, which reads as nothing spent
+    : n > 0 && n < 0.005 ? "<$0.01"
     : "$" + n.toLocaleString("en-US", Math.abs(n) >= 1000
       ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const pct = (x, digits = 1) => (x === null || x === undefined || !Number.isFinite(x)) ? "—" : (x * 100).toFixed(digits) + "%";
@@ -152,7 +156,7 @@
     if (!c || c.status === "none") return { html: "—", title: "Nothing to price yet" };
     if (c.status === "unpriced") return { html: `<span class="void">unpriced</span>`, title: "No verified list price for what ran here" };
     const floor = c.status === "partial" || dropped > 0;
-    const why = [c.status === "partial" ? "some records are unpriced" : "", dropped > 0 ? `${dropped.toLocaleString("en-US")} ${dropped === 1 ? "message" : "messages"} not counted` : ""].filter(Boolean).join(" · ");
+    const why = [c.status === "partial" ? "some records are unpriced" : "", dropped > 0 ? `${dropped.toLocaleString("en-US")} transcript ${dropped === 1 ? "line" : "lines"} not counted` : ""].filter(Boolean).join(" · ");
     return { html: money(c.usd) + (floor ? (word ? `<em class="part">partial</em>` : `<em class="part">+</em>`) : ""),
       title: floor ? `${why} · list-price estimate, a floor` : "List-price estimate. Not an invoice." };
   }
@@ -164,7 +168,7 @@
     const n = Number.isFinite(cost.unpricedMessages) ? cost.unpricedMessages : null;
     const models = (cost.unpricedModels || []).join(", ");
     // a count of zero is not a cause: only what made the figure a floor is named
-    const what = [n ? `${plural(n, "message")} unpriced` : n === null && cost.status === "partial" ? `${models || "a model"} unpriced` : "", dropped ? `${plural(dropped, "message")} not counted` : ""].filter(Boolean).join(" · ");
+    const what = [n ? `${plural(n, "message")} unpriced` : n === null && cost.status === "partial" ? `${models || "a model"} unpriced` : "", dropped ? `${plural(dropped, "transcript line")} not counted` : ""].filter(Boolean).join(" · ");
     if (!what) return "";
     return `<span class="${cls}" title="A figure marked + is a floor: ${esc(what)}${models ? ` (${esc(models)}: no verified list price)` : ""} · list-price estimates, never an invoice">+ a floor · ${esc(what)}</span>`;
   }
@@ -1082,7 +1086,7 @@
     row.className = "lane " + l.state + (demo ? " sim" : "");
     // The state column says the state; DEMO is a stamp on the strip, the row's
     // cobalt edge and the footer, never a substitute for the state word.
-    const word = l.state === "live" ? "LIVE" : l.state === "idle" ? "IDLE" : l.state === "revoked" ? "REMOVED"
+    const word = l.state === "live" ? "LIVE" : l.state === "idle" ? "IDLE" : l.state === "revoked" ? (machineLeft(l.device.id) ? "LEFT" : "REMOVED")
       : l.state === "catching-up" ? "CATCHING UP" : l.state === "reconnecting" ? "RECONNECTING" : "SILENT";
     row.querySelector(".st span:not(.stamp)").textContent = word;
     row.querySelector(".st").title = l.state === "live" ? "Reported within the last two minutes" + (demo ? " (generated)" : "")
@@ -1698,7 +1702,7 @@
     const gitHead = anyGit ? `<th scope="col" class="r git">Commits</th><th scope="col" class="r git">Lines + / −</th><th scope="col" class="r git est">$ / commit</th><th scope="col" class="git">Branches</th>` : "";
     const gitCells = (x) => !anyGit ? "" : !x.repo ? `<td class="merged git" colspan="4">${na("not in Git", "Not a Git repository: commits, lines, spend per commit and branches are not counted here; its tokens, estimate and sessions are still measured", true)}</td>`
       : `<td class="num r git">${x.repo.commits}</td><td class="num r git">+${fmt(x.repo.added)} / −${fmt(x.repo.removed)}</td>
-        <td class="num r git" data-money>${x.costPerOutcome.perCommitUsd === null ? na("unpriced", "No verified list price for what ran here") : money(x.costPerOutcome.perCommitUsd)}</td>
+        <td class="num r git" data-money>${x.costPerOutcome.perCommitUsd === null ? (everyAuthor(x) ? na(EVERY_AUTHOR[0], EVERY_AUTHOR[1]) : na("unpriced", "No verified list price for what ran here")) : money(x.costPerOutcome.perCommitUsd)}</td>
         <td class="num mono git">${esc((x.branches || []).slice(0, 3).map((b) => pn("branch", b)).join(", ")) || (p.period && p.period.branchesKept === false ? na("—", "Branches are kept with the minute detail (8 days), not with the daily rollup this period reads") : na("—", "No branch name reached the console from this project's sessions"))}</td>`;
     $("foldProjBody").innerHTML = p.projects.length ? `<table class="grid${anyGit ? "" : " nogit"}"><thead><tr><th scope="col">Project</th><th scope="col" class="r">Tokens</th><th scope="col" class="r est">Est. $</th><th scope="col" class="r">Sessions</th>${gitHead}</tr></thead><tbody>`
       + p.projects.map((x) => `<tr><td><b>${esc(pn("project", x.name))}</b></td>
@@ -1743,7 +1747,7 @@
     return shipped.length ? `<table class="grid"><thead><tr><th scope="col">Repository</th><th scope="col" class="r">Commits</th><th scope="col" class="r">Lines + / −</th><th scope="col" class="r" title="Commits whose subject ends (#N) or merges a pull request; #N may name an issue">Referencing #N</th><th scope="col" class="r">Default merges</th><th scope="col" class="r est">$ / default merge</th></tr></thead><tbody>`
       + shipped.map((x) => `<tr><td><b>${esc(pn("project", x.repo.name))}</b>${x.repo.name !== x.name ? `<span class="sub">${esc(pn("project", x.name))}</span>` : ""}</td><td class="num r">${x.repo.commits}</td><td class="num r">+${fmt(x.repo.added)} / −${fmt(x.repo.removed)}</td>
         <td class="num r">${x.repo.prsMerged === null ? na("no remote", "Needs a remote to tell pull requests from issues") : x.repo.prsMerged}</td><td class="num r">${x.costPerOutcome.defaultMerges === null ? na("no default", "No default branch is known here, so merges into it could not be counted: unavailable, not zero") : x.costPerOutcome.defaultMerges}</td>
-        <td class="num r" data-money>${x.costPerOutcome.perDefaultMergeUsd === null ? (x.costPerOutcome.defaultMerges ? na("unpriced", "No verified list price for what ran here") : na("no merge", "No local default-branch integration in the period, so nothing to divide by")) : money(x.costPerOutcome.perDefaultMergeUsd)}</td></tr>`).join("")
+        <td class="num r" data-money>${x.costPerOutcome.perDefaultMergeUsd === null ? (everyAuthor(x) ? na(EVERY_AUTHOR[0], EVERY_AUTHOR[1]) : x.costPerOutcome.defaultMerges ? na("unpriced", "No verified list price for what ran here") : na("no merge", "No local default-branch integration in the period, so nothing to divide by")) : money(x.costPerOutcome.perDefaultMergeUsd)}</td></tr>`).join("")
       + `</tbody></table><div class="note">What Git recorded on this machine in the period; a word in place of a figure says why there is none.</div>`
       : `<div class="note">No project on this machine is in a Git repository${p.projects.length ? "" : ", or none has transcripts in this period"}.</div>`;
   }
@@ -2628,9 +2632,13 @@
   const noGit = na("no Git", "Not a Git repository: nothing to count");
   // Merges into the default branch, read three ways and never by truthiness: null is evidence the console could
   // not read (no default branch is known), 0 is an observed none, a positive number is that count.
+  // No Git email in a repository: its commits are everyone's, so no spend is divided by them.
+  const EVERY_AUTHOR = ["every author", "No Git email (user.email) is set in this repository, so its commits are everyone's. Dividing this machine's spend by other people's commits or merges would mean nothing, so no ratio is shown"];
+  const everyAuthor = (x) => Boolean(x.repo && x.repo.mine === false);
   function mergeReading(x) {
     const c = x.costPerOutcome, n = c.defaultMerges;
     if (!x.repo) return { count: null, per: null, word: "no Git", why: "Not a Git repository: nothing to count" };
+    if (everyAuthor(x)) return { count: Number.isSafeInteger(n) && n >= 0 ? n : null, per: null, word: EVERY_AUTHOR[0], why: EVERY_AUTHOR[1] };
     if (!Number.isSafeInteger(n) || n < 0) return { count: null, per: null, word: "no default", why: "No default branch is known here, so merges into it could not be counted: unavailable, not zero" };
     if (c.perDefaultMergeUsd !== null) return { count: n, per: c.perDefaultMergeUsd };
     return n === 0 ? { count: 0, per: null, word: "no merge", why: "No local default-branch integration in the period, so nothing to divide by" }
@@ -2653,7 +2661,7 @@
       <td class="num r" data-src="projects.repo.added" title="Lines added and removed in local Git · ${esc(label)}">+${x.repo.added.toLocaleString("en-US")} / −${x.repo.removed.toLocaleString("en-US")}</td>
       <td class="num r" data-src="projects.repo.prsMerged" title="Commits whose subject ends (#N) or merges a pull request">${x.repo.prsMerged === null ? na("no remote", "Needs a remote to tell pull requests from issues") : x.repo.prsMerged}</td>
       <td class="num r" data-src="projects.costPerOutcome.defaultMerges" title="Local default-branch integration commits">${m.count === null ? na(m.word, m.why, false, true) : m.count}</td>
-      <td class="num r" data-money data-src="projects.costPerOutcome.perCommitUsd" title="Spend in the work window per local commit, not attribution">${c.perCommitUsd === null ? (x.repo.commits ? na("unpriced", "No verified list price for what ran here, so no dollar figure") : na("no commit", "No local commit in the period")) : money(c.perCommitUsd) + " est."}</td>
+      <td class="num r" data-money data-src="projects.costPerOutcome.perCommitUsd" title="Spend in the work window per local commit, not attribution">${c.perCommitUsd === null ? (everyAuthor(x) ? na(EVERY_AUTHOR[0], EVERY_AUTHOR[1]) : x.repo.commits ? na("unpriced", "No verified list price for what ran here, so no dollar figure") : na("no commit", "No local commit in the period")) : money(c.perCommitUsd) + " est."}</td>
       <td class="num r" data-money data-src="projects.costPerOutcome.perDefaultMergeUsd" title="Spend in the work window per local default-branch integration, not attribution">${m.per === null ? na(m.word, m.why, false, true) : money(m.per) + " est."}</td>
       <td class="num mono" data-src="projects.branches">${branchesCell}</td>`
       // with no project in Git at all the seven Git columns are left out and the head says so once (R3-06); otherwise a folder outside Git
@@ -2697,7 +2705,7 @@
       $("pTotal").title = `${fmt(p.tokens)} tokens in this machine's transcripts · ${label} · ${stampAt}`;
       $("pSpend").textContent = cost.usd === null ? "no priced model" : money(cost.usd) + (cost.status === "partial" ? "+ est. · partial" : " est.");
       $("pSpend").title = cost.status === "partial" ? `A floor: ${plural(partialN, "project is partly", "projects are partly")} unpriced and ${plural(unpricedN, "project is", "projects are")} wholly unpriced (${(cost.unpricedModels || []).join(", ") || "no verified list price"}); their tokens are not in this figure` : "List-price estimate. Not an invoice.";
-      $("pSessions").innerHTML = p.sessions === null ? `<span class="s">sessions not kept</span>` : `${p.sessions.toLocaleString("en-US")} sessions`;
+      $("pSessions").innerHTML = p.sessions === null ? `<span class="s">sessions not kept</span>` : `${plural(p.sessions, "session")}`;
       $("pSessions").title = p.sessions === null ? (p.period && p.period.sessionsKept === false ? "Sessions are kept with the minute detail (8 days), not with the daily rollup this period reads; none is estimated" : "Sessions are kept with the minute detail; none is estimated for this period") : `${plural(p.sessions, "session")} on this machine · ${label}`;
       $("pProv").innerHTML = (p.demo ? "generated · this machine · " : "this machine's transcripts and Git · ") + (p.author === true ? "commits by this machine's Git email" : p.author === false ? "every author — no Git email set here" : "local Git history");
       $("pProv").title = (p.author === false ? "No Git email (user.email) is set in one of these repositories, so its Git figures count every author. None of this leaves this machine." : "Read from this machine only. None of this leaves this machine.") + " · " + stampAt;
@@ -2736,8 +2744,11 @@
       const mmax = Math.max(...merged.map(([, m]) => m.per), 0.01);
       const anyGit = ranked.some((x) => x.repo);
       // one void sentence per card: what neither block can show is said once under spend per commit, and the merge block folds away
-      const commitWhy = priced.length ? "" : anyGit ? "no priced commit in this period" : "no project here is in a Git repository";
-      const mergeWhy = merged.length ? "" : anyGit ? (ranked.some((x) => mergeReading(x).count > 0) ? "no priced merge in this period" : "no default-branch merge in this period") : "";
+      // commits that are every author's (no Git email set) divide nothing: said as that, never as "no priced commit"
+      const othersOnly = anyGit && ranked.filter((x) => x.repo).every(everyAuthor);
+      const commitWhy = priced.length ? "" : othersOnly ? "every author — no Git email set here"
+        : anyGit ? "no priced commit in this period" : "no project here is in a Git repository";
+      const mergeWhy = merged.length || othersOnly ? "" : anyGit ? (ranked.some((x) => mergeReading(x).count > 0) ? "no priced merge in this period" : "no default-branch merge in this period") : "";
       const voidLine = (why) => `<div class="xrow"><span class="xn"><em>${esc(why)}</em></span></div>`;
       $("pSpendRows").innerHTML = priced.length ? priced.slice(0, MODELS_SHOWN).map((x) => `<div class="mrow door" data-inspect="project:${esc(doorId("project", projectKeyOf(x)))}" tabindex="0" role="button" title="${esc(pn("project", x.name))} · spend in the window of the work per local commit — not attribution · open">
           <span class="mn"><span class="txt">${esc(pn("project", x.name))}</span></span><span class="ms"></span>
@@ -2953,7 +2964,9 @@
           ? `Send ${esc(who)} the command below by any message. They paste it into a terminal on their computer, which must be on the same network as this machine. Agent Console itself comes from its GitHub release, never from this machine.`
           : `This console listens on this machine only, so the link works only here — for example for a second account on this computer. To add another computer, restart with <code>--listen 0.0.0.0</code>.`;
       $("linkExpiry").textContent = `Works once. Expires at ${hhmm(j.invitation.expiresAt)}.`
-        + (j.adjusted && j.adjusted.minutes ? ` (${j.adjusted.minutes.used} minutes, not ${j.adjusted.minutes.asked}: ${j.adjusted.minutes.reason}.)` : "");
+        + (j.adjusted && j.adjusted.minutes ? ` (${j.adjusted.minutes.used} minutes, not ${j.adjusted.minutes.asked}: ${j.adjusted.minutes.reason}.)` : "")
+        + (j.adjusted && j.adjusted.person ? ` The person's name was left out: ${j.adjusted.person.reason}.` : "")
+        + (j.adjusted && j.adjusted.machine ? ` The machine's name was left out: ${j.adjusted.machine.reason}.` : "");
       const status = $("joinStatus");
       // a wait that can never end is not drawn as live (R3-13): a demonstration's link says so, quietly, with no pulse
       status.className = j.demo ? "waiting demo" : "waiting";
@@ -3042,9 +3055,9 @@
     : `<div class="iquiet">No session in the last 24 hours.</div>`;
   // The inspector's "Last hour" head: a counted zero prints as the void it is, never as a figure over an empty tile.
   const hourHead = (s) => `<div class="ihead">Last hour <span>${s && s.spark.some((v) => v > 0) ? fmt(s.spark.reduce((a, b) => a + b, 0)) + " tokens" : s ? "nothing" : "—"}</span></div>`;
-  const stateWord = (s) => s === "live" ? "LIVE" : s === "idle" ? "IDLE" : s === "revoked" ? "REMOVED" : s === "catching-up" ? "CATCHING UP" : s === "reconnecting" ? "RECONNECTING" : "SILENT";
+  const stateWord = (s, deviceId = null) => s === "live" ? "LIVE" : s === "idle" ? "IDLE" : s === "revoked" ? (machineLeft(deviceId) ? "LEFT" : "REMOVED") : s === "catching-up" ? "CATCHING UP" : s === "reconnecting" ? "RECONNECTING" : "SILENT";
   const laneList = (lanes, cap = "24 h", total = null) => lanes.length
-    ? `<div class="ihead">Sessions <span>${total && total > lanes.length ? `${lanes.length} of ${total}` : lanes.length} · ${esc(cap)}</span></div>` + lanes.slice(0, 12).map((l) => `<div class="irow" data-lane="${esc(l.key)}" tabindex="0" role="button" title="Open the lane · ${esc(pn("project", l.project.name))}${l.branch ? " · " + esc(pn("branch", l.branch)) : ""}"><span class="nm"><b>${esc(pn("project", l.project.name))}</b>${l.branch ? `<em>${esc(pn("branch", l.branch))}</em>` : ""}</span><span class="md" title="${esc(l.modelLabel)}">${esc(l.modelLabel)}</span><span class="r" data-src="lanes.tokensDay">${l.tokensDay == null ? "—" : fmt(l.tokensDay)}</span><span class="st ${l.state}">${stateWord(l.state)}</span></div>`).join("")
+    ? `<div class="ihead">Sessions <span>${total && total > lanes.length ? `${lanes.length} of ${total}` : lanes.length} · ${esc(cap)}</span></div>` + lanes.slice(0, 12).map((l) => `<div class="irow" data-lane="${esc(l.key)}" tabindex="0" role="button" title="Open the lane · ${esc(pn("project", l.project.name))}${l.branch ? " · " + esc(pn("branch", l.branch)) : ""}"><span class="nm"><b>${esc(pn("project", l.project.name))}</b>${l.branch ? `<em>${esc(pn("branch", l.branch))}</em>` : ""}</span><span class="md" title="${esc(l.modelLabel)}">${esc(l.modelLabel)}</span><span class="r" data-src="lanes.tokensDay">${l.tokensDay == null ? "—" : fmt(l.tokensDay)}</span><span class="st ${l.state}">${stateWord(l.state, l.device && l.device.id)}</span></div>`).join("")
       + (lanes.length > 12 ? `<div class="iquiet">${lanes.length - 12} more in the lanes</div>` : "")
       + (total && total > lanes.length ? `<div class="iquiet">${plural(total, "session")} in all; the hub sends ${lanes.length} to draw</div>` : "")
     : total ? `<div class="iquiet">${plural(total, "session")} in the last 24 hours, none among the lanes the hub sent to draw.</div>` : `<div class="iquiet">No session in the last 24 hours.</div>`;
@@ -3059,7 +3072,7 @@
     ${iline ? `<div class="iline">${iline}</div>` : ""}
     ${ikv([[projMoney(x), "est. $", x.usd === null ? "warn" : "", "projects.usd"], [x.sessions === null ? "not kept" : String(x.sessions), "sessions", "", "projects.sessions"],
       ...(x.repo ? [[`+${fmt(x.repo.added)} <span class="u">−${fmt(x.repo.removed)}</span>`, "lines", "", "projects.repo.added"], [x.repo.prsMerged !== null ? String(x.repo.prsMerged) : "no remote", "PR-linked commits", "", "projects.repo.prsMerged"],
-        [c.perCommitUsd === null ? (x.repo.commits ? "unpriced" : "no commit") : money(c.perCommitUsd), "$ / commit · est.", "", "projects.costPerOutcome.perCommitUsd"], [m.per === null ? na(m.word, m.why, false, true) : money(m.per), `$ / merge · est. · ${m.count === null ? "merges not counted" : plural(m.count, "merge")}`, "", "projects.costPerOutcome.perDefaultMergeUsd"]] : [])])}
+        [c.perCommitUsd === null ? (everyAuthor(x) ? EVERY_AUTHOR[0] : x.repo.commits ? "unpriced" : "no commit") : money(c.perCommitUsd), "$ / commit · est.", "", "projects.costPerOutcome.perCommitUsd"], [m.per === null ? na(m.word, m.why, false, true) : money(m.per), `$ / merge · est. · ${m.count === null ? "merges not counted" : plural(m.count, "merge")}`, "", "projects.costPerOutcome.perDefaultMergeUsd"]] : [])])}
     ${x.repo ? "" : `<div class="na held iwide" data-src="projects.repo">Not a Git repository · commits, lines, PR-linked commits, $ per commit and $ per merge are not counted; nothing is estimated in their place</div>`}
     ${hourHead(s)}${isparkHtml(s, false)}
     ${laneList(lanes, "24 h", D && D.laneTotals && D.laneTotals.byLocalProject && D.laneTotals.byLocalProject[projectKeyOf(x)] ? D.laneTotals.byLocalProject[projectKeyOf(x)].sessions : null)}`;
@@ -3142,7 +3155,7 @@
         const res = l.activity && l.activity.results ? l.activity.results : null;
         title = pn("project", l.project.name);
         body = `<div class="ihero"><span class="big" data-src="lanes.tokensDay">${l.tokensDay == null ? "—" : fmt(l.tokensDay)}</span><span class="u">tokens · 24 h</span>${demoStamp()}</div>
-          <div class="iline"><span class="st ${l.state}">${stateWord(l.state)}</span> · <span class="mono">${esc(pn("branch", l.branch) || TOOL[l.tool] || l.tool)}</span> · <span class="mono">${esc(l.modelLabel)}</span> · <b>${esc(pn("machine", l.device.label))}</b>${l.device.person ? " · " + esc(pn("person", l.device.person)) : ""}</div>
+          <div class="iline"><span class="st ${l.state}">${stateWord(l.state, l.device && l.device.id)}</span> · <span class="mono">${esc(pn("branch", l.branch) || TOOL[l.tool] || l.tool)}</span> · <span class="mono">${esc(l.modelLabel)}</span> · <b>${esc(pn("machine", l.device.label))}</b>${l.device.person ? " · " + esc(pn("person", l.device.person)) : ""}</div>
           <div class="iline" title="${esc(doingWhy)}">doing · <b>${doing}</b> · last report ${l.state === "live" ? "now" : hhmm(l.lastAt)}</div>
           ${ikv([[l.tokens5m === null ? "—" : fmt(l.tokens5m), "5 min", "", "lanes.tokens5m"], [!cost ? "—" : cost.usd === null ? (cost.status === "none" ? "—" : "unpriced") : money(cost.usd) + (cost.status === "partial" ? "+" : ""), "est. $ · 24 h", cost && cost.usd === null && cost.status !== "none" ? "warn" : "", "lanes.costDay.usd"],
             [cls.fresh == null ? "—" : fmt(cls.fresh), "uncached input", "", "lanes.tokensDayByClass.fresh"], [cls.output == null ? "—" : fmt(cls.output), "output", "", "lanes.tokensDayByClass.output"],

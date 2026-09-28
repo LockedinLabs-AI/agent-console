@@ -184,7 +184,7 @@ test("a money figure with records the reporter could not count is a floor, marke
   assert.match(whole.title, /Not an invoice/u);
   const floor = costMark({ usd: 21.26, status: "estimated" }, 3);
   assert.match(floor.html, /^\$21\.26<em class="part">partial<\/em>$/u, "the mark sits with the number");
-  assert.match(floor.title, /3 messages not counted · list-price estimate, a floor/u);
+  assert.match(floor.title, /3 transcript lines not counted · list-price estimate, a floor/u);
   assert.match(costMark({ usd: 21.26, status: "estimated" }, 3, false).html, /^\$21\.26<em class="part">\+<\/em>$/u, "a narrow cell carries the mark alone");
   assert.match(costMark({ usd: 5, status: "partial" }, 0).html, /partial/u, "a partly unpriced estimate is a floor too");
   assert.match(costMark({ usd: null, status: "unpriced" }, 3).html, /unpriced/u);

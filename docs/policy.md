@@ -155,7 +155,10 @@ changing files. Native permissions and managed settings remain necessary.
 
 Known limits: if `node` is not on `PATH`, or the hook file itself is missing or
 broken, Claude Code treats the failure as a non-blocking hook error and the
-tool call proceeds, so the hook fails open in that case. The classifier does
+tool call proceeds, so the hook fails open in that case. `policy apply` and
+`policy status` say so when `node` is not on the `PATH` they run with
+(`hookRunner` in `policy status --json`); a computer that runs Agent Console as
+a standalone executable may have no Node.js at all. The classifier does
 not see commands fetched or built at run time, such as `sh -c "$(curl …)"` or
 `bash <(curl …)`, nor deletes made by other tools, such as `find … -delete`.
 

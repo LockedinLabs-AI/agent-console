@@ -583,3 +583,72 @@ test("every GET route the hub serves is read by the privacy checks above", () =>
   assert.ok(routes.has("/api/console") && routes.has("/join"), "the route pattern no longer matches lib/hub/routes.js");
   assert.deepEqual(unchecked, [], "add these to CONSOLE_READS or REPORTING_READS so the canaries cover them");
 });
+
+/** A reporter's opening words: it runs until it has said them, then is stopped. */
+function openingWords(args, env = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [BIN, ...args], { env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    const timer = setTimeout(() => { child.kill("SIGKILL"); reject(new Error("no opening words: " + out)); }, 20_000);
+    child.stdout.on("data", (c) => { out += c; if (/Reporting to /u.test(out) && /\n\s*\n/u.test(out.slice(out.indexOf("Reporting to ")))) child.kill("SIGTERM"); });
+    child.on("close", () => { clearTimeout(timer); resolve(out); });
+  });
+}
+
+test("a machine that joins another console leaves the one before, and its commands keep its options", async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agent-console-switch-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const home = path.join(root, "home");
+  fs.mkdirSync(home);
+  const startedA = startHub(["--no-local", "--state-dir", path.join(root, "hub-a")]);
+  const startedB = startHub(["--no-local", "--state-dir", path.join(root, "hub-b")]);
+  t.after(() => { startedA.child.kill("SIGKILL"); startedB.child.kill("SIGKILL"); });
+  const [a, b] = await Promise.all([startedA.ready, startedB.ready]);
+  const state = path.join(root, "laptop-state");
+
+  const first = await run(["join", (await invite(a, "Alex", "Laptop")).link, "--once", "--home", home, "--state-dir", state]);
+  assert.equal(first.code, 0, first.out + first.err);
+  const second = await run(["join", (await invite(b, "Alex", "Laptop")).link, "--once", "--json", "--home", home, "--state-dir", state]);
+  assert.equal(second.code, 0, second.out + second.err);
+  const switched = second.out.trim().split("\n").map((line) => JSON.parse(line)).find((e) => e.event === "switched");
+  assert.ok(switched, "the reporter says it left the console it reported to before");
+  assert.equal(switched.told, "told");
+  assert.equal(switched.sameAddress, false);
+  const onA = (await consoleView(a)).devices.find((d) => d.label === "Laptop");
+  assert.ok(onA.leftAt, "the console it left shows it as having left, never silent for ever");
+  assert.ok((await consoleView(b)).devices.some((d) => d.label === "Laptop" && !d.revokedAt));
+
+  // A reporter started by --background has no window: its log never asks for one to stay open.
+  const windowed = await openingWords(["report", "--home", home, "--state-dir", state, "--interval", "30"]);
+  assert.match(windowed, /Leave this window open/u);
+  const detached = await openingWords(["report", "--home", home, "--state-dir", state, "--interval", "30"], { AGENT_CONSOLE_REPORTER_BACKGROUND: "1" });
+  assert.match(detached, /Reporting to /u);
+  assert.doesNotMatch(detached, /Leave this window open/u);
+
+  // Removed from the console: the command to join again keeps where this machine keeps its enrolment and what it reads.
+  const machine = (await consoleView(b)).devices.find((d) => d.label === "Laptop");
+  const removed = await fetch(`${b.url}/api/devices/${machine.id}/revoke`, { method: "POST", headers: { ...INTENT, cookie: b.cookie } });
+  assert.equal(removed.status, 200);
+  const refused = await run(["report", "--once", "--home", home, "--state-dir", state]);
+  assert.equal(refused.code, 3, refused.out + refused.err);
+  const rejoin = /then run: (.*join '<link>'.*)/u.exec(refused.out);
+  assert.ok(rejoin, refused.out);
+  assert.ok(rejoin[1].includes("--state-dir") && rejoin[1].includes(state), rejoin[1]);
+  assert.ok(rejoin[1].includes("--home") && rejoin[1].includes(home), rejoin[1]);
+});
+
+test("Add a machine says which name it could not use, instead of dropping it silently", async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agent-console-names-said-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const started = startHub(["--no-local", "--state-dir", path.join(root, "hub")]);
+  t.after(() => started.child.kill("SIGKILL"));
+  const hub = await started.ready;
+  const answer = await invite(hub, "<b>Alex</b>", "x".repeat(50));
+  assert.equal(answer.invitation.person, null);
+  assert.equal(answer.invitation.machine, null);
+  assert.deepEqual(answer.adjusted.person, { used: null, reason: "it contains < or >" });
+  assert.deepEqual(answer.adjusted.machine, { used: null, reason: "it is longer than 40 characters" });
+  assert.ok(!JSON.stringify(answer.adjusted).includes("Alex"), "the refused text is not echoed back");
+  const fine = await invite(hub, "Alex", "Laptop");
+  assert.equal(fine.adjusted, null, "nothing changed, nothing said");
+});

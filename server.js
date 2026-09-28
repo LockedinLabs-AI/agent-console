@@ -41,14 +41,23 @@ import { transcriptRoots } from "./lib/collector/collector.js";
 import { createGitStatsStore } from "./lib/gitstats.js";
 import { createInteropStore } from './lib/interop/ingest.js';
 import { PRODUCT_NAME, productTitle } from "./lib/brand.js";
-import { invocation } from "./lib/invocation.js";
+import { invocation, commandWith } from "./lib/invocation.js";
 import { REPORTER_SEARCH } from "./lib/reporter-search.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(HERE, "public");
 const VERSION = JSON.parse(fs.readFileSync(path.join(HERE, "package.json"), "utf8")).version;
 const COMMAND = invocation(VERSION);
-const config = readConfig(process.argv.slice(2), process.env);
+const ARGV = process.argv.slice(2);
+const config = readConfig(ARGV, process.env);
+/** This start's own command with some options changed: a suggestion keeps its data folder and every other option. */
+const again = (set) => commandWith(COMMAND, ARGV, set);
+
+/** A failure before the console is up: words on stderr, or one JSON line under --json. */
+function startFailure(kind, text) {
+  if (config.json) process.stdout.write(JSON.stringify({ ok: false, event: "error", kind, message: text.trim().split("\n").map((line) => line.trim()).filter(Boolean).join(" ") }) + "\n");
+  else process.stderr.write(text);
+}
 
 if (config.help) {
   process.stdout.write(help(COMMAND));
@@ -166,7 +175,7 @@ async function alreadyRunning() {
         + " is on port " + consoleChoice.port + ", and it is not the console for\n"
         + "  " + config.stateDir + " (it could not prove it holds that console's key). Nothing was sent to it.\n"
         + "  To stop it:  " + stopCommand({ port: consoleChoice.port }) + "\n"
-        + "  Or start this one on another port:  " + COMMAND + " --port " + (consoleChoice.port + 2) + "\n\n");
+        + "  Or start this one on another port:  " + again({ port: consoleChoice.port + 2 }) + "\n\n");
     }
     return 1;
   }
@@ -184,8 +193,8 @@ async function alreadyRunning() {
 }
 if (consoleChoice.action === "already-running") process.exit(await alreadyRunning());
 if (consoleChoice.action === "busy") {
-  process.stderr.write("\n  Port " + config.port + " is already in use by another program.\n"
-    + "  Start the console on another port:  " + COMMAND + " --port " + (config.port + 2) + "\n\n");
+  startFailure("port-busy", "\n  Port " + config.port + " is already in use by another program.\n"
+    + "  Start the console on another port:  " + again({ port: config.port + 2 }) + "\n\n");
   process.exit(1);
 }
 config.port = consoleChoice.port;
@@ -196,14 +205,13 @@ const reportChoice = await chooseFreePort({
   host: config.listen, explicit: config.reportPortExplicit, avoid: config.port ? [config.port] : [],
 });
 if (reportChoice.action === "busy") {
-  process.stderr.write("\n  Port " + config.reportPort + " (for other machines to report on) is already in use.\n"
-    + "  Choose another:  " + COMMAND + " --report-port " + (config.reportPort + 2) + "\n"
+  startFailure("report-port-busy", "\n  Port " + config.reportPort + " (for other machines to report on) is already in use.\n"
+    + "  Choose another:  " + again({ "report-port": config.reportPort + 2 }) + "\n"
     + "  Machines that joined earlier look for this console on nearby ports (up to " + REPORTER_SEARCH + " either side of the\n"
     + "  port they joined on) and move by themselves; one further away needs a new join link.\n\n");
   process.exit(1);
 }
 config.reportPort = reportChoice.port;
-const movedReporting = remembered && reportChoice.port !== 0 && reportChoice.port !== remembered ? remembered : null;
 
 // ---------------------------------------------------------------------------
 // The hub
@@ -216,9 +224,8 @@ try {
   stateLock = acquireStateLock(config.stateDir);
   config.stateDir = stateLock.dir;
 } catch (error) {
-  process.stderr.write(error?.code === "ELOCKED"
-    ? lockedStateNotice({ dir: config.stateDir, owner: stateLockOwner(config.stateDir) }) + "\n"
-    : "\n  " + remedy(error, { what: "opening the console's data folder", path: config.stateDir, command: COMMAND }) + "\n\n");
+  if (error?.code === "ELOCKED") startFailure("state-locked", lockedStateNotice({ dir: config.stateDir, owner: stateLockOwner(config.stateDir) }) + "\n");
+  else startFailure("state-unusable", "\n  " + remedy(error, { what: "opening the console's data folder", path: config.stateDir, command: COMMAND }) + "\n\n");
   process.exit(1);
 }
 let registry = null, names = null, store = null;
@@ -229,7 +236,10 @@ if (!config.demo) {
     try { registry?.flush(); names?.save(); store?.flush(); } catch { /* exiting */ }
     finally { try { stateLock.release(); } catch { /* a dead owner is recovered on the next start */ } }
   });
-  for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => process.exit(signal === "SIGINT" ? 130 : 143));
+  // Closing the terminal window sends SIGHUP: the console saves and lets go
+  // of its data folder then too, as for Ctrl+C, so the next start finds it free.
+  const SIGNAL_EXIT = { SIGINT: 130, SIGHUP: 129, SIGTERM: 143 };
+  for (const signal of Object.keys(SIGNAL_EXIT)) process.once(signal, () => process.exit(SIGNAL_EXIT[signal]));
 }
 let admin, certificate;
 try {
@@ -286,7 +296,7 @@ const consoleHandler = createConsoleHandler({
   onSignInLink: () => {
     const link = signIn();
     if (config.json) process.stdout.write(JSON.stringify({ event: "sign-in", at: new Date().toISOString(), signIn: link }) + "\n");
-    else process.stdout.write("\n  A browser asked for a new sign-in link (it works once):  " + link + "\n\n");
+    else process.stdout.write("\n  A new sign-in link was asked for (it works once):  " + link + "\n\n");
   },
   networkCommand: networkCommand(),
 });
@@ -335,9 +345,9 @@ const reportingServer = net.createServer((socket) => {
 
 function listenError(what, port) {
   return (error) => {
-    if (error.code === "EADDRINUSE") process.stderr.write("\n  Port " + port + " (" + what + ") is already in use.\n\n");
-    else if (error.code === "EADDRNOTAVAIL") process.stderr.write("\n  This machine has no network address " + config.listen + ". Try --listen 0.0.0.0.\n\n");
-    else process.stderr.write("\n  " + what + ": " + remedy(error, { what: "opening a port", port, command: COMMAND }) + "\n\n");
+    if (error.code === "EADDRINUSE") startFailure("port-busy", "\n  Port " + port + " (" + what + ") is already in use.\n\n");
+    else if (error.code === "EADDRNOTAVAIL") startFailure("no-such-address", "\n  This machine has no network address " + config.listen + ". Try --listen 0.0.0.0.\n\n");
+    else startFailure("listen-failed", "\n  " + what + ": " + remedy(error, { what: "opening a port", port, command: COMMAND }) + "\n\n");
     process.exit(1);
   };
 }
@@ -349,9 +359,33 @@ config.port = consoleServer.address().port;
 await new Promise((resolve) => reportingServer.listen(config.reportPort, config.listen, resolve));
 config.reportPort = reportingServer.address().port;
 Object.assign(reportingInfo, { port: config.reportPort, consolePort: config.port });
-if (REPORTING_FILE && config.reportPort && !config.demo && !(reportChoice.movedFrom && registry.list().some((d) => !d.local && !d.revokedAt))) {
-  // Kept, so the next start listens where enrolled machines report. A port
-  // taken only for this run (the usual one was busy) is not kept.
+/**
+ * Enrolled machines that report somewhere other than this start's reporting
+ * port, by the port each one last used (recorded at join and on every report;
+ * a machine from before that was recorded is taken to be on the remembered
+ * port). `near` machines look for this console on nearby ports and move here
+ * by themselves; the others cannot find it.
+ */
+function machinesElsewhere() {
+  const byPort = new Map();
+  for (const d of registry.list()) {
+    if (d.local || d.revokedAt) continue;
+    const port = Number.isInteger(d.reportPort) ? d.reportPort : remembered;
+    if (!port || port === config.reportPort) continue;
+    byPort.set(port, (byPort.get(port) || 0) + 1);
+  }
+  return [...byPort].sort((a, b) => a[0] - b[0])
+    .map(([port, machines]) => ({ port, machines, near: Math.abs(port - config.reportPort) <= REPORTER_SEARCH }));
+}
+const elsewhere = config.demo ? [] : machinesElsewhere();
+const stranded = elsewhere.filter((g) => !g.near);
+// Kept, so the next start listens where enrolled machines report. A port taken
+// only for this run is not kept: one the usual port was busy for, and one given
+// with --report-port that machines already enrolled could not find (a one-off
+// never strands them; they move once they are sent new links).
+const keepPort = !(reportChoice.movedFrom && registry.list().some((d) => !d.local && !d.revokedAt))
+  && !(config.reportPortExplicit && stranded.length);
+if (REPORTING_FILE && config.reportPort && !config.demo && keepPort) {
   try { fs.writeFileSync(REPORTING_FILE, JSON.stringify({ v: 1, port: config.reportPort }) + "\n", { mode: 0o600 }); } catch { /* best effort */ }
 }
 
@@ -375,6 +409,8 @@ if (config.json) {
       demo: config.demo,
       local: Boolean(local),
       stateDir: config.stateDir,
+      // Machines that report to another port: how many, and whether they find this one by themselves.
+      machinesElsewhere: elsewhere,
       // A demonstration's key lives in memory, so its scrape token is shown here; a real one's by metrics-token.
       ...(config.demo && config.interop ? { metricsToken: admin.demoScrapeToken() } : {}),
     },
@@ -405,11 +441,16 @@ if (config.json) {
   } else if (!config.demo) {
     lines.push("  this machine only — to connect other machines, restart with --listen 0.0.0.0");
   }
-  if (movedReporting && registry.list().some((d) => !d.local && !d.revokedAt)) {
-    const near = Math.abs(config.reportPort - movedReporting) <= REPORTER_SEARCH;
-    lines.push("", "  Reporting is on port " + config.reportPort + ", not " + movedReporting + " where machines joined. "
-      + (near ? "They look for this console on nearby ports and move here by themselves."
-        : "That is too far for them to find it: start with --report-port " + movedReporting + ", or send each a new join link."));
+  for (const group of elsewhere) {
+    const who = group.machines + " machine" + (group.machines === 1 ? "" : "s");
+    lines.push("", "  Reporting is on port " + config.reportPort + ", but " + who + " report" + (group.machines === 1 ? "s" : "") + " to port " + group.port + ". "
+      + (group.near ? "They look for this console on nearby ports and move here by themselves."
+        : "That is too far for them to find it."));
+    if (!group.near) {
+      lines.push("  To reach them, start with:  " + again({ "report-port": group.port }),
+        "  or send each of them a new join link."
+        + (config.reportPortExplicit && !keepPort ? " This port is used for this run only; without --report-port the next start goes back to " + (remembered || group.port) + "." : ""));
+    }
   }
   if (config.interop) {
     lines.push(config.demo

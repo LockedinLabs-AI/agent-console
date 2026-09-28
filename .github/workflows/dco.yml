@@ -1,0 +1,27 @@
+name: DCO
+# Every commit a pull request adds is signed off by its author under the
+# Developer Certificate of Origin (https://developercertificate.org/), as
+# CONTRIBUTING.md asks. See scripts/dco-check.mjs. It reads the pull request's
+# commits and nothing else: pull_request (never pull_request_target), a
+# read-only token and no secrets.
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  sign-off:
+    name: Signed-off-by on every commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/dco-check.mjs

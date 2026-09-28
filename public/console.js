@@ -1747,7 +1747,7 @@
     return shipped.length ? `<table class="grid"><thead><tr><th scope="col">Repository</th><th scope="col" class="r">Commits</th><th scope="col" class="r">Lines + / −</th><th scope="col" class="r" title="Commits whose subject ends (#N) or merges a pull request; #N may name an issue">Referencing #N</th><th scope="col" class="r">Default merges</th><th scope="col" class="r est">$ / default merge</th></tr></thead><tbody>`
       + shipped.map((x) => `<tr><td><b>${esc(pn("project", x.repo.name))}</b>${x.repo.name !== x.name ? `<span class="sub">${esc(pn("project", x.name))}</span>` : ""}</td><td class="num r">${x.repo.commits}</td><td class="num r">+${fmt(x.repo.added)} / −${fmt(x.repo.removed)}</td>
         <td class="num r">${x.repo.prsMerged === null ? na("no remote", "Needs a remote to tell pull requests from issues") : x.repo.prsMerged}</td><td class="num r">${x.costPerOutcome.defaultMerges === null ? na("no default", "No default branch is known here, so merges into it could not be counted: unavailable, not zero") : x.costPerOutcome.defaultMerges}</td>
-        <td class="num r" data-money>${x.costPerOutcome.perDefaultMergeUsd === null ? (x.costPerOutcome.defaultMerges ? na("unpriced", "No verified list price for what ran here") : na("no merge", "No local default-branch integration in the period, so nothing to divide by")) : money(x.costPerOutcome.perDefaultMergeUsd)}</td></tr>`).join("")
+        <td class="num r" data-money>${x.costPerOutcome.perDefaultMergeUsd === null ? (everyAuthor(x) ? na(EVERY_AUTHOR[0], EVERY_AUTHOR[1]) : x.costPerOutcome.defaultMerges ? na("unpriced", "No verified list price for what ran here") : na("no merge", "No local default-branch integration in the period, so nothing to divide by")) : money(x.costPerOutcome.perDefaultMergeUsd)}</td></tr>`).join("")
       + `</tbody></table><div class="note">What Git recorded on this machine in the period; a word in place of a figure says why there is none.</div>`
       : `<div class="note">No project on this machine is in a Git repository${p.projects.length ? "" : ", or none has transcripts in this period"}.</div>`;
   }
@@ -2705,7 +2705,7 @@
       $("pTotal").title = `${fmt(p.tokens)} tokens in this machine's transcripts · ${label} · ${stampAt}`;
       $("pSpend").textContent = cost.usd === null ? "no priced model" : money(cost.usd) + (cost.status === "partial" ? "+ est. · partial" : " est.");
       $("pSpend").title = cost.status === "partial" ? `A floor: ${plural(partialN, "project is partly", "projects are partly")} unpriced and ${plural(unpricedN, "project is", "projects are")} wholly unpriced (${(cost.unpricedModels || []).join(", ") || "no verified list price"}); their tokens are not in this figure` : "List-price estimate. Not an invoice.";
-      $("pSessions").innerHTML = p.sessions === null ? `<span class="s">sessions not kept</span>` : `${p.sessions.toLocaleString("en-US")} sessions`;
+      $("pSessions").innerHTML = p.sessions === null ? `<span class="s">sessions not kept</span>` : `${plural(p.sessions, "session")}`;
       $("pSessions").title = p.sessions === null ? (p.period && p.period.sessionsKept === false ? "Sessions are kept with the minute detail (8 days), not with the daily rollup this period reads; none is estimated" : "Sessions are kept with the minute detail; none is estimated for this period") : `${plural(p.sessions, "session")} on this machine · ${label}`;
       $("pProv").innerHTML = (p.demo ? "generated · this machine · " : "this machine's transcripts and Git · ") + (p.author === true ? "commits by this machine's Git email" : p.author === false ? "every author — no Git email set here" : "local Git history");
       $("pProv").title = (p.author === false ? "No Git email (user.email) is set in one of these repositories, so its Git figures count every author. None of this leaves this machine." : "Read from this machine only. None of this leaves this machine.") + " · " + stampAt;
@@ -2744,8 +2744,11 @@
       const mmax = Math.max(...merged.map(([, m]) => m.per), 0.01);
       const anyGit = ranked.some((x) => x.repo);
       // one void sentence per card: what neither block can show is said once under spend per commit, and the merge block folds away
-      const commitWhy = priced.length ? "" : anyGit ? "no priced commit in this period" : "no project here is in a Git repository";
-      const mergeWhy = merged.length ? "" : anyGit ? (ranked.some((x) => mergeReading(x).count > 0) ? "no priced merge in this period" : "no default-branch merge in this period") : "";
+      // commits that are every author's (no Git email set) divide nothing: said as that, never as "no priced commit"
+      const othersOnly = anyGit && ranked.filter((x) => x.repo).every(everyAuthor);
+      const commitWhy = priced.length ? "" : othersOnly ? "every author — no Git email set here"
+        : anyGit ? "no priced commit in this period" : "no project here is in a Git repository";
+      const mergeWhy = merged.length || othersOnly ? "" : anyGit ? (ranked.some((x) => mergeReading(x).count > 0) ? "no priced merge in this period" : "no default-branch merge in this period") : "";
       const voidLine = (why) => `<div class="xrow"><span class="xn"><em>${esc(why)}</em></span></div>`;
       $("pSpendRows").innerHTML = priced.length ? priced.slice(0, MODELS_SHOWN).map((x) => `<div class="mrow door" data-inspect="project:${esc(doorId("project", projectKeyOf(x)))}" tabindex="0" role="button" title="${esc(pn("project", x.name))} · spend in the window of the work per local commit — not attribution · open">
           <span class="mn"><span class="txt">${esc(pn("project", x.name))}</span></span><span class="ms"></span>

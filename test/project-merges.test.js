@@ -121,6 +121,15 @@ test("with no Git email set, a repository's commits are everyone's: no spend is 
   assert.ok(perCommit, "no $ / commit cell");
   assert.equal(text(perCommit[1]), "every author");
   assert.match(perCommit[1], /title="No Git email \(user\.email\) is set in this repository/u, "the reason is on the cell");
+  // The Shipped table's $ / default merge says the same, never "unpriced" for a figure that is only withheld.
+  const shippedTable = vm.runInNewContext(slice("  function shippedTable(", "  // ── scrollable regions") + "\nshippedTable",
+    { ...helpers, na: rows.na, everyAuthor: rows.everyAuthor, EVERY_AUTHOR: rows.EVERY_AUTHOR });
+  const shippedRow = shippedTable({ projects: [x] }).match(/<tr><td><b>atlas-api[\s\S]*?<\/tr>/u);
+  assert.ok(shippedRow, "no Shipped row");
+  const lastCell = shippedRow[0].match(/<td class="num r" data-money>([\s\S]*?)<\/td><\/tr>$/u);
+  assert.ok(lastCell, "no $ / default merge cell");
+  assert.equal(text(lastCell[1]), "every author");
+  assert.equal(text(shippedTable({ projects: [project(2)] }).match(/<td class="num r" data-money>([\s\S]*?)<\/td><\/tr>/u)[1]), "$6.00");
   // This machine's own commits (a Git email is set) keep their ratio.
   assert.equal(text(render(project(2)).row.per), "$6.00 est.");
   assert.deepEqual(withheldForOthers({ mine: true }, { perCommitUsd: 4 }), { perCommitUsd: 4 });

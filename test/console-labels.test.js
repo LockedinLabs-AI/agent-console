@@ -39,3 +39,19 @@ test("a lane whose machine left says LEFT; one the console removed says REMOVED"
   // The lane row itself uses the same rule.
   assert.match(JS, /l\.state === "revoked" \? \(machineLeft\(l\.device\.id\) \? "LEFT" : "REMOVED"\)/u);
 });
+
+test("the spend-per-commit card says every author, not 'no priced commit', when no Git email is set", () => {
+  // The Projects card's void line: a withheld ratio is never read as an unpriced one.
+  const card = slice("      const othersOnly = ", "      const voidLine = ");
+  const run = (projects) => vm.runInNewContext(card + "\n({ commitWhy, mergeWhy })", {
+    priced: [], merged: [], anyGit: true, ranked: projects,
+    everyAuthor: (x) => Boolean(x.repo && x.repo.mine === false),
+    mergeReading: () => ({ count: 2 }),
+  });
+  const others = run([{ repo: { mine: false } }]);
+  assert.equal(others.commitWhy, "every author — no Git email set here");
+  assert.equal(others.mergeWhy, "", "said once, not twice");
+  const unpriced = run([{ repo: { mine: true } }]);
+  assert.equal(unpriced.commitWhy, "no priced commit in this period");
+  assert.equal(unpriced.mergeWhy, "no priced merge in this period");
+});

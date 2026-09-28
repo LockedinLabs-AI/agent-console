@@ -34,7 +34,8 @@
   a locked data folder and other start-up failures are JSON lines.
 - Projects no longer divides this machine's spend by other people's commits:
   with no Git email set in a repository, spend per commit and per merge are
-  withheld ("every author") instead of computed from everyone's commits.
+  withheld ("every author") instead of computed from everyone's commits, in the
+  Projects table, the Shipped table and the spend-per-commit card.
 - Add a machine says when it leaves out a person's or machine's name it cannot
   use, instead of dropping it silently.
 - `policy apply` and `policy status` say when `node` is not on the PATH, since
@@ -44,7 +45,9 @@
   longer writes "Leave this window open" to its log. A lane whose machine left
   says LEFT, as the Machines panel does. An estimate under a cent reads
   "<$0.01", not "$0.00". Lines the collector could not count are called
-  transcript lines, not messages, which is what is counted.
+  transcript lines, not messages, which is what is counted. Projects says
+  "1 session", not "1 sessions". The Console screenshots are retaken from
+  `--demo`.
 
 ## 0.4.1 — 2026-09-27
 

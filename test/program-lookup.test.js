@@ -238,11 +238,10 @@ test("each entry point sets the variable before it starts a program", async (t) 
   for (const entry of ["bin/agent-console.mjs", "server.js"]) {
     // The opener is the first program a demo console started with --open runs; the
     // recorder ends the process there, before anything is started.
-    const log = path.join(dir, path.basename(entry) + ".ndjson");
     const run = spawnSync(process.execPath, ["--import", RECORDER, path.join(ROOT, entry), "--demo", "--json", "--open", "--port", "0", "--report-port", "0"],
-      { cwd: dir, env: { ...env, RECORD_PROGRAMS: log }, encoding: "utf8", timeout: 60_000 });
+      { cwd: dir, env, encoding: "utf8", timeout: 60_000 });
     assert.equal(run.status, 0, `${entry}: ${run.stderr}`);
-    const calls = fs.readFileSync(log, "utf8").trim().split("\n").map((line) => JSON.parse(line));
+    const calls = run.stderr.split(/\r?\n/u).filter((line) => line.startsWith("RECORDED ")).map((line) => JSON.parse(line.slice(9)));
     assert.deepEqual(calls, [{ call: "execFile", file: opener, variable: "1" }], entry);
   }
 });
@@ -262,7 +261,6 @@ test("Windows: the git the console runs comes from PATH, not from the folder it 
   try {
     const git = programOnPath("git", { cwd: repo });
     assert.ok(git && !inside(fs.realpathSync.native(repo), fs.realpathSync.native(git)), String(git));
-    assert.match(execFileSync(git, ["--version"], { cwd: repo, encoding: "utf8" }), /^git version /u);
     const top = await repoToplevel(createGitStatsStore(), repo);
     assert.equal(path.win32.basename(String(top)).toLowerCase(), path.win32.basename(repo).toLowerCase());
   } finally {

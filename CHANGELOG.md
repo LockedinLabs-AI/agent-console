@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Windows: helper programs are found on PATH only. Git is started by its full
+  path, and the browser opener and desktop notifier from the Windows system
+  folder.
+
 ## 0.4.1 — 2026-09-27
 
 - Cap the transcript reading interval set through `AGENT_CONSOLE_POLL_MS` at one

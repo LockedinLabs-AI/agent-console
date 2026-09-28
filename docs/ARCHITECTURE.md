@@ -274,7 +274,7 @@ usage attestation. Read [SECURITY.md](../SECURITY.md) before network deployment.
 
 | Component | Responsibility and source |
 | --- | --- |
-| Entry and configuration | `bin/agent-console.mjs`, `server.js`, `lib/config.js`: command selection, configuration and listener lifecycle. |
+| Entry and configuration | `bin/agent-console.mjs`, `server.js`, `lib/config.js`: command selection, configuration and listener lifecycle. `lib/programs.js`: helper programs found on PATH only, imported first by every entry point and every module that starts a program. |
 | Collection | `lib/collector/`: parsers, projection, identity, spool, transport and pricing; `scanner.js` decides which transcripts a pass looks at (a budgeted sweep once a minute, only what can be changing in between). |
 | Reporter | `lib/reporter.js`: enrollment, local credentials, reporting and leave. `lib/reporter-outbox.js`: opt-in alerts and activity pending until the console acknowledges them, kept in the collector's cursor file. |
 | Admin and enrollment | `lib/hub/admin.js`, `registry.js`, `tls.js`: browser sessions, invitation/device state and hub TLS identity. |

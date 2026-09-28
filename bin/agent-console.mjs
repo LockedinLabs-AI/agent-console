@@ -11,6 +11,8 @@
  * `joni` must not start a console that reads this machine.
  */
 
+import "../lib/programs.js"; // first, for every command: helper programs come from PATH only
+
 const [major] = process.versions.node.split(".").map(Number);
 if (major < 22) {
   process.stderr.write(

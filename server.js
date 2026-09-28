@@ -15,6 +15,7 @@
  * usage (lib/hub/store.js) and builds the console's view (lib/hub/aggregate.js).
  */
 
+import { systemProgram } from "./lib/programs.js"; // first: helper programs come from PATH only
 import http from "node:http";
 import https from "node:https";
 import net from "node:net";
@@ -84,7 +85,7 @@ function networkCommand() {
 /** Open the page in the platform's default browser. Best effort, never fatal. */
 function openBrowser(address) {
   if (process.platform === "darwin") execFile("/usr/bin/open", [address], () => {});
-  else if (process.platform === "win32") execFile("cmd", ["/c", "start", "", address.replace(/&/gu, "^&")], () => {});
+  else if (process.platform === "win32") execFile(systemProgram("cmd.exe") || "cmd", ["/c", "start", "", address.replace(/&/gu, "^&")], () => {});
   else execFile("xdg-open", [address], () => {});
 }
 

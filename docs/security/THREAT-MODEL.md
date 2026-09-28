@@ -53,7 +53,7 @@ console does not defend against them and says so
 are mode 600 in 700 directories on macOS and Linux
 ([lib/hub/admin.js:59-62](../../lib/hub/admin.js#L59-L62),
 [lib/hub/tls.js:100-103](../../lib/hub/tls.js#L100-L103),
-[lib/reporter.js:215-221](../../lib/reporter.js#L215-L221)); state records are
+[lib/reporter.js:216-222](../../lib/reporter.js#L216-L222)); state records are
 read by descriptor, refusing symlinks and swapped files
 ([lib/hub/state-file.js](../../lib/hub/state-file.js)).
 
@@ -70,7 +70,7 @@ read by descriptor, refusing symlinks and swapped files
   which defeats DNS rebinding ([lib/hub/routes.js:90-96](../../lib/hub/routes.js#L90-L96)).
 - A program that takes the console's port first learns nothing: a second
   start proves it holds the key by HMAC challenge, and opens the browser only
-  on a console that proved itself ([server.js:118-185](../../server.js#L118-L185),
+  on a console that proved itself ([server.js:119-186](../../server.js#L119-L186),
   [lib/hub/admin.js:24-33](../../lib/hub/admin.js#L24-L33)).
 - Residual: a browser sends a `127.0.0.1` cookie to every port on that
   address, so another local web server the user visits can see it. It is
@@ -80,12 +80,12 @@ read by descriptor, refusing symlinks and swapped files
 ### An attacker on the same network
 
 - The console's page and API are never on the network, whatever `--listen`
-  says ([server.js:347](../../server.js#L347)).
+  says ([server.js:348](../../server.js#L348)).
 - The reporting port answers only private addresses unless `--allow-public`
   ([lib/hub/routes.js:190-196](../../lib/hub/routes.js#L190-L196)).
 - Joins, reports and leaves are refused over plain HTTP
   ([lib/hub/routes.js:212-218](../../lib/hub/routes.js#L212-L218)); TLS 1.2+
-  ([server.js:319](../../server.js#L319)).
+  ([server.js:320](../../server.js#L320)).
 - A reporter accepts only the certificate whose fingerprint is in its join
   link, on every connection ([lib/collector/pinned.js:68-80](../../lib/collector/pinned.js#L68-L80)),
   so a machine that answers at the hub's address gets no code, no token and
@@ -108,12 +108,12 @@ read by descriptor, refusing symlinks and swapped files
   it ([lib/collector/collector.js:305-338](../../lib/collector/collector.js#L305-L338)).
   It cannot ask for more: the reporter has no request the hub can make it
   answer, and project hashes use a key the hub never has
-  ([lib/reporter.js:382-389](../../lib/reporter.js#L382-L389)).
+  ([lib/reporter.js:383-390](../../lib/reporter.js#L383-L390)).
 - What it sends back is checked before use: identifiers must match their
   exact pattern, so none can steer a file path, and text is stripped of
   control characters before printing
-  ([lib/reporter.js:107-110](../../lib/reporter.js#L107-L110),
-  [lib/reporter.js:359-364](../../lib/reporter.js#L359-L364)). Responses are
+  ([lib/reporter.js:108-111](../../lib/reporter.js#L108-L111),
+  [lib/reporter.js:360-365](../../lib/reporter.js#L360-L365)). Responses are
   capped at 1 MiB ([lib/collector/pinned.js:20](../../lib/collector/pinned.js#L20)).
 
 ### A malicious reporter (a machine that joined, then misbehaves)
@@ -172,9 +172,9 @@ read by descriptor, refusing symlinks and swapped files
 
 | Component | Spoofing | Tampering | Repudiation | Information disclosure | Denial of service | Elevation of privilege |
 | --- | --- | --- | --- | --- | --- | --- |
-| Console (loopback page and API) | Sign-in cookie + loopback Host + no proxy headers ([routes.js:509](../../lib/hub/routes.js#L509)) | Same; state files mode 600 | Joins and leaves are printed as they happen ([server.js:295-301](../../server.js#L295-L301)); no persistent audit log of console actions | Loopback only ([server.js:347](../../server.js#L347)); redaction ([http.js:52-58](../../lib/hub/http.js#L52-L58)) | Local only | Runs as the user; no privileged operation |
-| Reporting listener (hub) | Device tokens, SHA-256 verifiers ([registry.js:352](../../lib/hub/registry.js#L352)) | TLS; exact record shape | Per-device records keyed by device id | Private addresses only by default ([routes.js:190-196](../../lib/hub/routes.js#L190-L196)) | Join, ingest and bad-token rate limits ([routes.js:37-39](../../lib/hub/routes.js#L37-L39)); body caps; socket timeouts ([server.js:321-326](../../server.js#L321-L326)) | Serves only join and ingest routes ([routes.js:1-20](../../lib/hub/routes.js#L1-L20)) |
-| Reporter | Pinned hub certificate ([pinned.js:68-80](../../lib/collector/pinned.js#L68-L80)) | Response validation ([reporter.js:359-364](../../lib/reporter.js#L359-L364)) | Local `reporter.log` in background mode | One allowlist for what leaves ([collector.js:305-338](../../lib/collector/collector.js#L305-L338)); opt-ins per run | Bounded retries ([transport.js](../../lib/collector/transport.js)) | Runs as the user |
+| Console (loopback page and API) | Sign-in cookie + loopback Host + no proxy headers ([routes.js:509](../../lib/hub/routes.js#L509)) | Same; state files mode 600 | Joins and leaves are printed as they happen ([server.js:296-302](../../server.js#L296-L302)); no persistent audit log of console actions | Loopback only ([server.js:348](../../server.js#L348)); redaction ([http.js:52-58](../../lib/hub/http.js#L52-L58)) | Local only | Runs as the user; no privileged operation |
+| Reporting listener (hub) | Device tokens, SHA-256 verifiers ([registry.js:352](../../lib/hub/registry.js#L352)) | TLS; exact record shape | Per-device records keyed by device id | Private addresses only by default ([routes.js:190-196](../../lib/hub/routes.js#L190-L196)) | Join, ingest and bad-token rate limits ([routes.js:37-39](../../lib/hub/routes.js#L37-L39)); body caps; socket timeouts ([server.js:322-327](../../server.js#L322-L327)) | Serves only join and ingest routes ([routes.js:1-20](../../lib/hub/routes.js#L1-L20)) |
+| Reporter | Pinned hub certificate ([pinned.js:68-80](../../lib/collector/pinned.js#L68-L80)) | Response validation ([reporter.js:360-365](../../lib/reporter.js#L360-L365)) | Local `reporter.log` in background mode | One allowlist for what leaves ([collector.js:305-338](../../lib/collector/collector.js#L305-L338)); opt-ins per run | Bounded retries ([transport.js](../../lib/collector/transport.js)) | Runs as the user |
 | Collector | n/a | Reads transcripts read-only; spool mode 600 | n/a | Salted HMAC hashes ([collector.js:96](../../lib/collector/collector.js#L96)) | Bounded by retention window | n/a |
 | Installers / join command | HTTPS to github.com | SHA-256 check before install or run | n/a | n/a | n/a | User directories only; no admin ([install.sh:91-94](../../install.sh#L91-L94), [install.ps1:75](../../install.ps1#L75)) |
 | Release pipeline | OIDC-signed attestations | Pinned actions; tag ruleset; no `--clobber` | Attestations record workflow, commit and run | Public logs print no secret or certificate name | n/a | Per-job permissions |

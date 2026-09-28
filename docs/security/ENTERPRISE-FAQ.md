@@ -82,7 +82,7 @@ LDAP or role model in this version.
 
 **Encryption in transit?** Reporter to hub: TLS 1.2 or later, pinned to the
 hub's own ECDSA P-256 certificate, whose fingerprint is in the join link
-([server.js:319](../../server.js#L319),
+([server.js:320](../../server.js#L320),
 [lib/collector/pinned.js](../../lib/collector/pinned.js)). Browser to console:
 plain HTTP on `127.0.0.1`, which never leaves the computer.
 

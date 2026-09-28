@@ -95,6 +95,17 @@ Keep it compact and readable in both themes. Check any screen you change at
 1440×900, 1280×800 and phone width, with no console errors. Any new dependency
 or background activity needs a stated reason.
 
+## Sign-off
+
+We ask that every commit be signed off under the
+[Developer Certificate of Origin](https://developercertificate.org/): a short
+statement that you wrote the change, or otherwise have the right to submit it
+under the project's licence. `git commit -s` adds the `Signed-off-by:` line
+from your Git name and email, which must match the commit's author. The DCO
+check on each pull request reads every commit. If one was missed,
+`git rebase --signoff HEAD~3` signs off the last three commits, for example,
+and `git push --force-with-lease` updates the pull request.
+
 ## Pull requests
 
 Describe what changes for the person using the console and how you verified it,

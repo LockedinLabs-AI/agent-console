@@ -10,11 +10,12 @@
 <h1 align="center">Agent Console</h1>
 
 <p align="center">
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/LockedinLabs-AI/agent-console"></a>
+  <a href="https://github.com/LockedinLabs-AI/agent-console/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/LockedinLabs-AI/agent-console/ci.yml?branch=main&label=CI"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/LockedinLabs-AI/agent-console"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/LockedinLabs-AI/agent-console/badge"></a>
+  <a href="https://www.bestpractices.dev/projects/14979"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/14979/badge"></a>
   <a href="https://github.com/LockedinLabs-AI/agent-console/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/LockedinLabs-AI/agent-console"></a>
   <a href="https://nodejs.org"><img alt="Node.js 22 or newer" src="https://img.shields.io/badge/node-%3E%3D22-339933"></a>
-  <a href="https://github.com/LockedinLabs-AI/agent-console/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/LockedinLabs-AI/agent-console/ci.yml?branch=main&label=CI"></a>
-  <a href="https://www.bestpractices.dev/projects/14979"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/14979/badge"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/LockedinLabs-AI/agent-console"></a>
 </p>
 
 <p align="center">
@@ -42,7 +43,7 @@
 | **Gateway and telemetry aware** | Optional ingest of Claude Code OpenTelemetry and Kong or LiteLLM token metrics, a Prometheus `/metrics` endpoint and a [Grafana dashboard](docs/grafana-agent-console.json). |
 | **Honest numbers** | Estimates say they are estimates; unknown readings are shown as unknown, never as zero. |
 | **Safe to present** | Presenting mode (P) replaces every project, machine and person with a stand-in name. |
-| **Verifiable supply chain** | Apple-signed and notarized macOS builds, `SHA256SUMS`, signed build attestations and, from 0.4.1, a CycloneDX SBOM on every release; [threat model](docs/security/THREAT-MODEL.md), [NIST SSDF mapping](docs/security/SSDF.md) and an [enterprise security FAQ](docs/security/ENTERPRISE-FAQ.md). |
+| **Verifiable supply chain** | Apple-signed and notarized macOS builds, `SHA256SUMS`, signed build attestations and, from 0.4.1, a CycloneDX SBOM on every release ([verify one](#verify-a-release)); [threat model](docs/security/THREAT-MODEL.md), [NIST SSDF mapping](docs/security/SSDF.md) and an [enterprise security FAQ](docs/security/ENTERPRISE-FAQ.md). |
 
 **Installing with Claude Code or Codex?** Give it this repository's URL and ask
 it to follow [INSTALL.md](INSTALL.md). The same guide works if you prefer to
@@ -133,7 +134,7 @@ npx.cmd --yes https://github.com/LockedinLabs-AI/agent-console/releases/download
 </details>
 
 Published files can be checked against the release's `SHA256SUMS` and build
-attestation ([Checking a download](#checking-a-download)). Consult that
+attestation ([Verify a release](#verify-a-release)). Consult that
 version's release notes for its signing status. The Windows executable is
 not code-signed; Node.js can run the source without installing that executable.
 
@@ -180,7 +181,7 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
 **No Node.js?** The [v0.4.1 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.1)
 carries standalone executables with Node.js inside. Use
 [the installation instructions](docs/standalone-install.md)
-and [check the downloaded file](#checking-a-download).
+and [check the downloaded file](#verify-a-release).
 
 **Or download it.** On the [GitHub page](https://github.com/LockedinLabs-AI/agent-console),
 press the green **Code** button, then **Download ZIP**, and unzip it. You get a
@@ -751,38 +752,53 @@ place; last, delete `~/.agent-console/` and the executable's cache folder.
 [docs/uninstall.md](docs/uninstall.md) lists every file, folder and background
 item, per system.
 
-## Checking a download
+## Verify a release
 
-From 0.2.1 on, each release's package is built by CI from the release's tag.
-The release page lists its SHA-256 in `SHA256SUMS`, and GitHub keeps a signed
-build provenance attestation for it. For example, to check the published
-v0.4.1 package you downloaded:
+From 0.2.1 on, CI builds each release from its tag
+([release.yml](.github/workflows/release.yml)); nothing is built on anyone's
+own machine. The files it attaches (the package, the standalone executables
+and their archives, and the SBOMs) are each listed in the release's
+`SHA256SUMS` and covered by a signed build provenance attestation. To check
+the v0.4.1 package, with `SHA256SUMS` downloaded beside it:
 
 ```sh
-shasum -a 256 lockedinlabs-agent-console-0.4.1.tgz              # macOS, Linux
-Get-FileHash lockedinlabs-agent-console-0.4.1.tgz               # Windows PowerShell
+shasum -a 256 -c SHA256SUMS --ignore-missing        # macOS, Linux
+Get-FileHash lockedinlabs-agent-console-0.4.1.tgz   # Windows PowerShell: compare with SHA256SUMS
 gh attestation verify lockedinlabs-agent-console-0.4.1.tgz -R LockedinLabs-AI/agent-console
 ```
 
-**Links from before the move.** Releases v0.1.0 through v0.3.0 were attested
-under the project's original repository name, and that historical identity
-stays the same after the move: check those files with
-`gh attestation verify <file> --owner SamSnead85 --signer-repo SamSnead85/agent-console`
-instead.
-
 The standalone executables ([docs/executables.md](docs/executables.md)) are
-nine more files on the same page, each with its line in `SHA256SUMS` and the
-same attestation: `agent-console-darwin-arm64`, `agent-console-darwin-x64`,
-`agent-console-linux-x64`, `agent-console-linux-arm64` and
-`agent-console-win32-x64.exe`, and a `.tar.gz` of each of the first four.
-Check one the same way, by its own file name.
+checked the same way, each by its own file name: `agent-console-darwin-arm64`,
+`agent-console-darwin-x64`, `agent-console-linux-x64`,
+`agent-console-linux-arm64` and `agent-console-win32-x64.exe`, and a `.tar.gz`
+of each of the first four.
 
-A checksum or GitHub build attestation does not establish Apple signing or
-notarization on its own. From v0.4.1, the macOS executables are signed with
-an Apple Developer ID and notarized by Apple
-([details](docs/executables.md#signed-or-not-plainly)). Check the exact
+**SBOMs.** From 0.4.1, the package and each executable have a CycloneDX SBOM
+on the release page (`*.cdx.json`), attested against the files it describes.
+To check that a file's SBOM is the one the release workflow made:
+
+```sh
+gh attestation verify lockedinlabs-agent-console-0.4.1.tgz -R LockedinLabs-AI/agent-console \
+  --predicate-type https://cyclonedx.org/bom
+```
+
+**npm provenance.** The package is not on the npm registry yet. When it is,
+[npm-publish.yml](.github/workflows/npm-publish.yml) publishes that same
+attested file with npm provenance, after checking it against `SHA256SUMS`, its
+attestation and the tag; `npm audit signatures` checks the provenance in a
+project that installs it.
+
+**Signing.** A checksum or build attestation does not establish Apple signing
+or notarization on its own. From v0.4.1, the macOS executables are signed
+with an Apple Developer ID and notarized by Apple
+([details](docs/executables.md#signed-or-not-plainly)); check the exact
 release's notes and the downloaded file's signature before relying on a
 signing claim. The Windows executable is not code-signed.
+
+**Releases before the move.** v0.1.0 through v0.3.0 were attested under the
+project's original repository name, which remains their identity: check those
+files with
+`gh attestation verify <file> --owner SamSnead85 --signer-repo SamSnead85/agent-console`.
 
 ## The check in every command
 

@@ -349,7 +349,7 @@ archive; the presence of its workflow does not establish registry availability.
 Publication and a usable download remain separate states. Development pushes
 can explicitly report a pending release; scheduled, manual and release checks
 require a working download. Pending availability does not establish a verified
-installation. See [download verification](../README.md#checking-a-download).
+installation. See [release verification](../README.md#verify-a-release).
 
 ## Model and MCP boundary
 

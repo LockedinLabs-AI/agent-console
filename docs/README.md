@@ -15,7 +15,7 @@ installation with Claude Code or Codex, use [INSTALL.md](../INSTALL.md).
 | Connect another computer | [Add another computer](../README.md#add-another-computer) and [how reporting works](../README.md#how-the-machines-connect). |
 | Understand tokens, cache use and dollar figures | [Measurements](MEASUREMENTS.md) and [accounting](accounting.md). Estimates are not invoices. |
 | Run it without keeping a terminal open | [Background operation](BACKGROUND.md). |
-| Check a download or use a standalone executable | [Download verification](../README.md#checking-a-download) and [standalone installation](standalone-install.md). |
+| Check a download or use a standalone executable | [Release verification](../README.md#verify-a-release) and [standalone installation](standalone-install.md). |
 | Fix a startup or reporting problem | [Troubleshooting](../README.md#troubleshooting). |
 | Remove the console and its state | [Uninstall](uninstall.md). |
 

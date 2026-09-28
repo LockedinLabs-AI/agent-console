@@ -203,7 +203,7 @@ matches. The check holds no quote, backslash or dollar sign, so it pastes
 literally into sh, bash, zsh, fish and PowerShell. Release files are uploaded
 without replacing one that exists. From 0.2.1 on, CI builds each release's package, attaches its SHA-256
 checksum and records a signed build provenance attestation for it (see the
-README's "Checking a download").
+README's "Verify a release").
 
 **Joining.** A join link carries a 128-bit code; the eight-character code for
 typing by hand exists too. Either works once and lives at most an hour. Join

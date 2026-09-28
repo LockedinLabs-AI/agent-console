@@ -14,6 +14,7 @@
   <a href="https://github.com/LockedinLabs-AI/agent-console/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/LockedinLabs-AI/agent-console"></a>
   <a href="https://nodejs.org"><img alt="Node.js 22 or newer" src="https://img.shields.io/badge/node-%3E%3D22-339933"></a>
   <a href="https://github.com/LockedinLabs-AI/agent-console/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/LockedinLabs-AI/agent-console/ci.yml?branch=main&label=CI"></a>
+  <a href="https://www.bestpractices.dev/projects/14979"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/14979/badge"></a>
 </p>
 
 <p align="center">

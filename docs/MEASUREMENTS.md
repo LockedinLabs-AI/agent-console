@@ -2,13 +2,19 @@
 
 ## Sources
 
-Claude Code: the JSONL transcripts under `~/.claude/projects`. Codex: the
-rollout JSONL under `~/.codex/sessions`. Both are read locally and read-only,
-on each machine, by the collector (`lib/collector/`). Only the transcripts
+Claude Code: local JSONL transcripts in its configured project folders. Codex:
+rollout JSONL under `$CODEX_HOME/sessions` and its sibling `archived_sessions`
+(default `~/.codex`). Both are read locally and read-only on each enrolled
+machine by the collector (`lib/collector/`), including recently modified threads
+filed under older start dates. Explicit folder overrides follow the
+[source contract](accounting.md#1-sources). Only the transcripts
 written inside the console's retention window (8 days by default) are read.
 The console also keeps daily totals for 400 days, which answer the 30-day
 period after the minute detail is gone.
 The field-by-field rules are in [COLLECTOR-CONTRACT.md](COLLECTOR-CONTRACT.md).
+
+These collectors cover supported local clients. They do not automatically see
+browser chats, arbitrary provider API calls, every account, or unenrolled devices.
 
 ## Tokens
 
@@ -19,6 +25,13 @@ shows the 5-minute, 1-hour and unreported-lifetime parts). A class a tool did
 not report is unknown, not zero: the total is then a floor, and the screen says
 so. A line that carries usage and cannot be counted is counted as a drop, by
 reason, and the screen says how many ([accounting.md](accounting.md) §3.2).
+
+Codex lifetime counters are not rolling totals. Native response records carry
+individual usage; otherwise successive cumulative samples supply increments.
+The first cumulative observation counts only its reported last response.
+Missing initial evidence remains a coverage gap, not usage assigned to today.
+Fork replay, copies and repeated responses are excluded under the
+[accounting rules](accounting.md#4-codex-cumulative-counters).
 
 **Periods.** One switch sets the period for every view: 1 hour, 24 hours and
 7 days are whole minutes ending now, and the chart's bars add up to the

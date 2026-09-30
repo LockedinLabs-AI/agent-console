@@ -107,7 +107,7 @@ export function codexSession({ id, cwd, branch = "canary-private-branch", model 
     input += 9000 + i * 1500; cached += 7000 + i * 1400; output += 800 + i * 120; reasoning += 200;
     lines.push({ timestamp: iso(t), type: "event_msg", payload: { type: "token_count", info: {
       total_token_usage: { input_tokens: input, cached_input_tokens: cached, cache_write_input_tokens: 0, output_tokens: output, reasoning_output_tokens: reasoning, total_tokens: input + output },
-      last_token_usage: { input_tokens: 9000, cached_input_tokens: 7000, output_tokens: 800, reasoning_output_tokens: 200, total_tokens: 9800 },
+      last_token_usage: { input_tokens: 9000 + i * 1500, cached_input_tokens: 7000 + i * 1400, cache_write_input_tokens: 0, output_tokens: 800 + i * 120, reasoning_output_tokens: 200, total_tokens: 9800 + i * 1620 },
       model_context_window: 272000,
     } } });
   }

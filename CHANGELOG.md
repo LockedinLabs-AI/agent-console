@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Count only the reported last response when a Codex cumulative source has no
+  prior baseline. Missing or inconsistent initial response evidence remains a
+  visible coverage gap; a thread lifetime never becomes one rolling event.
+- Retain exclusion of late native response IDs after switching accounting modes,
+  and keep cumulative fallback active when a native sample has no usable usage
+  or timestamp.
+
 - Windows: helper programs are found on PATH only. Git is started by its full
   path, and the browser opener and desktop notifier from the Windows system
   folder.

@@ -93,7 +93,9 @@ counted exactly once.
   running total, so switching there counts nothing twice. Only a record for
   the response the last counted running total already covered (its
   `last_token_usage` equals the record's usage) is late: it is not counted,
-  and is reported as `lateUsageRecord`.
+  and is reported as `lateUsageRecord`. Its response ID remains excluded after
+  native mode begins. A native sample without usable usage or a timestamp MUST
+  NOT disable valid cumulative fallback.
 - Otherwise, an event is one `event_msg` / `token_count` line whose cumulative
   `info.total_token_usage` differs from the previous distinct cumulative total
   in the same thread.
@@ -196,9 +198,12 @@ its children's usage, so each thread's own differences are added once.
    (`unboundedReplay`). It is never guessed with a timestamp heuristic.
 6. **Rollover:** if a thread continues in a new rollout file, the thread id and
    ordinals identify the events, so replayed lines are duplicates. The first
-   observation in a file with no earlier baseline counts its whole cumulative
-   total. That is correct for a new thread. For a continued thread without
-   ordinals, it is the known limit in §13.
+   observation with no earlier baseline MUST use its `last_token_usage`, never
+   the whole cumulative total. Missing last-response usage is coverage debt
+   (`missingLastUsage`); a last-response class exceeding the corresponding
+   reported cumulative class is `invalidLastUsage`. The cumulative sample still
+   seeds the next difference. Unreported last-response classes remain unknown,
+   even when the lifetime sample reports them.
 7. **Per-response records first.** Where a rollout writes `token_usage_record`
    lines, they are the events (§2) and the rules above only keep the baseline.
    The running total can miss requests, such as a compaction call, that the
@@ -382,9 +387,9 @@ These are counts from one heavily used machine, taken read-only on
   copied history, copies would no longer share an identity. The suite pins the
   observed behaviour, so a change in format shows up as a failing conformance
   run, not as silent double counting.
-- A continued Codex thread whose new file lacks ordinals, and whose first
-  cumulative total includes earlier usage, cannot be told apart from a new
-  thread.
+- Work before the first observed Codex cumulative sample cannot be assigned
+  to timestamps from that sample alone. Only its reported last response is
+  counted; earlier usage needs earlier source records.
 - Transcripts are what the tools wrote. They are not reconciled with the
   provider's usage API or invoice, and requests a tool never logged are
   invisible.

@@ -163,6 +163,8 @@ is then complete only when nothing was dropped. The reasons:
 | `changedFinalUsage` | Usage that changed after a response without line uuids was counted. |
 | `revisedDown` | A line rewritten in the same transcript with lower, non-zero usage. What was counted is not un-counted. A copy with all-zero usage, which Claude Code writes of counted lines, takes nothing away and is not a drop. |
 | `missingReplayOrdinal`, `unboundedReplay`, `counterReset`, `ambiguousEventIdentity` | Codex readings §4 cannot place. |
+| `missingLastUsage`, `invalidLastUsage` | A first Codex cumulative observation without usable last-response evidence. |
+| `invalidResponseUsage`, `invalidCumulativeUsage`, `invalidUsageDelta` | Unusable Codex usage, or an increase whose cache subsets exceed its input. |
 | `lateUsageRecord` | A Codex per-response record written after the running total that already counted its response (§2). |
 | `oversizedLine` | A line longer than the implementation holds (32 MiB here) whose usage could not be recovered from its first and last bytes. |
 | `unreadableLine` | A complete line that looks like usage and is not valid JSON. |
@@ -182,7 +184,11 @@ Codex writes a running total per thread. The parent thread's counter excludes
 its children's usage, so each thread's own differences are added once.
 
 1. **Unchanged total:** no event.
-2. **Increase:** the event's usage is the difference in each class.
+2. **Increase:** the event's usage is the difference in each class. Both the
+   cumulative sample and its difference must preserve known subset relations:
+   cached input cannot exceed input, and reasoning cannot exceed output. A
+   contradictory difference is skipped with `invalidUsageDelta` and the current
+   consistent cumulative sample becomes the next baseline.
 3. **Restart:** if any class goes *down*, the counter restarted from zero.
    When the event's `last_token_usage` equals the new cumulative total in every
    class, the new total is this event's usage. Any other drop could be a
@@ -204,6 +210,11 @@ its children's usage, so each thread's own differences are added once.
    reported cumulative class is `invalidLastUsage`. The cumulative sample still
    seeds the next difference. Unreported last-response classes remain unknown,
    even when the lifetime sample reports them.
+   An empty or contradictory cumulative sample is `invalidCumulativeUsage`;
+   it does not replace the last usable counter. After that gap, only the next
+   sample's reported last response is dated at its timestamp, not all growth
+   across the unmeasured interval. These corrections affect newly read lines;
+   upgrading does not rewrite already retained measurements.
 7. **Per-response records first.** Where a rollout writes `token_usage_record`
    lines, they are the events (§2) and the rules above only keep the baseline.
    The running total can miss requests, such as a compaction call, that the

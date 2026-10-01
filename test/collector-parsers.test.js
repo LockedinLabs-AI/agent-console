@@ -13,8 +13,13 @@ const assistant = (usage, extra = {}) => ({ type: 'assistant', timestamp: stamp,
   cwd: '/synthetic/project', isSidechain: false, uuid: `synthetic-line-${usage.output_tokens}`, requestId: 'synthetic-request',
   message: { id: 'synthetic-message', model: 'claude-opus-4-8', usage }, ...extra });
 const usage = { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 20, cache_read_input_tokens: 30 };
-const tokens = (total, extra = {}) => ({ type: 'event_msg', timestamp: stamp,
-  payload: { type: 'token_count', info: { total_token_usage: total, last_token_usage: total } }, ...extra });
+const tokens = (total, extra = {}) => {
+  // Synthetic complete counters keep their stated sum when a test changes a
+  // component. Tests for contradictions set the raw field explicitly.
+  const usage = { ...total, ...(Object.hasOwn(total, 'total_tokens') ? { total_tokens: total.input_tokens + total.output_tokens } : {}) };
+  return { type: 'event_msg', timestamp: stamp,
+    payload: { type: 'token_count', info: { total_token_usage: usage, last_token_usage: usage } }, ...extra };
+};
 const counters = { input_tokens: 100, output_tokens: 20, cached_input_tokens: 60, cache_write_input_tokens: 10,
   reasoning_output_tokens: 5, total_tokens: 120 };
 const call = (tool, line, state, offset = 0) => {
@@ -131,7 +136,7 @@ test('missing classes stay null; unsafe numbers and impossible cache counts are 
   assert.equal(bad.cacheRead, null);
   const impossible = call('codex', tokens({ ...counters, input_tokens: 5 }));
   assert.deepEqual(impossible.records, []);
-  assert.equal(impossible.state.coverageDebt.invalidLastUsage, 1, 'contradictory subsets are not a safe floor');
+  assert.equal(impossible.state.coverageDebt.invalidCumulativeUsage, 1, 'contradictory subsets are not a safe floor');
 });
 
 test('Codex input-only consumption with an unreported cache class is preserved as unknown, then deduplicated', () => {
@@ -489,4 +494,47 @@ test('invalid native evidence does not switch off a valid cumulative fallback', 
     const next = call('codex', tokens({ ...counters, input_tokens: 150 }), invalid.state, 2);
     assert.equal(next.records[0].fresh, 50);
   }
+});
+
+test('a cumulative increase cannot report more cached input than its input increase', () => {
+  const first = call('codex', tokens(counters));
+  const invalid = call('codex', tokens({ ...counters, input_tokens: 110, output_tokens: 22,
+    cached_input_tokens: 90 }), first.state, 2);
+  assert.deepEqual(invalid.records, []);
+  assert.equal(invalid.state.coverageDebt.invalidUsageDelta, 1);
+  const next = call('codex', tokens({ ...counters, input_tokens: 130, output_tokens: 25,
+    cached_input_tokens: 95, cache_write_input_tokens: 12 }), invalid.state, 3);
+  assert.deepEqual(totals(next.records), { fresh: 13, output: 3, cacheWrite: 2, cacheRead: 5, messages: 1 });
+});
+
+test('empty or contradictory cumulative samples preserve the baseline and expose the unmeasured interval', () => {
+  const invalidSamples = [{}, { input_tokens: 10, output_tokens: 2, cached_input_tokens: 20,
+    cache_write_input_tokens: 1, total_tokens: 12 }, { ...counters, total_tokens: 119 },
+  { ...counters, reasoning_output_tokens: 21 }];
+  for (const total of invalidSamples) {
+    const first = call('codex', tokens(counters));
+    const bad = tokens(counters);
+    bad.payload.info.total_token_usage = total;
+    bad.payload.info.last_token_usage = total;
+    const invalid = call('codex', bad, first.state, 2);
+    assert.deepEqual(invalid.records, []);
+    assert.deepEqual(invalid.state.codexUsage, first.state.codexUsage);
+    assert.equal(invalid.state.coverageDebt.invalidCumulativeUsage, 1);
+    const nextLine = tokens({ ...counters, input_tokens: 150, output_tokens: 30, cached_input_tokens: 90, cache_write_input_tokens: 15 });
+    nextLine.payload.info.last_token_usage = { input_tokens: 20, output_tokens: 3, cached_input_tokens: 10,
+      cache_write_input_tokens: 2, total_tokens: 23 };
+    const next = call('codex', nextLine, invalid.state, 3);
+    assert.deepEqual(totals(next.records), { fresh: 8, output: 3, cacheWrite: 2, cacheRead: 10, messages: 1 },
+      'only the next response is dated here; consumption across the gap has no known time');
+    assert.deepEqual(call('codex', nextLine, next.state, 4).records, []);
+  }
+});
+
+test('a reset requires internally consistent last response evidence, even when all four classes match', () => {
+  const first = call('codex', tokens(counters));
+  const reset = tokens({ input_tokens: 10, output_tokens: 2, cached_input_tokens: 5, cache_write_input_tokens: 1 });
+  reset.payload.info.last_token_usage = { ...reset.payload.info.total_token_usage, total_tokens: 11 };
+  const invalid = call('codex', reset, first.state, 2);
+  assert.deepEqual(invalid.records, []);
+  assert.equal(invalid.state.coverageDebt.counterReset, 1);
 });

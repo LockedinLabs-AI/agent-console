@@ -50,9 +50,9 @@ it to follow [INSTALL.md](INSTALL.md). The same guide works if you prefer to
 install it yourself: choose the current source, an npm archive, or a standalone
 download, then verify the version and open the console.
 
-This page describes **v0.4.1**, published as the
-[v0.4.1 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.1)
-and as the source on `main`. Run from source to use the current console:
+This page describes **v0.4.2**. Download a versioned package from
+[GitHub Releases](https://github.com/LockedinLabs-AI/agent-console/releases/latest),
+or run the current source:
 
 ```sh
 git clone https://github.com/LockedinLabs-AI/agent-console.git
@@ -95,17 +95,18 @@ Choose a version as well as an installation method:
 
 | Channel | Current availability |
 | --- | --- |
-| Source on main | v0.4.1 source. Use Node.js 22+ and the commands above, or Download ZIP below. |
-| GitHub release downloads | [v0.4.1](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.1) has a Node.js package and standalone files for macOS, Linux and Windows. |
+| Source on main | v0.4.2 source. Use Node.js 22+ and the commands above, or Download ZIP below. |
+| GitHub release downloads | [Versioned packages](https://github.com/LockedinLabs-AI/agent-console/releases/latest) for Node.js and standalone files for macOS, Linux and Windows. Check the listed version and Assets before installing. |
 | npm registry | `@lockedinlabs/agent-console` is not published. Use the source checkout or a published GitHub release archive. |
 | Homebrew | The documented tap has not been verified as available. Use source or the listed GitHub release. |
-| Published container image | A v0.4.1 image has not been verified. Do not assume the source version is an available image tag. |
+| Published container image | A v0.4.2 image has not been verified as a published download. Check the [container instructions](docs/docker-hub.md) and the selected release's image workflow. |
 
 **Prefer `npm install`?** npm can install a published GitHub archive even while
-the registry name is unavailable. For the currently published **v0.4.1**:
+the registry name is unavailable. To install **v0.4.2** once its archive is
+listed on the release page:
 
 ```sh
-npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.1/lockedinlabs-agent-console-0.4.1.tgz
+npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.2/lockedinlabs-agent-console-0.4.2.tgz
 agent-console --open
 ```
 
@@ -114,21 +115,21 @@ If npm reports a permission error, use the source route; administrator access
 is unnecessary.
 
 <details>
-<summary>v0.4.1 package commands — only after its release is published</summary>
+<summary>Run v0.4.2 once with npx — only after its release is published</summary>
 
-These commands require `lockedinlabs-agent-console-0.4.1.tgz` to be listed
+These commands require `lockedinlabs-agent-console-0.4.2.tgz` to be listed
 on the [release page](https://github.com/LockedinLabs-AI/agent-console/releases).
 Until that file is published, use the source instructions above.
 
 ```sh
-npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.1/lockedinlabs-agent-console-0.4.1.tgz --open
+npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.2/lockedinlabs-agent-console-0.4.2.tgz --open
 ```
 
 In Windows PowerShell, use `npx.cmd` because the default policy can refuse
 `npx`'s script form:
 
 ```powershell
-npx.cmd --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.1/lockedinlabs-agent-console-0.4.1.tgz --open
+npx.cmd --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.2/lockedinlabs-agent-console-0.4.2.tgz --open
 ```
 
 </details>
@@ -156,7 +157,7 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
    [nodejs.org](https://nodejs.org). To check, open a terminal (*Terminal* on a
    Mac, *PowerShell* on Windows) and type `node --version` — it should say
    `v22` or higher.
-   Without Node.js, the published v0.4.1 standalone downloads run this
+   Without Node.js, the standalone release downloads run this
    console; see [Install](#install).
 2. **Start it.** Paste this into the terminal and press Return:
 
@@ -178,7 +179,7 @@ You need a Mac, a Linux machine or a Windows PC, and about two minutes.
    computer. With months of it that can take a minute; the terminal counts the
    files as it goes, and so does the console.
 
-**No Node.js?** The [v0.4.1 release](https://github.com/LockedinLabs-AI/agent-console/releases/tag/v0.4.1)
+**No Node.js?** [GitHub Releases](https://github.com/LockedinLabs-AI/agent-console/releases/latest)
 carries standalone executables with Node.js inside. Use
 [the installation instructions](docs/standalone-install.md)
 and [check the downloaded file](#verify-a-release).
@@ -232,12 +233,11 @@ each reports to the same console and they all add up.
    [How the machines connect](#how-the-machines-connect)).
 2. In the console, press **Add a machine**. Say whose machine it is and what to
    call it, press **Create join link**, then **Copy link**.
-3. Until v0.4.1 packages are published, use a current source checkout on the
-   other computer and run `node bin/agent-console.mjs join '<join link>'`,
-   replacing `<join link>` with the copied link. The join travels encrypted,
-   checked against your console's certificate. The generated **Copy command**
-   requires the corresponding GitHub release package; it does not transfer
-   the source checkout from your computer.
+3. Run the generated **Copy command** on the other computer. It downloads
+   and verifies the matching GitHub release package before joining. If you
+   are running unpublished source, use a matching checkout on that computer
+   and run `node bin/agent-console.mjs join '<join link>'` instead. The join
+   travels encrypted, checked against your console's certificate.
 
 The machine appears on your console within seconds, and the console shows who
 joined and when. A join link works **once**, for at most an hour. On the
@@ -357,10 +357,10 @@ import { ANALYSIS_VERSION, contextHealth } from '@lockedinlabs/agent-console/ana
 const health = contextHealth(samples, prices);
 ```
 
-The package is not on the npm registry, and the v0.4.1 archive is not
-published yet. To use the current analysis API, install a local source
-checkout into your project with `npm install /path/to/agent-console`,
-replacing the path with your checkout's location.
+Install the versioned GitHub archive into your project using the URL under
+[Install](#install), without `--global`. For unpublished source, use
+`npm install /path/to/agent-console`, replacing the path with your checkout's
+location. The registry name is not published yet.
 
 `ANALYSIS_VERSION` is 1. `contextHealth` accepts only plain usage data:
 `samples` contains timestamps, token counts and model IDs; `prices` contains
@@ -513,8 +513,8 @@ Nothing leaves that directory.
 ### The reporter
 
 **Add a machine** and the join page generate a command for the versioned
-GitHub release. Until v0.4.1 packages are published, copy the join link and
-run these commands from a current source checkout on the reporting computer:
+GitHub release. For an unpublished source version, copy the join link and
+run these commands from a matching source checkout on the reporting computer:
 
 ```sh
 node bin/agent-console.mjs join '<join link>'
@@ -759,12 +759,12 @@ From 0.2.1 on, CI builds each release from its tag
 own machine. The files it attaches (the package, the standalone executables
 and their archives, and the SBOMs) are each listed in the release's
 `SHA256SUMS` and covered by a signed build provenance attestation. To check
-the v0.4.1 package, with `SHA256SUMS` downloaded beside it:
+the v0.4.2 package, with `SHA256SUMS` downloaded beside it:
 
 ```sh
 shasum -a 256 -c SHA256SUMS --ignore-missing        # macOS, Linux
-Get-FileHash lockedinlabs-agent-console-0.4.1.tgz   # Windows PowerShell: compare with SHA256SUMS
-gh attestation verify lockedinlabs-agent-console-0.4.1.tgz -R LockedinLabs-AI/agent-console
+Get-FileHash lockedinlabs-agent-console-0.4.2.tgz   # Windows PowerShell: compare with SHA256SUMS
+gh attestation verify lockedinlabs-agent-console-0.4.2.tgz -R LockedinLabs-AI/agent-console
 ```
 
 The standalone executables ([docs/executables.md](docs/executables.md)) are
@@ -778,7 +778,7 @@ on the release page (`*.cdx.json`), attested against the files it describes.
 To check that a file's SBOM is the one the release workflow made:
 
 ```sh
-gh attestation verify lockedinlabs-agent-console-0.4.1.tgz -R LockedinLabs-AI/agent-console \
+gh attestation verify lockedinlabs-agent-console-0.4.2.tgz -R LockedinLabs-AI/agent-console \
   --predicate-type https://cyclonedx.org/bom
 ```
 
@@ -802,7 +802,7 @@ files with
 
 ## The check in every command
 
-This section describes the v0.4.1 source. For a packaged version, use that
+This section describes the v0.4.2 source. For a packaged version, use that
 release's README and notes: the verification check can change between versions.
 
 Every command the console or the join page prints starts with

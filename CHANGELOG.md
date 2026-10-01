@@ -2,13 +2,19 @@
 
 ## Unreleased
 
+## 0.4.2 — 2026-09-30
+
 - Count only the reported last response when a Codex cumulative source has no
   prior baseline. Missing or inconsistent initial response evidence remains a
   visible coverage gap; a thread lifetime never becomes one rolling event.
 - Retain exclusion of late native response IDs after switching accounting modes,
   and keep cumulative fallback active when a native sample has no usable usage
   or timestamp.
-
+- Reject contradictory cumulative increments and resets, retain a usable
+  baseline across empty samples, and surface every accounting gap in dashboard
+  and exported coverage. Retained measurements are not rewritten on upgrade.
+- Align installation, joining and analysis-package instructions with the
+  versioned GitHub downloads.
 - Windows: helper programs are found on PATH only. Git is started by its full
   path, and the browser opener and desktop notifier from the Windows system
   folder.

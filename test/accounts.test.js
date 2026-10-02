@@ -8,7 +8,7 @@ import { PassThrough, Readable, Writable } from 'node:stream';
 import { FRESH_MS, claudeCapacity, codexCapacity, capacityView, recommend, storedCapacity } from '../lib/accounts/capacity.js';
 import vm from 'node:vm';
 import { accountStore } from '../lib/accounts/store.js';
-import { readCodexCapacity, nativeEnvironment, capacityService } from '../lib/accounts/native.js';
+import { readCodexCapacity, nativeEnvironment, nativeProgram, capacityService } from '../lib/accounts/native.js';
 import { accountsMain } from '../lib/accounts/cli.js';
 
 const NOW = Date.UTC(2026, 0, 1);
@@ -114,6 +114,17 @@ test('native environments isolate client homes and refuse auth overrides without
   assert.throws(() => nativeEnvironment({ ...p, provider: 'claude-code' }, { CLAUDE_CODE_OAUTH_TOKEN: 'SYNTHETIC_SECRET' }), /override/);
 });
 
+test('Windows native lookup accepts explicit home installs but refuses implicit or aliased current-directory programs', () => {
+  const home = 'C:\\SyntheticHome';
+  const bin = home + '\\.local\\bin';
+  const files = new Set([home + '\\codex.exe', bin + '\\codex.exe']);
+  const options = { platform: 'win32', home, exists: file => files.has(file), real: file => file };
+  assert.equal(nativeProgram('codex', { Path: `.;${home};${bin}` }, options), bin + '\\codex.exe');
+  assert.throws(() => nativeProgram('codex', { Path: `.;.local\\bin;${home}` }, options), /Install/);
+  assert.throws(() => nativeProgram('codex', { Path: 'C:\\Alias' }, { ...options,
+    exists: () => true, real: file => file.replace('C:\\Alias', home) }), /Install/);
+});
+
 function fakeProcess(answer) {
   const child = new EventEmitter(); child.stdout = new PassThrough(); child.stderr = new PassThrough();
   child.kill = () => { child.killed = true; };
@@ -170,7 +181,7 @@ test('a quota response completing after sign-out is discarded', async () => {
   const source = fs.readFileSync(new URL('../public/accounts.js', import.meta.url), 'utf8');
   const api = source.slice(source.indexOf('  async function api('), source.indexOf('  async function load('));
   let resolveJson;
-  const context = vm.createContext({ sessionClosed: false, fetch: async () => ({ ok: true,
+  const context = vm.createContext({ sessionClosed: false, AbortSignal, fetch: async () => ({ ok: true,
     json: () => new Promise(resolve => { resolveJson = resolve; }) }) });
   const request = vm.runInContext(api + '\napi("/api/accounts")', context);
   await new Promise(resolve => setImmediate(resolve));
@@ -183,8 +194,24 @@ test('an expired session clears account details as soon as its response arrives'
   const source = fs.readFileSync(new URL('../public/accounts.js', import.meta.url), 'utf8');
   const api = source.slice(source.indexOf('  async function api('), source.indexOf('  async function load('));
   let cleared = false;
-  const context = vm.createContext({ sessionClosed: false, clear: () => { cleared = true; },
+  const context = vm.createContext({ sessionClosed: false, AbortSignal, clear: () => { cleared = true; },
     fetch: async () => ({ ok: false, status: 401, json: async () => ({ reason: 'Sign in required.' }) }) });
   await assert.rejects(vm.runInContext(api + '\napi("/api/accounts")', context), /Sign in required/);
   assert.equal(cleared, true);
+});
+
+test('a failed quota poll removes previously ready cards and recommendations', async () => {
+  const source = fs.readFileSync(new URL('../public/accounts.js', import.meta.url), 'utf8');
+  const loader = source.slice(source.indexOf('  function unavailable('), source.indexOf('  function paint('));
+  const nodes = Object.fromEntries(['accountOverview', 'accountProfiles', 'accountStatus', 'view-accounts'].map(id =>
+    [id, { hidden: false, innerHTML: 'Ready profile and recommendation', replaceChildren() { this.innerHTML = ''; } }]));
+  const context = vm.createContext({ data: { profiles: [{ state: 'ready' }] }, loading: false, sessionClosed: false,
+    document: { hidden: false }, $: id => nodes[id], api: async () => { throw new Error('Quota request failed.'); } });
+  await vm.runInContext(loader + '\nload()', context);
+  assert.equal(context.data, null);
+  assert.equal(context.loading, false);
+  assert.equal(nodes.accountOverview.innerHTML, '');
+  assert.doesNotMatch(nodes.accountProfiles.innerHTML, /Ready profile/);
+  assert.match(nodes.accountProfiles.innerHTML, /unavailable/);
+  assert.equal(nodes.accountStatus.textContent, 'Quota request failed.');
 });

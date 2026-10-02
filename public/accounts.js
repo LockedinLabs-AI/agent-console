@@ -12,7 +12,8 @@
   };
   async function api(url, body) {
     const res = await fetch(url, { headers: { 'x-agent-console': '1', ...(body ? { 'content-type': 'application/json' } : {}) },
-      cache: 'no-store', ...(body ? { method: 'POST', body: JSON.stringify(body) } : {}) });
+      cache: 'no-store', signal: AbortSignal.timeout(20_000),
+      ...(body ? { method: 'POST', body: JSON.stringify(body) } : {}) });
     const value = await res.json();
     if (sessionClosed) throw new Error('Signed out.');
     if (!res.ok) {
@@ -21,11 +22,17 @@
     }
     return value;
   }
+  function unavailable(message) {
+    data = null;
+    $('accountOverview').replaceChildren();
+    $('accountProfiles').innerHTML = '<div class="capacity-empty">A current capacity reading is unavailable. Profiles and recommendations will return after a successful refresh.</div>';
+    $('accountStatus').textContent = message;
+  }
   async function load() {
     if (sessionClosed || loading || $('view-accounts').hidden || document.hidden) return;
     loading = true;
     try { data = await api('/api/accounts'); paint(); }
-    catch (e) { $('accountStatus').textContent = e.message; }
+    catch (e) { if (!sessionClosed) unavailable(e.message); }
     finally { loading = false; }
   }
   function paint() {
@@ -91,7 +98,12 @@
           ? { id, enabled: !data.profiles.find(p => p.id === id).enabled } : { id });
         paint();
       }
-    } catch (error) { $('accountStatus').textContent = error.message; }
+    } catch (error) {
+      if (!sessionClosed) {
+        if (action === 'refresh') unavailable(error.message);
+        else $('accountStatus').textContent = error.message;
+      }
+    }
     finally { button.disabled = false; }
   });
   window.addEventListener('agent-console-view', e => { if (e.detail === 'accounts') load(); });

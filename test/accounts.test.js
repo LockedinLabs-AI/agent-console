@@ -118,11 +118,21 @@ test('Windows native lookup accepts explicit home installs but refuses implicit 
   const home = 'C:\\SyntheticHome';
   const bin = home + '\\.local\\bin';
   const files = new Set([home + '\\codex.exe', bin + '\\codex.exe']);
-  const options = { platform: 'win32', home, exists: file => files.has(file), real: file => file };
+  const options = { platform: 'win32', home, cwd: home, exists: file => files.has(file), real: file => file };
   assert.equal(nativeProgram('codex', { Path: `.;${home};${bin}` }, options), bin + '\\codex.exe');
   assert.throws(() => nativeProgram('codex', { Path: `.;.local\\bin;${home}` }, options), /Install/);
   assert.throws(() => nativeProgram('codex', { Path: 'C:\\Alias' }, { ...options,
     exists: () => true, real: file => file.replace('C:\\Alias', home) }), /Install/);
+});
+
+test('Windows interactive lookup excludes its actual project tree and aliases while retaining explicit home installs', () => {
+  const home = 'C:\\SyntheticHome', cwd = 'C:\\SyntheticProject';
+  const bin = home + '\\.local\\bin';
+  const options = { platform: 'win32', home, cwd, exists: file => file.endsWith('.exe'), real: file => file };
+  assert.equal(nativeProgram('codex', { Path: `${cwd};${cwd}\\tools;${bin}` }, options), bin + '\\codex.exe');
+  assert.throws(() => nativeProgram('codex', { Path: `${cwd};${cwd}\\tools` }, options), /Install/);
+  assert.throws(() => nativeProgram('codex', { Path: 'C:\\Alias' }, { ...options,
+    real: file => file.replace('C:\\Alias', cwd + '\\tools') }), /Install/);
 });
 
 function fakeProcess(answer) {
@@ -214,4 +224,24 @@ test('a failed quota poll removes previously ready cards and recommendations', a
   assert.doesNotMatch(nodes.accountProfiles.innerHTML, /Ready profile/);
   assert.match(nodes.accountProfiles.innerHTML, /unavailable/);
   assert.equal(nodes.accountStatus.textContent, 'Quota request failed.');
+});
+
+test('provider overview shows separate longest-window allowances, excludes stale capacity, and escapes aliases', () => {
+  const source = fs.readFileSync(new URL('../public/accounts.js', import.meta.url), 'utf8');
+  const helpers = source.slice(source.indexOf('  const esc ='), source.indexOf('  async function api('));
+  const painter = source.slice(source.indexOf('  function paint('), source.indexOf("  $('accountFilter').addEventListener"));
+  const nodes = Object.fromEntries(['accountAdd', 'accountStatus', 'accountOverview', 'accountProfiles', 'accountFilter'].map(id => [id, { value: 'all' }]));
+  const freshSource = codex(20), staleSource = codex(0);
+  freshSource.rateLimits.secondary.usedPercent = 93;
+  staleSource.rateLimits.secondary.usedPercent = 30;
+  const fresh = capacityView({ ...profile, id: 'fresh', label: '<img src=synthetic onerror=synthetic>' }, codexCapacity(freshSource, NOW), NOW);
+  const stale = capacityView({ ...profile, id: 'stale', label: 'Stale profile' }, codexCapacity(staleSource, NOW - FRESH_MS - 1), NOW);
+  const context = vm.createContext({ document: { body: { hasAttribute: () => false } }, $: id => nodes[id],
+    fixture: { profiles: [fresh, stale], recommendations: [], now: NOW, demo: true } });
+  vm.runInContext(helpers + painter + '\ndata = fixture; paint();', context);
+  assert.match(nodes.accountOverview.innerHTML, /value="7"/); // Weekly, not the 80% short window.
+  assert.doesNotMatch(nodes.accountOverview.innerHTML, /value="70"|value="100"|<img/);
+  assert.match(nodes.accountOverview.innerHTML, /Stale reading/);
+  assert.match(nodes.accountOverview.innerHTML, /&lt;img/);
+  assert.match(nodes.accountProfiles.innerHTML, /70% last read/);
 });

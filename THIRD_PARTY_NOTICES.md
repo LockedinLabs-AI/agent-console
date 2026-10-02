@@ -27,7 +27,7 @@ their own.
 | OpenAI | `public/index.html` (`#mk-openai`) | [Simple Icons](https://simpleicons.org) 13.x, CC0 1.0 | OpenAI |
 
 These marks are trademarks of their owners. Agent Console draws them only to
-identify which company made a model in the usage it shows. Using them implies no
+identify the provider of a model or native account profile. Using them implies no
 affiliation with or endorsement by either company. Simple Icons releases its SVG
 path data under CC0 1.0; that dedication covers the drawing, not the trademark.
 

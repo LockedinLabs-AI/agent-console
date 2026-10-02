@@ -14,6 +14,11 @@ Try it with `agent-console --demo`; every demo profile is synthetic.
 
 </details>
 
+The OpenAI and Anthropic summaries show each profile's longest reported
+allowance separately. They do not pool percentages. A dotted row means current
+capacity is unavailable; a profile can be at its short-window limit even when
+its weekly allowance remains. Choose **View profiles** to filter the details.
+
 This is separate from token accounting. A 70% weekly allowance is not a token
 count, an API credit balance, or 70% of a bill. Percentages from different
 accounts and plans are never added together. The dashboard's token totals

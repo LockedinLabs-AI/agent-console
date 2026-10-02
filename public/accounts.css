@@ -1,44 +1,81 @@
-/* Account capacity uses the console's own materials and theme tokens. */
-.account-scroll { overflow: auto; padding: 18px 2px 32px; }
+/* Native account capacity is separate from measured token use. */
+.account-scroll { overflow: auto; padding: 24px 4px 32px; }
 .account-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
-.account-heading h1 { font-size: clamp(24px, 2vw, 28px); font-weight: 400; letter-spacing: -.035em; margin: 4px 0 6px; }
+.account-heading h1 { font-size: clamp(28px, 2.7vw, 36px); font-weight: 400; letter-spacing: -.04em; margin: 4px 0 8px; }
 .account-heading p { color: var(--quiet); margin: 0; }
-.account-heading .eyebrow { color: var(--cobalt); font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .1em; }
-.account-status { color: var(--quiet); font-size: 13px; min-height: 20px; }
-.account-overview { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin: 12px 0 20px; }
-.capacity-card, .capacity-brief, .capacity-next { border: 1px solid var(--card-edge); border-radius: 12px; background: linear-gradient(155deg, var(--card-a), var(--card-b)); padding: 16px; box-shadow: var(--elev2); }
-.capacity-brief h2, .capacity-next h2 { font-size: 14px; font-weight: 500; margin: 0 0 10px; }
-.capacity-numbers { display: flex; gap: 36px; margin-bottom: 10px; }
-.capacity-numbers strong { display: block; font: 300 36px var(--sans); color: var(--ink); }
-.capacity-numbers span { font-size: 12px; color: var(--quiet); }
-.capacity-brief p, .capacity-next p { color: var(--quiet); font-size: 13px; line-height: 1.6; margin: 6px 0; }
-.capacity-next-row { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; align-items: center; border-top: 1px solid var(--hair); padding: 8px 0; font-size: 13px; }
-.capacity-next-row b { color: var(--ink); font-weight: 500; }
-.capacity-next-row span { color: var(--quiet); }
+.account-heading .eyebrow { color: var(--lit); font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .13em; }
+.account-status { color: var(--quiet); font: 12px/1.6 var(--mono); min-height: 20px; margin: 0 0 16px; }
+.account-overview { display: grid; grid-template-columns: .9fr 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+.capacity-card, .capacity-brief, .capacity-provider-summary { border: 1px solid var(--card-edge); border-radius: 14px; background: linear-gradient(155deg, var(--card-a), var(--card-b)); box-shadow: var(--elev2); }
+.capacity-brief, .capacity-provider-summary { padding: 20px; min-width: 0; }
+.capacity-brief h2 { font: 500 11px var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--quiet); margin: 0 0 18px; }
+.capacity-headline { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+.capacity-headline strong { font: 300 60px/1 var(--sans); letter-spacing: -.05em; color: var(--ink); white-space: nowrap; }
+.capacity-headline strong span { font-size: 24px; color: var(--quiet); letter-spacing: -.03em; }
+.capacity-headline > span { font-size: 13px; line-height: 1.6; color: var(--quiet); }
+.capacity-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-block: 1px solid var(--hair); padding: 15px 0; }
+.capacity-stats b { font: 400 23px var(--sans); display: block; color: var(--ink); }
+.capacity-stats span { font-size: 12px; color: var(--quiet); }
+.capacity-brief p { color: var(--quiet); font-size: 12px; line-height: 1.7; margin: 15px 0 0; }
+.capacity-provider-summary { display: flex; flex-direction: column; }
+.capacity-provider-summary header { display: flex; align-items: center; gap: 11px; margin-bottom: 18px; }
+.account-logo { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--hair); }
+.account-logo svg { width: 23px; height: 23px; }
+.account-logo.anthropic { color: #bd7556; background: color-mix(in srgb, #bd7556 10%, transparent); }
+.account-logo.openai { color: var(--ink); background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.capacity-provider-summary h2 { margin: 0; font: 500 18px var(--sans); letter-spacing: -.02em; color: var(--ink); }
+.capacity-provider-summary header div > span { font-size: 12px; color: var(--quiet); }
+.provider-ready { margin-left: auto; color: var(--quiet); font: 12px var(--mono); white-space: nowrap; }
+.provider-allowances { margin-bottom: 18px; }
+.provider-allowance { display: grid; grid-template-columns: 1.1fr 1fr 36px; gap: 10px; align-items: center; min-height: 44px; }
+.allowance-name { font-size: 12px; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+.allowance-name small { display: block; color: var(--quiet); font-size: 10px; margin-top: 2px; }
+.provider-allowance b { font: 12px var(--mono); text-align: right; color: var(--ink2); }
+.allowance-unknown { display: block; border-top: 2px dotted var(--quiet); opacity: .4; }
+.provider-allowance progress, .capacity-window progress { display: block; width: 100%; height: 5px; border: 0; border-radius: 3px; accent-color: var(--cobalt); background: var(--hair); overflow: hidden; }
+.provider-allowance progress::-webkit-progress-bar, .capacity-window progress::-webkit-progress-bar { background: var(--hair); }
+.provider-allowance progress::-webkit-progress-value, .capacity-window progress::-webkit-progress-value { background: var(--cobalt); border-radius: 3px; }
+.provider-allowance progress::-moz-progress-bar, .capacity-window progress::-moz-progress-bar { background: var(--cobalt); border-radius: 3px; }
+[data-provider="claude-code"] { --capacity-accent: #bd7556; }
+[data-provider="codex"] { --capacity-accent: var(--cobalt); }
+[data-provider] progress { accent-color: var(--capacity-accent); }
+[data-provider] progress::-webkit-progress-value { background: var(--capacity-accent); }
+[data-provider] progress::-moz-progress-bar { background: var(--capacity-accent); }
+.provider-suggestion { margin-top: auto; border-top: 1px solid var(--hair); padding-top: 14px; }
+.provider-suggestion > span, .provider-suggestion > b { display: block; }
+.suggestion-label { font: 10px var(--mono); letter-spacing: .1em; color: var(--quiet); }
+.provider-suggestion b { font: 500 14px var(--sans); margin: 5px 0 3px; color: var(--ink); overflow-wrap: anywhere; }
+.provider-suggestion > span:last-child { font-size: 12px; color: var(--quiet); }
+.provider-filter { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 36px; margin: 12px 0 -4px; padding: 6px 0; background: none; border: 0; color: var(--lit); font: 500 12px var(--sans); cursor: pointer; text-align: left; }
+.provider-filter:hover { text-decoration: underline; text-underline-offset: 4px; }
 .account-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
-.account-toolbar h2 { font-size: 18px; font-weight: 500; margin: 0; }
+.account-toolbar h2 { font-size: 18px; font-weight: 500; margin: 0; letter-spacing: -.02em; }
 .account-toolbar label { font-size: 13px; color: var(--quiet); display: flex; align-items: center; gap: 12px; }
 .account-toolbar select { background: var(--tray); color: var(--ink); padding: 8px; border: 1px solid var(--hair); border-radius: 7px; }
 .account-profiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.capacity-card { padding: 20px; min-width: 0; }
 .capacity-card header { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 22px; }
-.capacity-card h3 { font-size: 19px; font-weight: 500; margin: 5px 0 0; }
-.capacity-provider { font: 12px var(--mono); color: var(--quiet); }
-.capacity-state { border: 1px solid var(--hair); border-radius: 20px; padding: 4px 10px; font-size: 12px; color: var(--quiet); white-space: nowrap; }
-.capacity-state.ready { color: var(--good); }
-.capacity-state.exhausted, .capacity-state.stale, .capacity-state.incomplete, .capacity-state.awaiting-reset { color: var(--warn); }
-.capacity-window { margin: 14px 0 20px; }
-.capacity-window-label { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 13px; }
+.capacity-identity { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.capacity-identity > div { min-width: 0; }
+.capacity-card .account-logo { width: 34px; height: 34px; border-radius: 9px; }
+.capacity-card .account-logo svg { width: 20px; height: 20px; }
+.capacity-card h3 { font-size: 18px; font-weight: 500; margin: 3px 0 0; color: var(--ink); overflow-wrap: anywhere; }
+.capacity-provider { font: 11px var(--mono); color: var(--quiet); }
+.capacity-state { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--hair); border-radius: 6px; padding: 5px 8px; font-size: 11px; color: var(--quiet); white-space: nowrap; }
+.capacity-state::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.capacity-state.ready { color: var(--good); background: color-mix(in srgb, var(--good) 7%, transparent); }
+.capacity-state.exhausted, .capacity-state.stale, .capacity-state.incomplete, .capacity-state.awaiting-reset { color: var(--warn); background: color-mix(in srgb, var(--warn) 6%, transparent); }
+.capacity-windows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.capacity-window { margin: 0 0 16px; min-width: 0; }
+.capacity-window-label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
 .capacity-window-label span { color: var(--quiet); }
-.capacity-window-label b { font: 500 19px var(--sans); }
-.capacity-window progress { display: block; width: 100%; height: 6px; border: 0; border-radius: 3px; margin: 9px 0; accent-color: var(--cobalt); background: var(--hair); overflow: hidden; }
-.capacity-window progress::-webkit-progress-bar { background: var(--hair); }
-.capacity-window progress::-webkit-progress-value { background: var(--cobalt); border-radius: 3px; }
-.capacity-window progress::-moz-progress-bar { background: var(--cobalt); border-radius: 3px; }
-.capacity-window small { color: var(--quiet); font-size: 12px; }
+.capacity-window-label b { font: 400 27px var(--sans); color: var(--ink); letter-spacing: -.035em; }
+.capacity-window progress { margin: 11px 0; }
+.capacity-window small { display: block; color: var(--quiet); font-size: 11px; line-height: 1.6; }
 .capacity-window.unknown { border-left: 2px dashed var(--quiet); padding-left: 12px; }
-.capacity-note { font-size: 13px; color: var(--quiet); line-height: 1.5; min-height: 38px; }
+.capacity-note { font-size: 12px; color: var(--quiet); line-height: 1.6; margin: 0 0 14px; }
 .capacity-card footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--hair); padding-top: 12px; }
-.capacity-card footer small { width: 100%; color: var(--quiet); font-size: 12px; margin-bottom: 6px; }
+.capacity-card footer small { width: 100%; color: var(--quiet); font: 10px/1.6 var(--mono); margin-bottom: 5px; }
 .capacity-empty { padding: 40px 24px; border: 1px dashed var(--hair); border-radius: 12px; color: var(--quiet); grid-column: 1 / -1; line-height: 1.8; }
 .account-guide { font-size: 13px; color: var(--quiet); line-height: 1.7; margin: 22px 0; max-width: 900px; }
 .account-guide summary { cursor: pointer; color: var(--ink); }
@@ -47,12 +84,16 @@
 #accountDialog p, #accountSetup p { font-size: 14px; line-height: 1.6; color: var(--quiet); }
 #accountSetup pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 var(--mono); background: var(--tray); border: 1px solid var(--hair); border-radius: 8px; padding: 12px; }
 body[data-present] #accountAdd { visibility: hidden; }
+@media (max-width: 1000px) { .account-overview { grid-template-columns: 1fr 1fr; } .capacity-brief { grid-column: 1 / -1; } .capacity-headline { margin-bottom: 14px; } .capacity-stats { max-width: 420px; } }
 @media (max-width: 760px) {
   .account-overview, .account-profiles { grid-template-columns: 1fr; }
   .account-heading { align-items: start; flex-direction: column; gap: 16px; }
   .account-scroll { padding-top: 18px; }
-  .capacity-numbers { gap: 24px; }
-  .capacity-next-row { grid-template-columns: 76px 1fr; }
-  .capacity-next-row > :last-child { grid-column: 2; }
   .account-toolbar label { gap: 5px; }
+  .capacity-card { padding: 16px; }
+  .capacity-card header { gap: 8px; }
+  .capacity-windows { gap: 16px; }
+  .capacity-state { font-size: 10px; padding: 5px 6px; }
+  .capacity-provider { font-size: 10px; }
+  .capacity-window-label b { font-size: 25px; }
 }

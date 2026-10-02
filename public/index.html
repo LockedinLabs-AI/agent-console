@@ -12,6 +12,7 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="stylesheet" href="/house.css">
 <link rel="stylesheet" href="/console.css">
+<link rel="stylesheet" href="/accounts.css">
 <script src="/theme.js"></script>
 </head>
 <body data-view="console">
@@ -62,6 +63,7 @@
       <button class="tab" data-view="console" aria-current="page"><span>Console</span><em id="tabLive">—</em></button>
       <button class="tab" data-view="team"><span>Team</span><em id="tabTeam">—</em></button>
       <button class="tab" data-view="projects"><span>Projects</span><em>this machine</em></button>
+      <button class="tab" data-view="accounts"><span>Accounts</span><em>capacity</em></button>
     </nav>
     <div class="right">
       <span class="reach" id="reach" title=""><i></i><span id="reachText">—</span></span>
@@ -354,6 +356,25 @@
     </div>
   </section>
 
+  <section class="view" id="view-accounts" aria-labelledby="h-accounts" hidden>
+    <div class="account-scroll">
+      <header class="account-heading">
+        <div><p class="eyebrow">Personal capacity · this machine</p><h1 id="h-accounts">Accounts &amp; limits</h1>
+          <p>Remaining allowance, upcoming resets, and profiles ready for your next session.</p></div>
+        <button class="btn primary" id="accountAdd" type="button">Connect a profile</button>
+      </header>
+      <p id="accountStatus" class="account-status" role="status">Reading account capacity…</p>
+      <div id="accountOverview" class="account-overview"></div>
+      <div class="account-toolbar"><h2>Account capacity</h2>
+        <label>Provider <select id="accountFilter"><option value="all">All providers</option><option value="claude-code">Claude Code</option><option value="codex">Codex</option></select></label></div>
+      <div id="accountProfiles" class="account-profiles"></div>
+      <details class="account-guide"><summary>Where these readings come from</summary>
+        <p>Codex reads account limits through the installed Codex app-server. Claude Code sends quota fields through its supported status line (v2.1.251 or later). Sign-in stays in each provider’s native client.</p>
+        <p>A profile is a native client home you register. It is not verified account identity. Register each account once; two profiles may otherwise represent the same allowance. Account capacity is independent of the console’s measured token totals.</p>
+        <p>Readings older than ten minutes, missing limits, and passed reset times are excluded from selection. A reset is confirmed by a new reading, never assumed. Recommendations consider all reported limits; unreported model restrictions may still apply.</p>
+      </details>
+    </div>
+  </section>
   </main>
 
   <!-- the status bar carries the reading's provenance: version, price table, what was left out, how fresh -->
@@ -440,5 +461,21 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="/console.js" defer></script>
+<script src="/accounts.js" defer></script>
+<dialog class="sheet" id="accountDialog" aria-labelledby="accountDialogTitle">
+  <form id="accountForm">
+    <header><h2 id="accountDialogTitle">Connect a profile</h2><button class="x" type="button" id="accountClose" aria-label="Close">×</button></header>
+    <p>Connect an existing native client home. Sign in through Codex or Claude Code first; credentials stay there.</p>
+    <label class="field">Profile ID<input id="accountId" required pattern="[a-z][a-z0-9-]{0,39}" maxlength="40" placeholder="personal" autocomplete="off"></label>
+    <label class="field">Display label<input id="accountLabel" required maxlength="40" placeholder="Personal" autocomplete="off"></label>
+    <label class="field">Native client<select id="accountProvider"><option value="codex">Codex</option><option value="claude-code">Claude Code</option></select></label>
+    <label class="field">Full path to native client home<input id="accountHome" required placeholder="Full path to your .codex or .claude folder" autocomplete="off" spellcheck="false" data-internal></label>
+    <p id="accountFormStatus" role="status"></p><footer><button type="submit" class="btn primary">Connect profile</button></footer>
+  </form>
+</dialog>
+<dialog class="sheet" id="accountSetup" aria-labelledby="accountSetupTitle">
+  <header><h2 id="accountSetupTitle">Use this profile</h2><button type="button" class="x" id="accountSetupClose" aria-label="Close">×</button></header>
+  <div id="accountSetupBody" data-internal></div>
+</dialog>
 </body>
 </html>

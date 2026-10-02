@@ -44,6 +44,8 @@ import { createInteropStore } from './lib/interop/ingest.js';
 import { PRODUCT_NAME, productTitle } from "./lib/brand.js";
 import { invocation } from "./lib/invocation.js";
 import { REPORTER_SEARCH } from "./lib/reporter-search.js";
+import { accountStore } from './lib/accounts/store.js';
+import { capacityService } from './lib/accounts/native.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(HERE, "public");
@@ -276,9 +278,11 @@ if (config.demo) {
 
 // Filled in with the real ports once both listeners are up.
 const reportingInfo = { port: config.reportPort, consolePort: config.port, fingerprint: certificate.fingerprint };
+const accounts = accountStore(config.stateDir, { demo: config.demo });
 const consoleHandler = createConsoleHandler({
   config, registry, store, names, local, admin, version: VERSION, publicDir: PUBLIC,
   reporting: reportingInfo,
+  accounts, accountCapacity: capacityService(accounts), accountCommand: COMMAND,
   git: config.demo ? null : createGitStatsStore(),
   alerts: alertEngine,
   fleet,

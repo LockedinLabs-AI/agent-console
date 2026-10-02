@@ -1,5 +1,29 @@
 # Threat model
 
+## Native account capacity
+
+Account profiles are opt-in, local metadata. Their HTTP routes require the
+existing signed-in cookie, intent header and loopback Host/connection; browser
+Origins are additionally checked against the exact console origin. None of
+these routes exists on the reporting listener. Profile IDs are bounded slugs;
+native homes must be existing absolute directories. State files use private
+permissions and quota replacement is atomic. Native homes are absent from
+quota responses and appear only in the authenticated setup response.
+
+The Codex reader starts the installed executable from an absolute PATH entry,
+uses an explicit native home, bounded output, a timeout, and only initialization
+plus the account-limit read method. It does not start a model turn. Raw stderr,
+responses and provider errors are not logged or returned to the browser. A
+failed read invalidates selection rather than reusing its last successful
+state. Native CLI configuration and the local OS account remain trusted: the
+console does not attest to the identity behind a profile or sandbox a user's
+installed executable.
+
+The Claude status-line command allowlists quota fields and discards the rest.
+No OAuth credential file, password, API key or browser session is imported.
+The launcher changes the native home only at process start. It never rotates
+accounts mid-session, consumes reset credits, or bypasses provider limits.
+
 Agent Console 0.4.x. What it protects, from whom, how, and what is left. The
 data flows this rests on are in [DATA-FLOWS.md](DATA-FLOWS.md); the reporting
 process is in [SECURITY.md](../../SECURITY.md).

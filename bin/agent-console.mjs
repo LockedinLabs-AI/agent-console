@@ -31,6 +31,10 @@ if (command === "--version" || command === "-v" || command === "version") {
 } else if (command === "join" || command === "report" || command === "leave" || command === "stop") {
   const { main } = await import("../lib/reporter.js");
   await main(command, process.argv.slice(3));
+} else if (command === "accounts") {
+  const { accountsMain } = await import('../lib/accounts/cli.js');
+  try { process.exitCode = await accountsMain(process.argv.slice(3)); }
+  catch (error) { process.stderr.write('Agent Console accounts: ' + error.message + '\n'); process.exitCode = 1; }
 } else if (command === "metrics-token") {
   const { mainMetricsToken } = await import("../lib/hub/metrics-token.js");
   process.exitCode = mainMetricsToken(process.argv.slice(3));
@@ -48,10 +52,10 @@ if (command === "--version" || command === "-v" || command === "version") {
   await import("../server.js");
 } else {
   const { closest } = await import("../lib/config.js");
-  const near = closest(command, ["join", "report", "stop", "leave", "policy", "metrics-token", "help", "version"]);
+  const near = closest(command, ["join", "report", "stop", "leave", "accounts", "policy", "metrics-token", "help", "version"]);
   const json = process.argv.includes("--json");
   const message = `"${command}" is not an Agent Console command.` + (near ? ` Did you mean "${near}"?` : "")
-    + " The commands are join, report, stop, leave, policy and metrics-token; with no command, or only options, the console starts.";
+    + " The commands are join, report, stop, leave, accounts, policy and metrics-token; with no command, or only options, the console starts.";
   if (json) process.stdout.write(JSON.stringify({ ok: false, event: "error", kind: "usage", message }) + "\n");
   else process.stderr.write("\n  " + message + "\n  Run --help for the options.\n\n");
   process.exitCode = 2;

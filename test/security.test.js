@@ -47,6 +47,8 @@ import { createRegistry, MAX_INVITE_TTL_MS } from "../lib/hub/registry.js";
 import { createStore } from "../lib/hub/store.js";
 import { printable } from "../lib/reporter.js";
 import { eventMeasurement } from "../lib/collector/measurement.js";
+import { accountStore } from '../lib/accounts/store.js';
+import { codexCapacity } from '../lib/accounts/capacity.js';
 
 const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "bin", "agent-console.mjs");
 const PRICES = JSON.parse(fs.readFileSync(new URL("../lib/collector/prices.json", import.meta.url), "utf8"));
@@ -88,6 +90,34 @@ async function signIn(hub) {
   assert.equal(login.status, 303);
   return login.headers["set-cookie"][0].split(";")[0];
 }
+
+test('account capacity stays on the authenticated loopback surface and never exposes native homes in readings', async t => {
+  const hub = await startHub(t), cookie = await signIn(hub);
+  const native = scratch(t, 'native-profile');
+  const endpoint = '/api/accounts';
+  assert.equal((await raw(hub.port, endpoint, { headers: INTENT })).status, 401);
+  assert.equal((await raw(hub.port, endpoint, { method: 'POST', headers: { ...INTENT, cookie, origin: 'https://outside.invalid' }, body: '{}' })).status, 403);
+  assert.equal((await raw(hub.port, endpoint, { headers: { ...INTENT, cookie, host: 'outside.invalid' } })).status, 421);
+  assert.notEqual((await raw(hub.reportPort, endpoint, { headers: { ...INTENT, cookie }, secure: true })).status, 200);
+  const added = await raw(hub.port, endpoint, { method: 'POST', headers: { ...INTENT, cookie },
+    body: JSON.stringify({ id: 'personal', label: 'Personal', provider: 'codex', directory: native }) });
+  assert.equal(added.status, 200, added.body);
+  assert.equal(JSON.parse(added.body).profiles[0].state, 'unavailable');
+  const now = Date.now();
+  accountStore(hub.state).snapshot('personal', codexCapacity({ rateLimits: { primary: {
+    usedPercent: 20, windowDurationMins: 300, resetsAt: Math.floor(now / 1000) + 1000,
+  } }, access_token: 'SYNTHETIC-CAPACITY-CANARY', email: 'invented@example.test' }, now));
+  const answer = await raw(hub.port, endpoint, { headers: { ...INTENT, cookie } });
+  assert.equal(answer.status, 200); assert.equal(JSON.parse(answer.body).profiles[0].state, 'ready');
+  assert.equal(answer.body.includes(native), false); assert.doesNotMatch(answer.body, /CANARY|example\.test|access_token/);
+  const setup = await raw(hub.port, '/api/accounts/setup?id=personal', { headers: { ...INTENT, cookie } });
+  assert.equal(setup.status, 200); assert.match(JSON.parse(setup.body).launch, /accounts launch --id personal/);
+  assert.doesNotMatch(setup.body, /CANARY|example\.test|access_token/);
+  const paused = await raw(hub.port, '/api/accounts/enabled', { method: 'POST', headers: { ...INTENT, cookie },
+    body: JSON.stringify({ id: 'personal', enabled: false }) });
+  assert.equal(JSON.parse(paused.body).profiles[0].state, 'paused');
+  assert.equal(JSON.parse(paused.body).recommendations.length, 0);
+});
 
 test("C1: the hub serves no code, and every command installs from the GitHub release over HTTPS", async (t) => {
   const hub = await startHub(t);

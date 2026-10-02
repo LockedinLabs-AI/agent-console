@@ -1,0 +1,58 @@
+/* Account capacity uses the console's own materials and theme tokens. */
+.account-scroll { overflow: auto; padding: 18px 2px 32px; }
+.account-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
+.account-heading h1 { font-size: clamp(24px, 2vw, 28px); font-weight: 400; letter-spacing: -.035em; margin: 4px 0 6px; }
+.account-heading p { color: var(--quiet); margin: 0; }
+.account-heading .eyebrow { color: var(--cobalt); font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+.account-status { color: var(--quiet); font-size: 13px; min-height: 20px; }
+.account-overview { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin: 12px 0 20px; }
+.capacity-card, .capacity-brief, .capacity-next { border: 1px solid var(--card-edge); border-radius: 12px; background: linear-gradient(155deg, var(--card-a), var(--card-b)); padding: 16px; box-shadow: var(--elev2); }
+.capacity-brief h2, .capacity-next h2 { font-size: 14px; font-weight: 500; margin: 0 0 10px; }
+.capacity-numbers { display: flex; gap: 36px; margin-bottom: 10px; }
+.capacity-numbers strong { display: block; font: 300 36px var(--sans); color: var(--ink); }
+.capacity-numbers span { font-size: 12px; color: var(--quiet); }
+.capacity-brief p, .capacity-next p { color: var(--quiet); font-size: 13px; line-height: 1.6; margin: 6px 0; }
+.capacity-next-row { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; align-items: center; border-top: 1px solid var(--hair); padding: 8px 0; font-size: 13px; }
+.capacity-next-row b { color: var(--ink); font-weight: 500; }
+.capacity-next-row span { color: var(--quiet); }
+.account-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.account-toolbar h2 { font-size: 18px; font-weight: 500; margin: 0; }
+.account-toolbar label { font-size: 13px; color: var(--quiet); display: flex; align-items: center; gap: 12px; }
+.account-toolbar select { background: var(--tray); color: var(--ink); padding: 8px; border: 1px solid var(--hair); border-radius: 7px; }
+.account-profiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.capacity-card header { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 22px; }
+.capacity-card h3 { font-size: 19px; font-weight: 500; margin: 5px 0 0; }
+.capacity-provider { font: 12px var(--mono); color: var(--quiet); }
+.capacity-state { border: 1px solid var(--hair); border-radius: 20px; padding: 4px 10px; font-size: 12px; color: var(--quiet); white-space: nowrap; }
+.capacity-state.ready { color: var(--good); }
+.capacity-state.exhausted, .capacity-state.stale, .capacity-state.incomplete, .capacity-state.awaiting-reset { color: var(--warn); }
+.capacity-window { margin: 14px 0 20px; }
+.capacity-window-label { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 13px; }
+.capacity-window-label span { color: var(--quiet); }
+.capacity-window-label b { font: 500 19px var(--sans); }
+.capacity-window progress { display: block; width: 100%; height: 6px; border: 0; border-radius: 3px; margin: 9px 0; accent-color: var(--cobalt); background: var(--hair); overflow: hidden; }
+.capacity-window progress::-webkit-progress-bar { background: var(--hair); }
+.capacity-window progress::-webkit-progress-value { background: var(--cobalt); border-radius: 3px; }
+.capacity-window progress::-moz-progress-bar { background: var(--cobalt); border-radius: 3px; }
+.capacity-window small { color: var(--quiet); font-size: 12px; }
+.capacity-window.unknown { border-left: 2px dashed var(--quiet); padding-left: 12px; }
+.capacity-note { font-size: 13px; color: var(--quiet); line-height: 1.5; min-height: 38px; }
+.capacity-card footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--hair); padding-top: 12px; }
+.capacity-card footer small { width: 100%; color: var(--quiet); font-size: 12px; margin-bottom: 6px; }
+.capacity-empty { padding: 40px 24px; border: 1px dashed var(--hair); border-radius: 12px; color: var(--quiet); grid-column: 1 / -1; line-height: 1.8; }
+.account-guide { font-size: 13px; color: var(--quiet); line-height: 1.7; margin: 22px 0; max-width: 900px; }
+.account-guide summary { cursor: pointer; color: var(--ink); }
+#accountDialog, #accountSetup { width: min(540px, calc(100vw - 24px)); max-height: 85vh; overflow: auto; padding: 24px; }
+#accountDialog header, #accountSetup header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+#accountDialog p, #accountSetup p { font-size: 14px; line-height: 1.6; color: var(--quiet); }
+#accountSetup pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 var(--mono); background: var(--tray); border: 1px solid var(--hair); border-radius: 8px; padding: 12px; }
+body[data-present] #accountAdd { visibility: hidden; }
+@media (max-width: 760px) {
+  .account-overview, .account-profiles { grid-template-columns: 1fr; }
+  .account-heading { align-items: start; flex-direction: column; gap: 16px; }
+  .account-scroll { padding-top: 18px; }
+  .capacity-numbers { gap: 24px; }
+  .capacity-next-row { grid-template-columns: 76px 1fr; }
+  .capacity-next-row > :last-child { grid-column: 2; }
+  .account-toolbar label { gap: 5px; }
+}

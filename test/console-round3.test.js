@@ -143,7 +143,7 @@ test("R3-09/R3-10: the restart command uses ~ normally and is hidden while prese
   assert.doesNotMatch(CSS, /body\[data-present\] [^{]*(?:th\.est|\.c-usd|\.chead|\.count)[^{]*\{ visibility: hidden; \}/u);
   assert.match(CSS, /body\[data-present\] \[data-internal\] \{ visibility: hidden; \}/u);
   assert.equal((JS.match(/data-internal/gu) || []).length, 0, "no figure in the page carries the presenting mark");
-  assert.equal((HTML.match(/data-internal/gu) || []).length, 1, "only the restart command's row carries it");
+  assert.equal((HTML.match(/data-internal/gu) || []).length, 3, "restart command, native profile path and account setup commands are private");
   assert.match(HTML, /id="networkCmd" hidden data-internal/u);
   assert.equal((HTML.match(/class="r est"|class="r git est"/gu) || []).length, 5, "every Est. \\$, \\$ / commit and \\$ / merge head carries the class");
   // the select is the sheet's own material, and the button beside a tall command does not stretch to its height

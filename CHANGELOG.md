@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## Unreleased — 0.4.3
+
+- Accounts view for native Codex and Claude Code profiles: remaining allowance,
+  reset timing, freshness, missing-data states, and per-provider suggestions.
+- Codex quota reads use the native app-server; Claude's status-line adapter
+  keeps only supported quota fields. Native credentials remain in their clients.
+- Profile-aware CLI launch and selection for new sessions. Selection keeps a
+  session on one profile and refuses stale, incomplete or exhausted readings.
+- Local-only profile registration, pausing, bounded refreshes, synthetic demo
+  coverage, and [setup and measurement documentation](docs/ACCOUNTS.md).
 
 ## 0.4.2 — 2026-09-30
 

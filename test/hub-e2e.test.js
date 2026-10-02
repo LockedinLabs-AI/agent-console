@@ -146,9 +146,9 @@ async function metricsReads(hub, stateDir) {
 
 async function consoleReads(hub) {
   let text = "";
-  for (const url of CONSOLE_READS) {
+  for (const url of [...CONSOLE_READS, '/api/accounts', '/api/accounts/setup?id=unregistered']) {
     const r = await fetch(hub.url + url, { headers: { ...INTENT, cookie: hub.cookie } });
-    assert.equal(r.status, 200, url);
+    assert.equal(r.status, url.startsWith('/api/accounts/setup') ? 404 : 200, url);
     text += `${url}\n${JSON.stringify([...r.headers])}\n${await r.text()}\n`;
   }
   return text;
@@ -577,7 +577,7 @@ test("every GET route the hub serves is read by the privacy checks above", () =>
   const routes = new Set();
   for (const m of source.matchAll(/url === (["'])(\/[^"']+)\1 && req\.method === (["'])GET\3/gu)) routes.add(m[2]);
   for (const m of source.matchAll(/\[(["'])(\/[^"']+)\1, (["'])[^"']+\3\]/gu)) routes.add(m[2]);   // the join page's assets
-  const read = new Set([...CONSOLE_READS, ...REPORTING_READS, ...METRICS_READS].map((u) => u.split("?")[0]));
+  const read = new Set([...CONSOLE_READS, ...REPORTING_READS, ...METRICS_READS, '/api/accounts', '/api/accounts/setup'].map((u) => u.split("?")[0]));
   // /login answers a single-use ticket with a redirect or a fixed refusal: no data.
   const unchecked = [...routes].filter((r) => !read.has(r) && r !== "/login");
   assert.ok(routes.has("/api/console") && routes.has("/join"), "the route pattern no longer matches lib/hub/routes.js");

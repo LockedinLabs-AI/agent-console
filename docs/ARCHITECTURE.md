@@ -293,6 +293,21 @@ and conformance fixtures together. Security-boundary changes belong with
 their adversarial regression tests. Performance changes retain exact record
 output; see the [benchmark method and budgets](PERFORMANCE.md).
 
+## Local account capacity
+
+`lib/accounts/capacity.js` normalizes provider quota metadata and makes pure
+readiness/selection decisions. `store.js` keeps private, local profile and
+quota files, separate from usage accounting. `native.js` provides a bounded
+Codex app-server reader. `cli.js` captures allowlisted Claude status-line
+fields and launches unmodified native clients with an explicit profile home.
+The authenticated loopback API and Accounts view use these same components.
+
+No capacity metadata is added to the reporter transport. No provider credential
+is imported or forwarded. This is a new-session launcher, not a model gateway;
+neither the hub nor the browser receives model requests. Missing limits and
+unconfirmed resets block selection. [Account setup and semantics](ACCOUNTS.md)
+document the provider and source boundaries.
+
 ## CI and release path
 
 ```mermaid

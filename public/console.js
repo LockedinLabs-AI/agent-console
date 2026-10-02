@@ -2157,14 +2157,15 @@
     for (const t of $("tabs").querySelectorAll(".tab")) {
       if (t.dataset.view === next) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
     }
-    for (const v of ["console", "team", "projects"]) $("view-" + v).hidden = v !== next;
+    for (const v of ["console", "team", "projects", "accounts"]) $("view-" + v).hidden = v !== next;
     document.body.dataset.view = next;
     // The strip is shared: its title says which view is under it.
-    $("stripView").textContent = next === "team" ? "Team" : next === "projects" ? "Projects" : "";
+    $("stripView").textContent = next === "team" ? "Team" : next === "projects" ? "Projects" : next === "accounts" ? "Accounts" : "";
     $("stripView").hidden = next === "console";
     if (next === "team" && D) paintTeam();
     if (next === "projects") { loadProjects(); paintProjectsLive(); }
     setHash(next === "console" ? "" : next);
+    window.dispatchEvent(new CustomEvent('agent-console-view', { detail: next }));
   }
   // The URL carries the view and whatever is open beside it: #team, #team/machine/<id>, #lane/<key>/context, #console/add.
   function setHash(h) { try { history.replaceState(null, "", h ? "#" + h : location.pathname); } catch { /* fine */ } }
@@ -3174,6 +3175,7 @@
       { name: "Console", run: () => show("console"), note: "1" },
       { name: "Team", run: () => show("team"), note: "2" },
       { name: "Projects", run: () => show("projects"), note: "3" },
+      { name: "Accounts", run: () => show("accounts"), note: "4" },
     ]]);
     if (D) {
       groups.push(["Machines", D.devices.map((d) => ({ name: pn("machine", d.label) + (d.person ? " · " + pn("person", d.person) : ""), run: () => openInspect("machine", d.id, $("palBtn")),
@@ -3262,13 +3264,14 @@
       case "1": show("console"); break;
       case "2": show("team"); break;
       case "3": show("projects"); break;
+      case "4": show("accounts"); break;
       case "[": case "]": { const i = PERIODS.indexOf(period); setPeriod(PERIODS[(i + (ev.key === "]" ? 1 : PERIODS.length - 1)) % PERIODS.length]); break; }
       case "j": case "J": case "ArrowDown": if (ev.key === "ArrowDown" && !(ev.target.closest && ev.target.closest(".lane"))) return; moveLane(1); break;
       case "k": case "K": case "ArrowUp": if (ev.key === "ArrowUp" && !(ev.target.closest && ev.target.closest(".lane"))) return; moveLane(-1); break;
       case "Enter": if (!laneFocus) return; focusLane(laneFocus, true); break;
       case "p": case "P": setPresent(!present); break;
       case "t": case "T": $("themeBtn").click(); break;
-      case "?": toast("Keys: <kbd>⌘K</kbd> anywhere · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> views · <kbd>[</kbd> <kbd>]</kbd> period · <kbd>J</kbd> <kbd>K</kbd> lanes · <kbd>↵</kbd> open · <kbd>P</kbd> present · <kbd>T</kbd> theme · <kbd>esc</kbd> back", true); break;
+      case "?": toast("Keys: <kbd>⌘K</kbd> anywhere · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> views · <kbd>[</kbd> <kbd>]</kbd> period · <kbd>J</kbd> <kbd>K</kbd> lanes · <kbd>↵</kbd> open · <kbd>P</kbd> present · <kbd>T</kbd> theme · <kbd>esc</kbd> back", true); break;
       case "Escape": for (const r of document.querySelectorAll(".lane.focused")) r.classList.remove("focused"); laneFocus = null; closeTrees(); break;
       default: return;
     }
@@ -3289,7 +3292,7 @@
   function route() {
     if (signOutStarted) { setHash(""); return; }
     // /team and /projects open on that view: the path is read once and folded into the hash, so the address stays one form
-    const pathView = /^\/(team|projects)\/?$/u.exec(location.pathname);
+    const pathView = /^\/(team|projects|accounts)\/?$/u.exec(location.pathname);
     if (pathView && !location.hash) { try { history.replaceState(null, "", "/#" + pathView[1]); } catch { /* fine */ } }
     const parts = (location.hash || "").replace("#", "").split("/").filter(Boolean).map((p) => { try { return decodeURIComponent(p); } catch { return p; } });
     const [a, b, c] = parts;
@@ -3304,7 +3307,7 @@
       else focusLane(b);
       return;
     }
-    const next = a === "team" || a === "projects" ? a : "console";
+    const next = a === "team" || a === "projects" || a === "accounts" ? a : "console";
     if (next !== view) show(next);
     if (b === "add") openAdd();
     else if (b === "alerts") openAlerts();

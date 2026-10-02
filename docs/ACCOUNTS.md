@@ -76,6 +76,11 @@ replace `agent-console` with `node bin/agent-console.mjs`. Every command accepts
 `--state-dir` if the console uses a custom hub state directory. **Use / connect**
 prints commands for the running installation and that exact state directory.
 
+If all Claude readings are stale after an idle period, explicitly `launch`
+your chosen profile. A subsequent native response can supply a fresh reading
+through the configured status line. Automatic selection stays unavailable
+until that reading arrives; it cannot probe a Claude subscription directly.
+
 API-key and custom endpoint environment overrides are refused by these
 subscription-profile commands, because they can bypass the selected account.
 Provider configuration can also affect routing; inspect your native profile

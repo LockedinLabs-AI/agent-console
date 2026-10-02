@@ -19,6 +19,11 @@ count, an API credit balance, or 70% of a bill. Percentages from different
 accounts and plans are never added together. The dashboard's token totals
 still come from supported local transcripts and enrolled reporters.
 
+Registering a quota profile does not add its home to the token collector's
+search paths. For profiles outside the default folders, check the console's
+reported source coverage and [collector root settings](../README.md#options)
+before assuming their token history is included.
+
 ## Connect a profile
 
 1. Sign in through the **unmodified native client**. For Codex, the client home

@@ -1,8 +1,36 @@
 # Data flows
 
-What each part of Agent Console reads, writes and sends, as the code does it
-at version 0.4.1. Every statement cites the file and line that does it. Where
-the code cannot answer a question, the section says so.
+What each part of Agent Console reads, writes and sends. The core collector
+references below describe 0.4.1; the native account-capacity section records
+the additional opt-in flows in 0.4.3. Where the code cannot answer a question,
+the section says so.
+
+## Native account capacity (0.4.3)
+
+- The authenticated Accounts API reads and writes local profile metadata and
+  normalized quota snapshots. A selected native home path appears only in the
+  authenticated setup response. None of this metadata enters team reporting.
+  See [store.js](../../lib/accounts/store.js) and
+  [routes.js](../../lib/hub/routes.js).
+- A requested Codex refresh starts the installed `codex app-server` with the
+  selected `CODEX_HOME`, initializes it, and reads `account/rateLimits/read`.
+  The native client contacts its configured provider using its own existing
+  sign-in. This is an indirect network operation; it is not a passive log read.
+  Agent Console keeps only normalized quota fields and starts no model turn.
+  See [native.js](../../lib/accounts/native.js).
+- Claude's explicitly configured status-line command receives JSON from the
+  native client on stdin, discards all fields except supported quota metadata,
+  and writes that metadata locally. Capture makes no network request.
+- `accounts run` and `accounts launch` explicitly start an installed native
+  client. That child can contact its provider, execute the user's work and use
+  their allowance according to its native settings. The console does not
+  intercept its prompts, responses or credentials. The child uses the local
+  user's authority; it is not sandboxed by Agent Console.
+  See [cli.js](../../lib/accounts/cli.js).
+
+The remaining network inventory describes the core console, reporter and
+installation flows. The native-client operations above are additional and
+require an explicit account operation.
 
 The parts:
 
@@ -42,7 +70,7 @@ A search of `server.js`, `bin/`, `lib/` and `public/` for `fetch(`,
 **There is no telemetry, no update check and no crash reporting** in the
 console, the reporter or the collector: no call site above reaches a
 LockedIn Labs server or any third party. The console makes no outbound
-connection other than to `127.0.0.1` ([lib/hub/port.js:35](../../lib/hub/port.js#L35),
+direct connection other than to `127.0.0.1` ([lib/hub/port.js:35](../../lib/hub/port.js#L35),
 [server.js:148](../../server.js#L148)). The only outbound connections a reporter
 makes are to the hub named in its join link. The GitHub URLs in the page
 ([public/index.html:365](../../public/index.html#L365),
@@ -50,8 +78,9 @@ makes are to the hub named in its join link. The GitHub URLs in the page
 nothing loads from them, and every answer carries `referrer-policy: no-referrer`
 ([lib/hub/http.js:37](../../lib/hub/http.js#L37)).
 
-**No AI model is called.** The code contains no request to a model provider's
-API. Model names appear only as data: the model id read from a transcript
+**Collection and quota reads do not start model inference.** The optional
+native launcher can start work that does, as described above. In the collector,
+model names are data: the model id read from a transcript
 ([lib/collector/collector.js:315](../../lib/collector/collector.js#L315)) and the
 published price table, whose `source` fields are citations, not endpoints
 ([lib/collector/prices.json](../../lib/collector/prices.json)).

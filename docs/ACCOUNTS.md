@@ -87,6 +87,10 @@ Provider configuration can also affect routing; inspect your native profile
 configuration when connecting it. API usage remains visible through the
 console's normal collectors, independently of this feature.
 
+On Windows, native account commands require a `codex.exe` or `claude.exe`
+executable on PATH. A shell-only `.cmd` wrapper is not executed by this feature.
+The console and its log collectors remain usable independently of that setup.
+
 ## What qualifies as ready
 
 - All reported windows must contain valid percentages and reset timestamps.

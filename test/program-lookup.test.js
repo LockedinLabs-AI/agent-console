@@ -113,7 +113,7 @@ test("every module that starts a program imports lib/programs.js, and each entry
   }
   // Every place the console or the reporter starts a program. A new one joins this list
   // once it names its program as lib/programs.js describes.
-  assert.deepEqual(starting.sort(), ["lib/gitstats.js", "lib/hub/alerts.js", "lib/reporter.js", "server.js"]);
+  assert.deepEqual(starting.sort(), ["lib/accounts/cli.js", "lib/accounts/native.js", "lib/gitstats.js", "lib/hub/alerts.js", "lib/reporter.js", "server.js"]);
   for (const entry of ["bin/agent-console.mjs", "server.js"]) {
     const [first] = imports(fs.readFileSync(path.join(ROOT, entry), "utf8"));
     assert.ok(lookup(entry)(first), `${entry} imports ${first} before lib/programs.js`);

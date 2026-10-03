@@ -1,6 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.4.3 — 2026-10-03
+
+- Accounts view for native Codex and Claude Code profiles: remaining allowance,
+  reset timing, freshness, missing-data states, and per-provider suggestions.
+- Provider-branded capacity summaries, individual allowance bars and quick
+  filters in light and dark themes; stale readings never imply current capacity.
+- Windows native launch resolves programs against the actual child working
+  directory, excluding project-local executables and aliases.
+- Codex quota reads use the native app-server; Claude's status-line adapter
+  keeps only supported quota fields. Native credentials remain in their clients.
+- Profile-aware CLI launch and selection for new sessions. Selection keeps a
+  session on one profile and refuses stale, incomplete or exhausted readings.
+- Local-only profile registration, pausing, bounded refreshes, synthetic demo
+  coverage, and [setup and measurement documentation](docs/ACCOUNTS.md).
 
 ## 0.4.2 — 2026-09-30
 

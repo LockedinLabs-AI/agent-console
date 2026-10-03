@@ -14,6 +14,7 @@ installation with Claude Code or Codex, use [INSTALL.md](../INSTALL.md).
 | Try it with synthetic data | [Start here](../README.md#start-here); add `--demo` to avoid reading local sessions. |
 | Connect another computer | [Add another computer](../README.md#add-another-computer) and [how reporting works](../README.md#how-the-machines-connect). |
 | Understand tokens, cache use and dollar figures | [Measurements](MEASUREMENTS.md) and [accounting](accounting.md). Estimates are not invoices. |
+| Interpret a high cache read percentage | [Reading cache usage](MEASUREMENTS.md#reading-cache-usage): token share, request hit rate, cost and latency. |
 | Run it without keeping a terminal open | [Background operation](BACKGROUND.md). |
 | Check a download or use a standalone executable | [Release verification](../README.md#verify-a-release) and [standalone installation](standalone-install.md). |
 | Fix a startup or reporting problem | [Troubleshooting](../README.md#troubleshooting). |

@@ -19,6 +19,11 @@
 </p>
 
 <p align="center">
+  <a href="https://trendshift.io/repositories/264929"><img src="https://trendshift.io/api/badge/trendshift/repositories/264929/daily?language=JavaScript" alt="Agent Console's best JavaScript Repository Of The Day position on Trendshift" width="250" height="55"></a><br>
+  <small>Trendshift's JavaScript daily category: #2 first achieved on 28 September 2026. The badge tracks the best position reached.</small>
+</p>
+
+<p align="center">
   <b>Agent Console by <a href="https://lockedinlabs.ai">LockedIn Labs</a> — open-source, local-first observability for AI coding agents.</b><br>
   Every Claude Code and Codex session's tokens, cache reads and writes, models and list-price cost,
   on this computer and on every computer you connect, in one local console.
@@ -32,7 +37,7 @@
 *Captured from `--demo`. Every figure in it is generated and stamped DEMO.
 [The same screen in the light theme.](docs/console-demo-light.png)*
 
-[Get started](#install) · [Documentation](docs/README.md) ·
+[Get started](#install) · [Product website](https://lockedinlabs-ai.github.io/agent-console/) · [Documentation](docs/README.md) ·
 [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) ·
 [Contribute](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
@@ -291,6 +296,8 @@ days come from daily totals the console keeps for 400 days. Transcript lines
 that carry usage but could not be counted are counted by reason and shown
 beside the figures, never silently dropped. (Cache read as a share of *input tokens only*, the
 other common reading, is in the cache-read tooltip, labelled as such.)
+For a worked example and the limits of that percentage, see
+[reading cache usage](docs/MEASUREMENTS.md#reading-cache-usage).
 
 **Tokens over time**: the last hour, day, week or 30 days. Where a machine has stopped
 reporting, the chart says from when it is incomplete.

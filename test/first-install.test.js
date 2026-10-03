@@ -154,9 +154,10 @@ test("CLAUDE_CONFIG_DIR and CODEX_HOME are read, --claude-root and --codex-root 
     [path.resolve(home, ".claude/projects"), true], [path.resolve(home, ".config/claude/projects"), true]]);
   assert.deepEqual(of("codex"), [[path.resolve(home, "codex-home/sessions"), false], [path.resolve(home, "codex-home/archived_sessions"), true],
     [path.resolve(home, ".codex/sessions"), true], [path.resolve(home, ".codex/archived_sessions"), true]]);
-  const overridden = transcriptRoots({ home, env, claudeRoot: "/synthetic/elsewhere", codexRoot: "/synthetic/codex" });
-  assert.deepEqual(overridden.map((r) => r.directory), [path.resolve("/synthetic/elsewhere"), path.resolve("/synthetic/codex")]);
-  assert.deepEqual(defaultRoots("/synthetic/other-home").map((r) => r.kind), ["default", "xdg", "default", "default"], "another home: no environment");
+  assert.deepEqual(of("pi"), [[path.resolve(home, ".pi/agent/sessions"), true]]);
+  const overridden = transcriptRoots({ home, env, claudeRoot: "/synthetic/elsewhere", codexRoot: "/synthetic/codex", piRoot: "/synthetic/pi" });
+  assert.deepEqual(overridden.map((r) => r.directory), [path.resolve("/synthetic/elsewhere"), path.resolve("/synthetic/codex"), path.resolve("/synthetic/pi")]);
+  assert.deepEqual(defaultRoots("/synthetic/other-home").map((r) => r.kind), ["default", "xdg", "default", "default", "default"], "another home: no environment");
 });
 
 test("optional transcript folders do not hide missing required sources or create false gaps", async (t) => {
@@ -168,7 +169,7 @@ test("optional transcript folders do not hide missing required sources or create
     device: { id: "dev_sources", label: "Workstation" }, orgSalt: Buffer.alloc(32, 7).toString("base64url") }), { mode: 0o600 });
   const required = roots.filter((r) => !r.optional), optional = roots.filter((r) => r.optional);
   assert.equal(required.length, 2);
-  assert.equal(optional.length, 2);
+  assert.equal(optional.length, 3);
   const check = async (available, expected) => {
     const preview = await summarizeUnenrolled({ roots });
     const enrolled = await runOnce({ directory, roots });
@@ -181,9 +182,9 @@ test("optional transcript folders do not hide missing required sources or create
   for (const root of required) fs.mkdirSync(root.directory, { recursive: true });
   await check(2, 2);
   for (const root of optional) fs.mkdirSync(root.directory, { recursive: true });
-  await check(4, 4);
+  await check(5, 5);
   fs.rmSync(required[0].directory, { recursive: true });
-  await check(3, 4);
+  await check(4, 5);
 });
 
 test("the console reads CLAUDE_CONFIG_DIR/projects, names every folder it read, and says where it looked when it found nothing", async (t) => {

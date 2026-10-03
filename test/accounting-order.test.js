@@ -12,8 +12,9 @@ import path from "node:path";
 import { runOnce } from "../lib/collector/collector.js";
 import { createStore } from "../lib/hub/store.js";
 import { createRegistry } from "../lib/hub/registry.js";
-import { accountingReport } from "../lib/hub/accounting.js";
+import { accountingReport, coverageReport } from "../lib/hub/accounting.js";
 import { buildConsole } from "../lib/hub/aggregate.js";
+import { projectsPayload } from "../lib/hub/projects.js";
 import { projectRecord } from "../lib/collector/collector.js";
 
 const prices = JSON.parse(fs.readFileSync(new URL("../lib/collector/prices.json", import.meta.url), "utf8"));
@@ -259,4 +260,99 @@ test("§3.2: a transcript replaced in place (same path, new file) is not counted
   fs.renameSync(file + ".tmp", file); // an atomic rewrite: same path, a new file
   const again = await pass(state, roots);
   assert.equal(again.coverage.unreadableLine, 1, "one bad line on disk");
+});
+
+test("Codex parser gaps survive collection and appear in dashboard and accounting coverage", async (t) => {
+  const base = scratch(t);
+  const dir = path.join(base, "codex");
+  fs.mkdirSync(dir);
+  const usage = { input_tokens: 100, output_tokens: 20, cached_input_tokens: 60, cache_write_input_tokens: 0, total_tokens: 120 };
+  const counter = (total, last, ordinal = 1) => ({ type: "event_msg", timestamp: at(ordinal), ordinal,
+    payload: { type: "token_count", info: { total_token_usage: total, last_token_usage: last } } });
+  const cases = {
+    missingLastUsage: [counter(usage)],
+    invalidLastUsage: [counter(usage, { ...usage, cached_input_tokens: 110 })],
+    invalidResponseUsage: [{ type: "token_usage_record", timestamp: at(1),
+      payload: { response_id: "synthetic-invalid", usage: {} } }],
+    invalidCumulativeUsage: [counter({})],
+    invalidUsageDelta: [counter(usage, usage), counter({ ...usage, input_tokens: 110,
+      output_tokens: 22, cached_input_tokens: 90, total_tokens: 132 }, usage, 2)],
+  };
+  for (const [reason, rows] of Object.entries(cases)) {
+    const thread = `synthetic-${reason}`;
+    for (const row of rows) if (row.type === "token_usage_record") row.payload.thread_id = thread;
+    fs.writeFileSync(path.join(dir, `rollout-${thread}.jsonl`), jsonl([
+      { type: "session_meta", timestamp: at(0), payload: { id: thread, cwd: "/synthetic/project" } }, ...rows,
+    ]));
+  }
+  const got = await pass(enrol(path.join(base, "state"), "dev_gaps"), [{ tool: "codex", directory: dir }]);
+  const expected = Object.fromEntries(Object.keys(cases).map((reason) => [reason, 1]));
+  assert.deepEqual(got.coverage, expected);
+  const store = createStore({ dir: null, retentionMs: 30 * 86_400_000, prices, now: () => W1 - 1 });
+  const registry = createRegistry({ dir: null, now: () => W1 - 1 });
+  registry.addSynthetic({ id: "dev_gaps", label: "Synthetic machine", person: "Person A", createdAt: W0 });
+  registry.touch("dev_gaps", { coverage: got.coverage });
+  store.ingest("dev_gaps", got.records);
+  const view = buildConsole({ store, registry, now: W1 - 1, hub: { version: "synthetic" } });
+  assert.equal(view.coverage.dropped, 5);
+  assert.deepEqual(Object.fromEntries(view.coverage.reasons.map((r) => [r.kind, r.count])), expected);
+  const report = coverageReport({ store, devices: registry.list() });
+  assert.equal(report.dropped, 5);
+  assert.deepEqual(report.devices.dev_gaps, expected);
+});
+
+test("mixed Claude and Codex transcripts reconcile across dashboard periods, projects and archive copies", async (t) => {
+  const base = scratch(t);
+  const active = path.join(base, "codex", "2020", "01", "01");
+  const archived = path.join(base, "archived");
+  const claude = path.join(base, "claude", "synthetic-project");
+  for (const dir of [active, archived, claude]) fs.mkdirSync(dir, { recursive: true });
+  const when = (minutes) => new Date(W1 - minutes * MINUTE).toISOString();
+  const u = (input, output, cache) => ({ input_tokens: input, output_tokens: output, cached_input_tokens: cache,
+    cache_write_input_tokens: 0, reasoning_output_tokens: 0, total_tokens: input + output });
+  const own = "synthetic-current-thread";
+  const currentRows = [
+    { type: "session_meta", payload: { id: own, cwd: "/synthetic/codex-project" } },
+    { type: "turn_context", payload: { model: "synthetic-unpriced-model" } },
+    { type: "event_msg", timestamp: when(10), ordinal: 1, payload: { type: "token_count",
+      info: { total_token_usage: u(5000, 500, 4000), last_token_usage: u(250, 50, 200) } } },
+  ];
+  const activeFile = path.join(active, "rollout-2020-01-01-synthetic-current.jsonl");
+  fs.writeFileSync(activeFile, jsonl(currentRows));
+  fs.writeFileSync(path.join(archived, "rollout-synthetic-current-copy.jsonl"), jsonl(currentRows));
+  fs.writeFileSync(path.join(archived, "rollout-synthetic-older.jsonl"), jsonl([
+    { type: "session_meta", payload: { id: "synthetic-older-thread", cwd: "/synthetic/codex-project" } },
+    { type: "turn_context", payload: { model: "synthetic-unpriced-model" } },
+    ...[[120, "older-hour", u(100, 20, 60)], [48 * 60, "older-day", u(70, 10, 40)]].map(([minutes, id, usage]) => ({
+      type: "token_usage_record", timestamp: when(minutes),
+      payload: { thread_id: "synthetic-older-thread", response_id: id, usage },
+    })),
+  ]));
+  fs.writeFileSync(path.join(claude, `${SESSION}.jsonl`), jsonl([{
+    type: "assistant", timestamp: when(10), uuid: "synthetic-mixed-claude", sessionId: SESSION,
+    cwd: "/synthetic/claude-project", message: { id: "synthetic-mixed-response", model: "claude-sonnet-5",
+      usage: { input_tokens: 100, output_tokens: 50, cache_read_input_tokens: 20, cache_creation_input_tokens: 30,
+        cache_creation: { ephemeral_5m_input_tokens: 30, ephemeral_1h_input_tokens: 0 }, service_tier: "standard", speed: "standard" } },
+  }]));
+  const state = enrol(path.join(base, "state"), "dev_mixed");
+  const roots = [{ tool: "codex", directory: path.join(base, "codex") }, { tool: "codex", directory: archived },
+    { tool: "claude-code", directory: path.join(base, "claude") }];
+  const store = createStore({ dir: null, retentionMs: 30 * 86_400_000, prices, now: () => W1 - 1 });
+  const registry = createRegistry({ dir: null, now: () => W1 - 1 });
+  registry.addSynthetic({ id: "dev_mixed", label: "Synthetic machine", person: "Person A", local: true, createdAt: W0 });
+  const names = { project: (hash) => hash, branch: () => null, path: () => null };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const got = await pass(state, roots);
+    assert.deepEqual(got.coverage, {});
+    store.ingest("dev_mixed", got.records);
+    const view = buildConsole({ store, registry, now: W1 - 1, hub: {} });
+    for (const [period, expected] of [["1h", 500], ["24h", 620], ["7d", 700], ["30d", 700]]) {
+      const projects = await projectsPayload({ store, registry, names, period, demo: false, now: W1 - 1 });
+      assert.equal(view.windows[period].tokens.total, expected, `${period}: both vendors, no lifetime or replay inflation`);
+      assert.equal(projects.tokens, expected, `${period}: Projects and Console reconcile`);
+      assert.equal(projects.projects.reduce((sum, project) => sum + project.tokens, 0), expected);
+      assert.equal(view.windows[period].cost.status, "partial", "an unknown model is never priced at zero");
+    }
+    if (!attempt) fs.unlinkSync(activeFile); // The archive remains; disappearance cannot add or remove usage.
+  }
 });

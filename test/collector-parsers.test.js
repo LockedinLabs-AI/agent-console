@@ -13,8 +13,13 @@ const assistant = (usage, extra = {}) => ({ type: 'assistant', timestamp: stamp,
   cwd: '/synthetic/project', isSidechain: false, uuid: `synthetic-line-${usage.output_tokens}`, requestId: 'synthetic-request',
   message: { id: 'synthetic-message', model: 'claude-opus-4-8', usage }, ...extra });
 const usage = { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 20, cache_read_input_tokens: 30 };
-const tokens = (total, extra = {}) => ({ type: 'event_msg', timestamp: stamp,
-  payload: { type: 'token_count', info: { total_token_usage: total } }, ...extra });
+const tokens = (total, extra = {}) => {
+  // Synthetic complete counters keep their stated sum when a test changes a
+  // component. Tests for contradictions set the raw field explicitly.
+  const usage = { ...total, ...(Object.hasOwn(total, 'total_tokens') ? { total_tokens: total.input_tokens + total.output_tokens } : {}) };
+  return { type: 'event_msg', timestamp: stamp,
+    payload: { type: 'token_count', info: { total_token_usage: usage, last_token_usage: usage } }, ...extra };
+};
 const counters = { input_tokens: 100, output_tokens: 20, cached_input_tokens: 60, cache_write_input_tokens: 10,
   reasoning_output_tokens: 5, total_tokens: 120 };
 const call = (tool, line, state, offset = 0) => {
@@ -109,7 +114,9 @@ test('inherited Codex counters and resets establish baselines instead of billing
   const grown = call('codex', tokens({ ...counters, input_tokens: 110, output_tokens: 23 }), inherited.state, 200);
   assert.equal(grown.records[0].fresh, 10);
   assert.equal(grown.records[0].output, 3);
-  const reset = call('codex', tokens({ input_tokens: 8, output_tokens: 2, cached_input_tokens: 0, cache_write_input_tokens: 0 }), grown.state, 300);
+  const resetLine = tokens({ input_tokens: 8, output_tokens: 2, cached_input_tokens: 0, cache_write_input_tokens: 0 });
+  delete resetLine.payload.info.last_token_usage;
+  const reset = call('codex', resetLine, grown.state, 300);
   assert.deepEqual(reset.records, []);
   assert.equal(reset.state.skippedBaselines, 2);
   const fork = call('codex', { type: 'session_meta', payload: { id: 'fork', forked_from_id: 'source', source: 'cli' } });
@@ -127,8 +134,9 @@ test('missing classes stay null; unsafe numbers and impossible cache counts are 
   assert.equal(bad.fresh, null);
   assert.equal(bad.cacheWrite, null);
   assert.equal(bad.cacheRead, null);
-  const impossible = call('codex', tokens({ ...counters, input_tokens: 5 })).records[0];
-  assert.equal(impossible.fresh, null);
+  const impossible = call('codex', tokens({ ...counters, input_tokens: 5 }));
+  assert.deepEqual(impossible.records, []);
+  assert.equal(impossible.state.coverageDebt.invalidCumulativeUsage, 1, 'contradictory subsets are not a safe floor');
 });
 
 test('Codex input-only consumption with an unreported cache class is preserved as unknown, then deduplicated', () => {
@@ -417,4 +425,116 @@ test('A3: Codex per-response records are the events; replayed and repeated recor
     out.push(...next.records);
   }
   assert.deepEqual(out.map((r) => [r.fresh, r.cacheRead, r.cacheWrite, r.output]), [[85, 10, 5, 20], [385, 10, 5, 30]]);
+});
+
+
+test('a first cumulative observation counts its last response, never the thread lifetime', () => {
+  const last = { ...counters, input_tokens: 10, output_tokens: 2, cached_input_tokens: 6,
+    cache_write_input_tokens: 1, reasoning_output_tokens: 1, total_tokens: 12 };
+  const line = tokens(counters);
+  line.payload.info.last_token_usage = last;
+  const first = call('codex', line);
+  assert.deepEqual(totals(first.records), { fresh: 3, output: 2, cacheWrite: 1, cacheRead: 6, messages: 1 });
+  const repeated = call('codex', line, first.state, 2);
+  assert.deepEqual(repeated.records, []);
+  const turn = call('codex', { type: 'turn_context', payload: { model: 'synthetic-next-model', cwd: '/synthetic/next-project' } }, repeated.state);
+  const grown = call('codex', tokens({ ...counters, input_tokens: 150, output_tokens: 30, cached_input_tokens: 90,
+    cache_write_input_tokens: 15, total_tokens: 180 }), turn.state, 3);
+  assert.deepEqual(totals(grown.records), { fresh: 15, output: 10, cacheWrite: 5, cacheRead: 30, messages: 1 });
+  assert.equal(grown.records[0].model, 'synthetic-next-model');
+  assert.equal(grown.records[0].projectHash, hashIdentity('project', '/synthetic/next-project'));
+});
+
+test('an absent or impossible initial response is a visible gap, while the next increase is counted', () => {
+  for (const [last, reason] of [[undefined, 'missingLastUsage'], [{ ...counters, input_tokens: 1000 }, 'invalidLastUsage'],
+    [{ input_tokens: 10, output_tokens: 2, cached_input_tokens: 20, cache_write_input_tokens: 1, total_tokens: 12 }, 'invalidLastUsage'],
+    [{ ...counters, total_tokens: 119 }, 'invalidLastUsage']]) {
+    const line = tokens(counters); line.payload.info.last_token_usage = last;
+    const first = call('codex', line);
+    assert.deepEqual(first.records, []);
+    assert.equal(first.state.coverageDebt[reason], 1);
+    const next = call('codex', tokens({ ...counters, input_tokens: 150, output_tokens: 30,
+      cached_input_tokens: 90, cache_write_input_tokens: 15, total_tokens: 180 }), first.state, 2);
+    assert.deepEqual(totals(next.records), { fresh: 15, output: 10, cacheWrite: 5, cacheRead: 30, messages: 1 });
+  }
+});
+
+test('a first response preserves unknown classes even when its lifetime counter has them', () => {
+  const line = tokens(counters);
+  line.payload.info.last_token_usage = { input_tokens: 10, output_tokens: 2, total_tokens: 12 };
+  const first = call('codex', line).records[0];
+  assert.equal(first.fresh, null);
+  assert.equal(first.cacheRead, null);
+  assert.equal(first.cacheWrite, null);
+  assert.equal(first.output, 2);
+});
+
+test('a late native response remains excluded after native mode begins', () => {
+  const first = call('codex', tokens(counters));
+  const response = (id, usage) => ({ type: 'token_usage_record', timestamp: stamp,
+    payload: { thread_id: 'synthetic-codex-session', response_id: id, usage } });
+  const late = call('codex', response('late-response', counters), first.state);
+  assert.deepEqual(late.records, []);
+  const own = call('codex', response('next-response', { ...counters, input_tokens: 110, total_tokens: 130 }), late.state);
+  assert.equal(own.records.length, 1);
+  const repeat = call('codex', response('late-response', counters), own.state);
+  assert.deepEqual(repeat.records, []);
+  assert.equal(repeat.state.coverageDebt.lateUsageRecord, 1);
+});
+
+test('invalid native evidence does not switch off a valid cumulative fallback', () => {
+  for (const [usage, timestamp, reason] of [[{}, stamp, 'invalidResponseUsage'], [counters, undefined, 'missingTimestamp'],
+    [{ input_tokens: 10, output_tokens: 2, cached_input_tokens: 20, cache_write_input_tokens: 1, total_tokens: 12 }, stamp, 'invalidResponseUsage']]) {
+    const first = call('codex', tokens(counters));
+    const invalid = call('codex', { type: 'token_usage_record', timestamp,
+      payload: { thread_id: 'synthetic-codex-session', response_id: 'invalid-response', usage } }, first.state);
+    assert.deepEqual(invalid.records, []);
+    assert.equal(invalid.state.usageRecords, undefined);
+    assert.equal(invalid.state.coverageDebt[reason], 1);
+    const next = call('codex', tokens({ ...counters, input_tokens: 150 }), invalid.state, 2);
+    assert.equal(next.records[0].fresh, 50);
+  }
+});
+
+test('a cumulative increase cannot report more cached input than its input increase', () => {
+  const first = call('codex', tokens(counters));
+  const invalid = call('codex', tokens({ ...counters, input_tokens: 110, output_tokens: 22,
+    cached_input_tokens: 90 }), first.state, 2);
+  assert.deepEqual(invalid.records, []);
+  assert.equal(invalid.state.coverageDebt.invalidUsageDelta, 1);
+  const next = call('codex', tokens({ ...counters, input_tokens: 130, output_tokens: 25,
+    cached_input_tokens: 95, cache_write_input_tokens: 12 }), invalid.state, 3);
+  assert.deepEqual(totals(next.records), { fresh: 13, output: 3, cacheWrite: 2, cacheRead: 5, messages: 1 });
+});
+
+test('empty or contradictory cumulative samples preserve the baseline and expose the unmeasured interval', () => {
+  const invalidSamples = [{}, { input_tokens: 10, output_tokens: 2, cached_input_tokens: 20,
+    cache_write_input_tokens: 1, total_tokens: 12 }, { ...counters, total_tokens: 119 },
+  { ...counters, reasoning_output_tokens: 21 }];
+  for (const total of invalidSamples) {
+    const first = call('codex', tokens(counters));
+    const bad = tokens(counters);
+    bad.payload.info.total_token_usage = total;
+    bad.payload.info.last_token_usage = total;
+    const invalid = call('codex', bad, first.state, 2);
+    assert.deepEqual(invalid.records, []);
+    assert.deepEqual(invalid.state.codexUsage, first.state.codexUsage);
+    assert.equal(invalid.state.coverageDebt.invalidCumulativeUsage, 1);
+    const nextLine = tokens({ ...counters, input_tokens: 150, output_tokens: 30, cached_input_tokens: 90, cache_write_input_tokens: 15 });
+    nextLine.payload.info.last_token_usage = { input_tokens: 20, output_tokens: 3, cached_input_tokens: 10,
+      cache_write_input_tokens: 2, total_tokens: 23 };
+    const next = call('codex', nextLine, invalid.state, 3);
+    assert.deepEqual(totals(next.records), { fresh: 8, output: 3, cacheWrite: 2, cacheRead: 10, messages: 1 },
+      'only the next response is dated here; consumption across the gap has no known time');
+    assert.deepEqual(call('codex', nextLine, next.state, 4).records, []);
+  }
+});
+
+test('a reset requires internally consistent last response evidence, even when all four classes match', () => {
+  const first = call('codex', tokens(counters));
+  const reset = tokens({ input_tokens: 10, output_tokens: 2, cached_input_tokens: 5, cache_write_input_tokens: 1 });
+  reset.payload.info.last_token_usage = { ...reset.payload.info.total_token_usage, total_tokens: 11 };
+  const invalid = call('codex', reset, first.state, 2);
+  assert.deepEqual(invalid.records, []);
+  assert.equal(invalid.state.coverageDebt.counterReset, 1);
 });

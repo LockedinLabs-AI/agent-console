@@ -146,6 +146,9 @@ p code, span code, li code, td code, .what code { padding: 1px 5px; border-radiu
 .brief.two { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 22px 24px 20px; }
 .brief.two p { max-width: 82ch; }
 .say { position: relative; padding-left: 0; }
+.recognition { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 16px; }
+.recognition img { display: block; width: 250px; max-width: 100%; height: auto; }
+.recognition p { margin: 0; max-width: 28ch; font-size: 12px; color: var(--quiet); }
 .get { display: grid; gap: 10px; align-content: start; padding-top: 6px; }
 .alt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
 .alt .fine { margin-left: auto; }

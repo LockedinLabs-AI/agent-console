@@ -24,6 +24,13 @@
   on this computer and on every computer you connect, in one local console.
 </p>
 
+<p align="center">
+  <a href="https://trendshift.io/repositories/264929?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-264929" target="_blank" rel="noopener noreferrer">
+    <img src="https://trendshift.io/api/badge/trendshift/repositories/264929/daily?language=JavaScript" alt="Agent Console — Trendshift #2 JavaScript Repository of the Day" width="250" height="55">
+  </a><br>
+  <sub>Trendshift's daily JavaScript ranking · first achieved September 28, 2026.</sub>
+</p>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/console-demo-dark.png">
   <img src="docs/console-demo-light.png" alt="Agent Console in demo mode: sessions, machines, token usage and estimated costs. All figures are synthetic.">
@@ -32,7 +39,7 @@
 *Captured from `--demo`. Every figure in it is generated and stamped DEMO.
 [The same screen in the light theme.](docs/console-demo-light.png)*
 
-[Get started](#install) · [Documentation](docs/README.md) ·
+[Website](https://lockedinlabs-ai.github.io/agent-console/) · [Get started](#install) · [Documentation](docs/README.md) ·
 [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) ·
 [Contribute](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 

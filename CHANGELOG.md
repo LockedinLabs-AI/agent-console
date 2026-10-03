@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — 0.4.3
+## 0.4.3 — 2026-10-03
 
 - Accounts view for native Codex and Claude Code profiles: remaining allowance,
   reset timing, freshness, missing-data states, and per-provider suggestions.

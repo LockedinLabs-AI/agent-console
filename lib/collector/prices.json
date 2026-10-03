@@ -9,8 +9,7 @@
     "OpenAI short-context rates are a baseline assumption where context tiers apply; service tier, geography, discounts and subscription charges are not observed.",
     "API-equivalent estimates never measure productivity or claim actual spend.",
     "Exact model ids only. Every model found in the local metadata inventory has a row; unverifiable models and token rates stay null.",
-    "Fast mode uses each row's verified fast rates, with the published cache multipliers applied on top; a model without them leaves fast-mode usage unpriced. Other Anthropic service tiers are unpriced.",
-    "A row marked derivedFrom carries rates computed from an agent's own recorded per-class cost instead of a vendor page, and names where that derivation is written down."
+    "Fast mode uses each row's verified fast rates, with the published cache multipliers applied on top; a model without them leaves fast-mode usage unpriced. Other Anthropic service tiers are unpriced."
   ],
   "rows": [
     {
@@ -415,28 +414,6 @@
         "cacheWrite5m": null,
         "cacheWrite1h": null,
         "cacheRead": 0.2
-      }
-    },
-    {
-      "model": "gpt-6.1-sol",
-      "status": "verified",
-      "verifiedOn": "2026-10-03",
-      "source": "https://github.com/timafen-dev/factory3/issues/2458",
-      "derivedFrom": "agent-recorded-cost",
-      "cacheWriteBasis": "published-standard",
-      "assumptions": [
-        "Rates are derived from the agent's own recorded per-class cost, not read from a vendor pricing page: across 12 009 recorded assistant messages cost.input/input, cost.output/output and cost.cacheRead/cacheRead each held exactly one value.",
-        "Standard global API rates are assumed; actual service tier and purchasing terms are not observed.",
-        "Short-context pricing is assumed; per-request context size is not reported."
-      ],
-      "notes": "The same derivation reproduces the published rows of gpt-6-astra, gpt-5.6-terra and gpt-5.6-luna exactly, which is why it is trusted for this id. A cache write was never observed for this model, so a nonzero cache write stays unpriced instead of being priced at a guess.",
-      "usdPerMillion": {
-        "fresh": 2,
-        "output": 10,
-        "cacheWrite": null,
-        "cacheWrite5m": null,
-        "cacheWrite1h": null,
-        "cacheRead": 0.1
       }
     },
     {

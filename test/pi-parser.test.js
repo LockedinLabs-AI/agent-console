@@ -52,17 +52,24 @@ test('Pi usage: input is the fresh class as recorded and the four classes reprod
   }
 });
 
-test('the bundled rates reproduce the cost Pi recorded for every model in the fixture', () => {
+test('a bundled rate reproduces the cost Pi recorded, and a model without a row stays unpriced', () => {
   const { records } = parsed();
   const written = FIXTURE.map(JSON.parse).filter((line) => line.message?.usage).map((line) => line.message.usage);
+  let priced = 0;
   for (const [index, row] of records.entries()) {
     const estimate = priceRecord(row, prices, { measurement: false });
-    assert.equal(estimate.status, 'estimated', row.model);
-    // The derived gpt-6.1-sol row and the published rows of the other two
-    // models are checked the same way: against the agent's own recorded cost.
+    if (estimate.status !== 'estimated') {
+      // Pi records its own per-class cost, but a model this table has no row
+      // for is still unpriced here rather than priced from that number: the
+      // table is the only source of a rate (docs/accounting.md).
+      assert.equal(estimate.reason, 'unknown-model', row.model);
+      continue;
+    }
+    priced += 1;
     assert.ok(Math.abs(estimate.usd - written[index].cost.total) < 1e-9,
       `${row.model}: ${estimate.usd} vs ${written[index].cost.total}`);
   }
+  assert.ok(priced > 0, 'at least one fixture model is in the bundled table');
 });
 
 test('Pi identity: the session line binds the session and its folder, and a replayed message counts once', () => {

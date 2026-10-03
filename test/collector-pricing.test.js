@@ -72,15 +72,7 @@ test("fully priced aggregation totals estimates without rounding each event", ()
 test("every bundled row names its verification date and exact public source", () => {
   for (const row of prices.rows) {
     assert.match(row.verifiedOn, /^\d{4}-\d{2}-\d{2}$/);
-    // A row either names the vendor page its rates were read on, or declares
-    // that they were derived from an agent's own recorded cost and names where
-    // that derivation is written down. There is no third, unattributed kind.
-    if (row.derivedFrom === undefined) assert.match(row.source, /^https:\/\/(platform\.claude\.com|developers\.openai\.com)\//);
-    else {
-      assert.equal(row.derivedFrom, "agent-recorded-cost");
-      assert.match(row.source, /^https:\/\//);
-      assert.ok(row.assumptions.some(line => line.includes("derived")), row.model);
-    }
+    assert.match(row.source, /^https:\/\/(platform\.claude\.com|developers\.openai\.com)\//);
     if (row.status === "unpriced") {
       assert.ok(Object.values(row.usdPerMillion).every(value => value === null));
       assert.equal(priceRecord(record({ model: row.model }), prices).status, "unpriced");
@@ -143,7 +135,7 @@ test("Claude Opus 5.5 is priced from Anthropic's published page: $4 in, $20 out,
 test("the complete checked local model inventory has one explicit price standing per id", () => {
   const inventory = [
     "claude-fable-5", "claude-fable-5-1", "claude-haiku-4-5-20251001", "claude-opus-4-6", "claude-opus-4-7", "claude-opus-4-8", "claude-opus-5", "claude-opus-5-5", "claude-sonnet-4-6", "claude-sonnet-5",
-    "codex-auto-review", "gpt-5.2", "gpt-5.3-codex-spark", "gpt-5.4", "gpt-5.4-mini", "gpt-5.5", "gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-6.1-sol", "gpt-reserve",
+    "codex-auto-review", "gpt-5.2", "gpt-5.3-codex-spark", "gpt-5.4", "gpt-5.4-mini", "gpt-5.5", "gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-6-astra", "gpt-6-sol", "gpt-reserve",
   ];
   assert.deepEqual(prices.rows.map(row => row.model).sort(), inventory.sort());
   assert.deepEqual(prices.rows.filter(row => row.status === "unpriced").map(row => row.model).sort(), ["codex-auto-review", "gpt-5.3-codex-spark", "gpt-reserve"]);

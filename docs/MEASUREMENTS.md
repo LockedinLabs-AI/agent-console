@@ -33,6 +33,42 @@ as such. Neither is a benchmark, and a high share is not a waste score.
 transcript lines; the lines after the first are marked as continuations and
 are not counted again. Their token increments are still counted, once.
 
+## Reading cache usage
+
+A cache read means the provider reported reusing cached prompt input. It does
+not mean the provider returned a previously generated answer: output tokens
+are still a separate class. Long agent sessions can reuse a large prefix over
+many responses, so those repeated reads can dominate the token total.
+
+For example, these **synthetic** counts describe one selected period:
+
+| Token class | Count |
+| --- | ---: |
+| Cache read | 900,000 |
+| Uncached input | 50,000 |
+| Cache write | 25,000 |
+| Output | 25,000 |
+| Total | 1,000,000 |
+
+The headline cache read share is **90%** (900,000 ÷ 1,000,000). Its input-only
+share is **about 92.3%** (900,000 ÷ 975,000). These are shares of tokens. A
+request hit rate would instead count responses meeting a stated hit criterion
+and divide by the relevant response count; this token split does not supply
+that percentage. It also does not establish a percentage saved on a bill.
+
+To interpret your own reading, select a period, check the model and machine
+breakdown, and inspect a session's Context column for recent input readings,
+writes and possible cache breaks. A high share shows reuse within that scope;
+compare the absolute input size and estimated cost as well. A large reused
+context can still be expensive. A possible break is a signal from counts and
+timing, not proof of its cause ([analysis contract](ANALYSIS.md#contexthealthsamples-prices-options)).
+
+The console observes the usage the agents recorded. It does not enable
+provider caching or change the agent's prompts. Provider rules differ and can
+change; see [Anthropic prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
+and [OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)
+for prefix matching, retention and pricing.
+
 ## Machines and copies
 
 Each machine reports what its own transcripts say, under its own device token.
@@ -62,6 +98,22 @@ Fast mode is priced at its own published rates; another service tier, or fast
 mode on a model without published fast rates, is unpriced. The estimate cannot
 see subscriptions, negotiated rates, batch, data-residency premiums, taxes or
 tool fees. It is not an invoice.
+
+Token share and cost share can differ substantially because each class has
+its own rate. Use the console's Spend spectrum and the dated price table to
+understand the estimate. Any savings comparison needs a stated baseline,
+the same model and service tier, and the cost of writes as well as reads.
+Reconcile actual spend against your provider's billing records and plan;
+transcript totals alone cannot establish an invoice reduction.
+
+## Cache and latency
+
+Provider prompt caching can reduce input processing time. A cache token share
+does not measure how much faster a request or coding task became. The
+console's activity buckets and session spans include other work and are not
+per-request latency measurements. To evaluate a speed change, compare similar
+workloads using request timings such as time to first token and total response
+time, alongside model, output length, tool time and cache usage.
 
 ## Projects (this machine only)
 

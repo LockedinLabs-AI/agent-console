@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Explain cache token share, request hit rate, list-price estimates and latency
+  in the measurement guide, and add the verified Trendshift JavaScript daily
+  recognition badge to the README.
 - Windows: helper programs are found on PATH only. Git is started by its full
   path, and the browser opener and desktop notifier from the Windows system
   folder.

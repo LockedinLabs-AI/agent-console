@@ -4,10 +4,10 @@
  * The performance budget, as CI enforces it: node --expose-gc bench/check.mjs
  *
  * Runs bench/ops.mjs at two history sizes and holds the counts to
- * bench/budgets.json. Everything gated here is an operation count (bytes
- * read and written, files opened, lines parsed, bytes kept), so a slow or
- * fast CI machine cannot make it pass or fail. Times are printed for
- * information only.
+ * bench/budgets.json. Most gates count operations (bytes read and written,
+ * files opened, lines parsed, bytes kept). The restart gate is a timed ratio
+ * against parsing the same records and can vary with runner scheduling.
+ * Absolute times are printed for information only.
  *
  * The rule the budgets encode: the first read costs about one read of the
  * history; after that, a pass costs what changed, not what exists.

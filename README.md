@@ -63,7 +63,7 @@ new Codex or Claude Code sessions. [Connect accounts and understand the readings
 Native sign-in stays with the provider; Agent Console does not pool subscription
 credentials or proxy model requests.
 
-This page describes **v0.4.3**. Download a versioned package from
+This page describes **v0.4.4**. Download a versioned package from
 [GitHub Releases](https://github.com/LockedinLabs-AI/agent-console/releases/latest),
 or run the current source:
 
@@ -108,18 +108,18 @@ Choose a version as well as an installation method:
 
 | Channel | Current availability |
 | --- | --- |
-| Source on main | v0.4.3 source. Use Node.js 22+ and the commands above, or Download ZIP below. |
+| Source on main | v0.4.4 source. Use Node.js 22+ and the commands above, or Download ZIP below. |
 | GitHub release downloads | [Versioned packages](https://github.com/LockedinLabs-AI/agent-console/releases/latest) for Node.js and standalone files for macOS, Linux and Windows. Check the listed version and Assets before installing. |
 | npm registry | `@lockedinlabs/agent-console` is not published. Use the source checkout or a published GitHub release archive. |
 | Homebrew | The documented tap has not been verified as available. Use source or the listed GitHub release. |
-| Published container image | A v0.4.3 image has not been verified as a published download. Check the [container instructions](docs/docker-hub.md) and the selected release's image workflow. |
+| Published container image | The Linux team hub image **v0.4.3** is published for amd64 and arm64. Use the [versioned image and verification instructions](docs/docker-hub.md). |
 
 **Prefer `npm install`?** npm can install a published GitHub archive even while
-the registry name is unavailable. To install **v0.4.3** once its archive is
+the registry name is unavailable. To install **v0.4.4** once its archive is
 listed on the release page:
 
 ```sh
-npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.3/lockedinlabs-agent-console-0.4.3.tgz
+npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.4/lockedinlabs-agent-console-0.4.4.tgz
 agent-console --open
 ```
 
@@ -128,21 +128,21 @@ If npm reports a permission error, use the source route; administrator access
 is unnecessary.
 
 <details>
-<summary>Run v0.4.3 once with npx — only after its release is published</summary>
+<summary>Run v0.4.4 once with npx — only after its release is published</summary>
 
-These commands require `lockedinlabs-agent-console-0.4.3.tgz` to be listed
+These commands require `lockedinlabs-agent-console-0.4.4.tgz` to be listed
 on the [release page](https://github.com/LockedinLabs-AI/agent-console/releases).
 Until that file is published, use the source instructions above.
 
 ```sh
-npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.3/lockedinlabs-agent-console-0.4.3.tgz --open
+npx --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.4/lockedinlabs-agent-console-0.4.4.tgz --open
 ```
 
 In Windows PowerShell, use `npx.cmd` because the default policy can refuse
 `npx`'s script form:
 
 ```powershell
-npx.cmd --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.3/lockedinlabs-agent-console-0.4.3.tgz --open
+npx.cmd --yes https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.4/lockedinlabs-agent-console-0.4.4.tgz --open
 ```
 
 </details>
@@ -772,12 +772,12 @@ From 0.2.1 on, CI builds each release from its tag
 own machine. The files it attaches (the package, the standalone executables
 and their archives, and the SBOMs) are each listed in the release's
 `SHA256SUMS` and covered by a signed build provenance attestation. To check
-the v0.4.3 package, with `SHA256SUMS` downloaded beside it:
+the v0.4.4 package, with `SHA256SUMS` downloaded beside it:
 
 ```sh
 shasum -a 256 -c SHA256SUMS --ignore-missing        # macOS, Linux
-Get-FileHash lockedinlabs-agent-console-0.4.3.tgz   # Windows PowerShell: compare with SHA256SUMS
-gh attestation verify lockedinlabs-agent-console-0.4.3.tgz -R LockedinLabs-AI/agent-console
+Get-FileHash lockedinlabs-agent-console-0.4.4.tgz   # Windows PowerShell: compare with SHA256SUMS
+gh attestation verify lockedinlabs-agent-console-0.4.4.tgz -R LockedinLabs-AI/agent-console
 ```
 
 The standalone executables ([docs/executables.md](docs/executables.md)) are
@@ -791,7 +791,7 @@ on the release page (`*.cdx.json`), attested against the files it describes.
 To check that a file's SBOM is the one the release workflow made:
 
 ```sh
-gh attestation verify lockedinlabs-agent-console-0.4.3.tgz -R LockedinLabs-AI/agent-console \
+gh attestation verify lockedinlabs-agent-console-0.4.4.tgz -R LockedinLabs-AI/agent-console \
   --predicate-type https://cyclonedx.org/bom
 ```
 
@@ -815,7 +815,7 @@ files with
 
 ## The check in every command
 
-This section describes the v0.4.3 source. For a packaged version, use that
+This section describes the v0.4.4 source. For a packaged version, use that
 release's README and notes: the verification check can change between versions.
 
 Every command the console or the join page prints starts with

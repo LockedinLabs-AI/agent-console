@@ -555,7 +555,7 @@ test("unreleased source has a runnable quick start and conditional, version-pinn
   assert.match(conditional[2], /npx --yes https:\/\/github\.com\//u);
   assert.match(install, /npm registry[^\n]*not published/u);
   assert.match(install, /Homebrew[^\n]*not been verified/u);
-  assert.match(install, /Published container image[^\n]*not been verified/u);
+  assert.match(install, /Published container image[^\n]*v0\.4\.3[^\n]*published for amd64 and arm64/u);
   assert.doesNotMatch(install, /npm(?:\.cmd)? install -g|brew install |docker run/u, "unavailable channels are not offered as working installs");
 });
 

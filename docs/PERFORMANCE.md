@@ -41,8 +41,10 @@ system.
 ## Budgets
 
 **Held by CI on every push** (`Performance budget`, `bench/check.mjs`). These
-are counts, not times, so a slow or fast runner cannot make them pass or
-fail. They run on one synthetic machine with 60 sessions at 20,000 and
+are operation counts except for the restart ratio, which compares load time
+with bare JSON parsing of the same records. Operation counts are independent
+of runner speed; the timing ratio can vary with scheduling and garbage
+collection even when the code is unchanged. They run on one synthetic machine with 60 sessions at 20,000 and
 100,000 lines; these fixture budgets are not limits on every fleet response.
 
 | What | Budget | Measured |

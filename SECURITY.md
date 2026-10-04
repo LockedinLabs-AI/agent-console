@@ -240,3 +240,17 @@ deletes everything the enrolment left on the machine.
 Known credential patterns are redacted from the console's answers before they
 reach a browser; redaction cannot recognise every private business detail, so
 use demo mode for screenshots and presentations.
+
+## Native account commands
+
+Account capacity reads and launches use the installed native client. Interactive
+launches exclude executables in the project's working directory and its
+subdirectories, including aliases into that tree, on all supported platforms.
+Home-directory launches allow explicit installation subdirectories on PATH.
+Authentication and endpoint environment overrides are refused by subscription
+profile commands; Windows variable names are checked without regard to case.
+Keep PATH, installed clients and native configuration under your control.
+
+Quota adapters retain only normalized allowance fields. They do not read OAuth
+files, proxy subscription credentials, start model turns while refreshing, or
+switch an existing session to another profile. See [account boundaries](docs/ACCOUNTS.md).

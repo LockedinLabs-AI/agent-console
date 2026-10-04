@@ -20,7 +20,7 @@ profiles. Quota setup is optional; the token console needs no provider login of
 its own. [Account setup](docs/ACCOUNTS.md) explains source support and the native
 launcher. No proxy, OAuth import, or extra runtime dependency is installed.
 
-**Source version:** v0.4.3. Versioned downloads are listed on
+**Source version:** v0.4.4. Versioned downloads are listed on
 [GitHub Releases](https://github.com/LockedinLabs-AI/agent-console/releases/latest).
 The registry name `@lockedinlabs/agent-console` is not published yet. Check the
 [release page](https://github.com/LockedinLabs-AI/agent-console/releases/latest)
@@ -56,10 +56,10 @@ marked DEMO. Stop it with Ctrl+C before starting the normal console.
 
 Node.js 22 or newer includes npm. npm can install a GitHub release archive
 directly; this does not require publication to the npm registry. Once its
-archive appears in the release Assets, install **v0.4.3** with:
+archive appears in the release Assets, install **v0.4.4** with:
 
 ```sh
-npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.3/lockedinlabs-agent-console-0.4.3.tgz
+npm install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.4/lockedinlabs-agent-console-0.4.4.tgz
 agent-console --version
 agent-console --open
 ```
@@ -67,7 +67,7 @@ agent-console --open
 On Windows PowerShell:
 
 ```powershell
-npm.cmd install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.3/lockedinlabs-agent-console-0.4.3.tgz
+npm.cmd install --global --ignore-scripts https://github.com/LockedinLabs-AI/agent-console/releases/download/v0.4.4/lockedinlabs-agent-console-0.4.4.tgz
 agent-console.cmd --version
 agent-console.cmd --open
 ```

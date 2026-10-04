@@ -55,6 +55,14 @@ try {
   runNpm(['install', '--prefix', prefix, '--ignore-scripts', tarball], { env: { npm_config_cache: npmCache } });
   const installed = path.join(prefix, 'node_modules', ...manifest.name.split('/'));
   assertLicensed(installed);
+  // Product documentation and its local illustrations must survive packing.
+  // Source-only links (build scripts, workflows) are reviewed on GitHub.
+  for (const name of ['README.md', 'SECURITY.md', 'docs/ACCOUNTS.md', 'docs/ARCHITECTURE.md',
+    'docs/security/DATA-FLOWS.md', 'docs/security/THREAT-MODEL.md', 'docs/security/SSDF.md',
+    'docs/security/ENTERPRISE-FAQ.md', 'docs/brand/lockup-on-light.svg', 'docs/brand/lockup-on-dark.svg',
+    ...fs.readdirSync(path.join(root, 'docs')).filter(n => /\.(?:png|jpg)$/u.test(n)).map(n => 'docs/' + n)]) {
+    assert.ok(fs.statSync(path.join(installed, name)).isFile(), 'packed documentation is missing ' + name);
+  }
   assert.match(run(process.execPath, ['--input-type=module', '-e',
     "import { ANALYSIS_VERSION, contextHealth } from '@lockedinlabs/agent-console/analysis'; console.log(ANALYSIS_VERSION, contextHealth([], null).status)"],
     { cwd: prefix }), /^1 unknown$/u, 'packed analysis subpath is unavailable');
@@ -90,6 +98,12 @@ try {
     const data = await view.json();
     assert.equal(data.hub.demo, true);
     assert.ok(data.devices.length > 1 && data.day.tokens.total > 0);
+    const accounts = await fetch(meta.url + '/api/accounts', { headers: { 'X-Agent-Console': '1', cookie }, signal: timeout() });
+    assert.equal(accounts.status, 200);
+    const capacity = await accounts.json();
+    assert.equal(capacity.demo, true);
+    assert.ok(capacity.profiles.some(p => p.provider === 'codex') && capacity.profiles.some(p => p.provider === 'claude-code'));
+    assert.equal((await fetch(meta.url + '/api/accounts', { headers: { 'X-Agent-Console': '1' }, signal: timeout() })).status, 401);
     const join = await fetch(`http://127.0.0.1:${meta.reportPort}/join`, { signal: timeout() });
     assert.equal(join.status, 200);
   } finally {

@@ -97,6 +97,11 @@ Provider configuration can also affect routing; inspect your native profile
 configuration when connecting it. API usage remains visible through the
 console's normal collectors, independently of this feature.
 
+Native account commands use absolute PATH entries and exclude executables in
+the current project, including symlink aliases into it. When the working
+directory is your home, explicit client installation subdirectories remain
+usable. Keep PATH and installed clients under your control.
+
 On Windows, native account commands require a `codex.exe` or `claude.exe`
 executable on PATH. A shell-only `.cmd` wrapper is not executed by this feature.
 The console and its log collectors remain usable independently of that setup.

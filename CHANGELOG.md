@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.4 — Unreleased
+
+- Exclude project-local native client executables and symlink aliases during
+  macOS and Linux account launches, matching the Windows boundary.
+- Refuse Windows authentication and endpoint overrides regardless of variable
+  name casing, so subscription profile selection cannot silently use an API key.
+- Include security documentation, brand assets and product screenshots in the
+  installed package; verify Accounts and its authentication in package acceptance.
+- Report the actual package version to the native Codex app-server.
+- Document the published v0.4.3 Linux hub image and its provenance verification.
+
 ## 0.4.3 — 2026-10-03
 
 - Accounts view for native Codex and Claude Code profiles: remaining allowance,

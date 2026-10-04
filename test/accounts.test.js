@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
+import { spawnSync } from 'node:child_process';
 import { PassThrough, Readable, Writable } from 'node:stream';
 import { FRESH_MS, claudeCapacity, codexCapacity, capacityView, recommend, storedCapacity } from '../lib/accounts/capacity.js';
 import vm from 'node:vm';
@@ -114,6 +115,50 @@ test('native environments isolate client homes and refuse auth overrides without
   assert.throws(() => nativeEnvironment({ ...p, provider: 'claude-code' }, { CLAUDE_CODE_OAUTH_TOKEN: 'SYNTHETIC_SECRET' }), /override/);
 });
 
+test('Windows authentication overrides are refused regardless of environment name casing', () => {
+  const p = { ...profile, directory: '/synthetic/native' };
+  for (const [provider, key] of [['codex', 'OpenAI_API_Key'], ['codex', 'codex_api_key'],
+    ['codex', 'openai_base_url'], ['claude-code', 'Anthropic_Auth_Token'],
+    ['claude-code', 'claude_code_oauth_token'], ['claude-code', 'claude_code_use_vertex']]) {
+    assert.throws(() => nativeEnvironment({ ...p, provider }, { [key]: 'SYNTHETIC_SECRET' }, { platform: 'win32' }),
+      e => /override/.test(e.message) && !e.message.includes('SECRET'));
+  }
+});
+
+test('POSIX native lookup refuses project programs and symlink aliases but permits explicit home installs', { skip: process.platform === 'win32' }, t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'console-native-path-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const project = path.join(root, 'project'), home = path.join(root, 'home');
+  const projectBin = path.join(project, 'tools'), trustedBin = path.join(home, '.local', 'bin');
+  for (const dir of [project, projectBin, home, trustedBin]) {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'codex'), '#!/bin/sh\nexit 0\n', { mode: 0o700 });
+  }
+  const alias = path.join(root, 'alias'); fs.mkdirSync(alias);
+  fs.symlinkSync(path.join(projectBin, 'codex'), path.join(alias, 'codex'));
+  const options = { cwd: project, home };
+  const hostilePath = [project, projectBin, alias, '.', './tools'].join(path.delimiter);
+  assert.throws(() => nativeProgram('codex', { PATH: hostilePath }, options), /Install/);
+  assert.equal(nativeProgram('codex', { PATH: hostilePath + path.delimiter + trustedBin }, options), path.join(trustedBin, 'codex'));
+  assert.equal(nativeProgram('codex', { PATH: [home, trustedBin].join(path.delimiter) }, { home, cwd: home }), path.join(trustedBin, 'codex'));
+});
+
+test('an account launch cannot execute a project PATH shadow before the installed native client', { skip: process.platform === 'win32' }, t => {
+  const { dir, store, native } = fixture(t);
+  const project = path.join(dir, 'project'), shadow = path.join(project, 'bin'), trusted = path.join(dir, 'installed');
+  for (const location of [shadow, trusted]) fs.mkdirSync(location, { recursive: true });
+  fs.writeFileSync(path.join(shadow, 'codex'), `#!${process.execPath}\nprocess.stdout.write('PROJECT_SHADOW');process.exit(97);\n`, { mode: 0o700 });
+  fs.writeFileSync(path.join(trusted, 'codex'), `#!${process.execPath}\nconsole.log(JSON.stringify({home:process.env.CODEX_HOME,args:process.argv.slice(2)}));\n`, { mode: 0o700 });
+  const command = new URL('../bin/agent-console.mjs', import.meta.url);
+  const result = spawnSync(process.execPath, [command.pathname, 'accounts', 'launch', '--id', profile.id,
+    '--state-dir', path.join(dir, 'state'), '--', '--version'],
+    { cwd: project, env: { PATH: [shadow, trusted].join(path.delimiter) }, encoding: 'utf8', timeout: 5000 });
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /PROJECT_SHADOW/);
+  assert.deepEqual(JSON.parse(result.stdout), { home: fs.realpathSync(native), args: ['--version'] });
+  assert.equal(store.view().profiles[0].state, 'unavailable'); // Launch did not invent quota.
+});
+
 test('Windows native lookup accepts explicit home installs but refuses implicit or aliased current-directory programs', () => {
   const home = 'C:\\SyntheticHome';
   const bin = home + '\\.local\\bin';
@@ -154,6 +199,7 @@ test('Codex adapter initializes, requests only limits, bounds output, and termin
   const s = await readCodexCapacity({ ...profile, directory: '/synthetic/native' }, { executable: 'synthetic', env: {}, now: () => NOW,
     spawnProcess: (exe, args, options) => { assert.deepEqual(args, ['app-server']); assert.equal(options.env.CODEX_HOME, '/synthetic/native'); return child; } });
   assert.equal(s.windows[0].remainingPercent, 60);
+  assert.equal(child.sent[0].params.clientInfo.version, JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version);
   assert.deepEqual(child.sent.map(m => m.method), ['initialize', 'initialized', 'account/rateLimits/read']);
   assert.equal(child.killed, true);
   const noisy = fakeProcess((m, c) => { if (m.id === 1) c.stdout.write('x'.repeat(1024 * 1024 + 1)); });

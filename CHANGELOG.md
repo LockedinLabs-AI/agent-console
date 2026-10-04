@@ -2,6 +2,9 @@
 
 ## 0.4.4 — Unreleased
 
+- Reuse each validated stored-record timestamp while rebuilding indexes at
+  restart, preserving record validation and reducing repeated date parsing.
+
 - Exclude project-local native client executables and symlink aliases during
   macOS and Linux account launches, matching the Windows boundary.
 - Refuse Windows authentication and endpoint overrides regardless of variable

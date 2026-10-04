@@ -282,3 +282,29 @@ test("a session's context readings stay in time order and keep the newest 128, w
   assert.equal(samples.at(-1).at, Math.floor((now - 60_000) / 60_000) * 60_000, "the newest is kept");
   assert.equal(samples[0].at, Math.floor((now - 128 * 60_000) / 60_000) * 60_000, "the oldest 22 are gone");
 });
+
+test("a Pi record survives the day file and the rollup, and is not read back as another tool", (t) => {
+  const now = Date.UTC(2026, 9, 3, 12);
+  const dir = scratch(t);
+  const options = { dir, retentionMs: 8 * DAY, prices: PRICES, now: () => now };
+  const rows = [
+    record({ id: 1, device: "dev_pi", session: 1, at: now - 60_000, tool: "pi", model: "gpt-6.1-sol" }),
+    record({ id: 2, device: "dev_pi", session: 1, at: now - 2 * DAY, tool: "pi", model: "gpt-6.1-sol" }),
+  ];
+  assert.deepEqual(createStore(options).ingest("dev_pi", rows),
+    { accepted: 2, duplicate: 0, expired: 0, rejected: [] });
+  // A restart reads the day files back. A stored record a reader cannot accept
+  // is counted as damaged, which is how the loss would be noticed at all.
+  const reopened = createStore(options);
+  const loaded = reopened.load();
+  assert.equal(loaded.damaged, 0);
+  assert.equal(loaded.loaded, 2);
+  const minutes = [];
+  reopened.eachBucket(now - 8 * DAY, now + 60_000, (_minute, bucket) => minutes.push(bucket));
+  assert.deepEqual(minutes.map((bucket) => bucket.tool), ["pi", "pi"]);
+  assert.equal(minutes.reduce((sum, bucket) => sum + bucket.n, 0), 2);
+  // The day rollup keeps the tool it was written with, not a default.
+  const days = [];
+  reopened.eachDay("2026-10-01", "2026-10-03", (day, bucket) => days.push(`${day} ${bucket.tool}`));
+  assert.deepEqual(days.sort(), ["2026-10-01 pi", "2026-10-03 pi"]);
+});
